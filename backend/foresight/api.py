@@ -365,7 +365,16 @@ def cancel(job_id: str):
 def events(job_id: str):
     j = JOBS.get(job_id)
     if not j:
-        raise HTTPException(404, "unknown job")
+        saved = OUT / job_id / "events.jsonl"
+        if not saved.exists():
+            raise HTTPException(404, "unknown job")
+
+        def replay():  # a finished job from an earlier server run: replay its saved events
+            for line in saved.read_text().splitlines():
+                e = json.loads(line)
+                yield f"event: {e['event']}\ndata: {json.dumps(e['data'])}\n\n"
+
+        return StreamingResponse(replay(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
 
     def gen():
         i = 0
