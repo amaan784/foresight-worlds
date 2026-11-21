@@ -4,18 +4,17 @@ Each agent edits ONLY its own section. Format: Done / Next / Blockers.
 
 ## Backend (Claude Code)
 
-### Done (15:44)
-- Phase 0 (phase0/REPORT.md). Backend: perceive, track, scale, scene (support snapping, source-object and occlusion filtering), predict_clip, omni lane, API with SSE.
-- Integrated backend/physics (fit, simulate, render, Decision 1 verify, Carbon repair): ball-rolls-off live stage run, Foresight 5.3 cm vs Omni 34.3 cm endpoint error, Decision 1 0.90 / 0.97, 20.8 s.
-- Frontend (Vite + React + Tailwind, Trained Eye style): QR + phone capture, live steps, synced three-panel reveal with posters.
-- Eval harness (eval/run_eval.py), README + docs + images (docs/img/build.py), FAILURES.md.
+### Done (final)
+- Phase 0 (phase0/REPORT.md); backend/foresight pipeline + API; frontend stage and phone capture; eval harness; README, docs, images.
+- Clean eval, 15 Physics-IQ clips, center view, original GT (eval/results.json): constant velocity 75.22, Foresight 58.97, Foresight with Carbon reading 58.8, Genie 4 42.23, last frame 34.96, Omni 1.2 27.51.
 
-### Next
-- Clean eval run (static, const_velocity, foresight) in progress; Omni eval batch waits for the user's approval (~$15).
-- Regenerate README results (eval/readme_results.py) and banner from results.json.
+### Next (after the hackathon)
+- Make the physics fit robust on contacts and falls (4 clips blew up; eval/FAILURES.md).
+- Genie 4 as a fourth panel on the stage (in the eval only today).
+- Physics-IQ Verified ground truth once the HF terms are accepted.
 
 ### Blockers
-- HF Physics-IQ-Verified still 403 (terms not accepted): eval uses the original Physics-IQ GT and says so.
+- none for submission
 
 ## Physics
 
