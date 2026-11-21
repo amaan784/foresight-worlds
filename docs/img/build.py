@@ -119,7 +119,8 @@ if __name__ == "__main__":
         r = json.loads(res.read_text())
         s = r["systems"]
         if "foresight" in s and "omni" in s:
-            stat = (f"Physics-IQ score {s['foresight']['physics_iq_verified_pct']:.1f} for Foresight against "
-                    f"{s['omni']['physics_iq_verified_pct']:.1f} for Gemini Omni, on {r['n_clips']} real clips.")
+            stat = (f"Physics-IQ score on {r['n_clips']} real clips: Foresight {s['foresight']['physics_iq_verified_pct']:.1f}, "
+                    f"Gemini Omni {s['omni']['physics_iq_verified_pct']:.1f}"
+                    + (f", constant velocity {s['const_velocity']['physics_iq_verified_pct']:.1f}." if 'const_velocity' in s else "."))
     print(banner(cond, stat))
     print(compare(real, ROOT / "phase0/out/0c_ball-rolls-off/omni_5s_24fps.mp4", a.fore, a.fore_label))

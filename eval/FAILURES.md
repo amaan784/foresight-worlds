@@ -20,5 +20,12 @@ center camera. Failures from the clean eval run are listed at the end, generated
 ## Clean eval run
 
 <!-- failures: start (written by eval/readme_results.py; edits here are lost) -->
-Not run yet.
+| System | Clip | What happened | Handling |
+|---|---|---|---|
+| foresight | roll-in-box | the fit blew up: endpoint 161.6 m off, 2 repairs | not fixed today: contacts and falls in the fitter |
+| foresight | ball-in-basket | Decision 1 doubted the fit twice; 2 Carbon repairs, 430.62 s | not fixed today |
+| foresight | duck-falls-in-box | Decision 1 doubted the fit twice; 2 Carbon repairs, 301.14 s | not fixed today |
+| foresight | ball-and-block-fall | the fit blew up: endpoint 46.2 m off, 2 repairs | not fixed today: contacts and falls in the fitter |
+| foresight | balls-collide | the fit blew up: endpoint 47.7 m off, 0 repairs | not fixed today: contacts and falls in the fitter |
+| foresight | two-balls-pass | the fit blew up: endpoint 20.8 m off, 2 repairs | not fixed today: contacts and falls in the fitter |
 <!-- failures: end -->

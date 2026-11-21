@@ -52,6 +52,10 @@ plays reality, Foresight and Omni side by side with how far each prediction ends
 
 <sub>The stage after a live run on a Physics-IQ clip, at 0.25 s into the hidden 5 seconds: the real ball and Foresight's ball are in the same place; Omni's ball has vanished.</sub>
 
+<p align="center"><img src="docs/img/how-it-works.svg" alt="The pipeline in one line: 3 s of video, read the scene with Gemini 4 Hydrogen, track, measure, fit physics, check with Gemini Decision 1 and repair with Gemini 4 Carbon, render 5 s; Gemini Omni continues the same clip as the baseline; both are compared with reality" width="100%"></p>
+
+<sub>The simple view: the six steps, the repair loop, and the Omni baseline. The detailed view below shows where each part runs.</sub>
+
 <p align="center"><img src="docs/img/architecture.svg" alt="Where Foresight runs: the phone records and the stage shows results; a local FastAPI server reads the scene with Gemini 4 Hydrogen, tracks, measures, builds the scene, fits physics, checks it with Gemini Decision 1, repairs it with Gemini 4 Carbon and renders 5 s; Gemini Omni continues the same clip in parallel; an offline eval scores everything on Physics-IQ" width="100%"></p>
 
 <sub>Blue is the live path from the phone to the stage; the numbers on the arrows into the Gemini API are the steps that make each call. Amber is the Omni baseline. Grey dashes are the offline eval, which calls the same pipeline.</sub>
@@ -61,7 +65,22 @@ plays reality, Foresight and Omni side by side with how far each prediction ends
 <!-- results: start (written by eval/readme_results.py from eval/results.json; edits here are lost) -->
 ## Results
 
-Not run yet.
+Every number below comes from `eval/run_eval.py`: [eval/results.json](eval/results.json), [the per-clip table](eval/results_table.md), [the method](docs/evaluation.md). 15 rigid-body clips, center camera, 24 FPS, scored against the original Physics-IQ ground truth (Verified files were not available) with the official Physics-IQ code. Clean run: yes; commit `f84ff62`, 2026-11-21T20:40:02+00:00.
+
+**In short:** Physics-IQ score (Verified formula, %, higher is better): Constant velocity (no physics) 75.2, Foresight (physics) 59.0, Last frame held 35.0, Gemini Omni 1.2 Flash (video model) 27.5.
+
+Foresight beats Gemini Omni by a wide margin. It does **not** yet beat the constant-velocity baseline, which uses the same Gemini scene reading, tracking and renderer and only drops the physics. Where the physics fit works it is more accurate: Foresight's object ends closer to the real one on 8 of the 14 clips with a measurable endpoint (on ball-rolls-off, 5.7 cm against 9.9 cm). But the fit blew up on 4 clips with collisions or falls (roll-in-box, ball-and-block-fall, balls-collide, two-balls-pass), and those pull the pooled score down. Making contacts and falls robust is the next step.
+
+<p align="center"><img src="eval/chart.png" alt="Physics-IQ score per system" width="88%"></p>
+
+| System | Physics-IQ score (Verified formula) | Original formula | Median endpoint error (cm) | Failed clips |
+|---|---|---|---|---|
+| Constant velocity (no physics) | **75.2** | 76.2 | 438.1 | 0 of 15 |
+| Foresight (physics) | 59.0 | 55.2 | 42.5 | 0 of 15 |
+| Last frame held | 35.0 | 32.4 | n/a | 0 of 15 |
+| Gemini Omni 1.2 Flash (video model) | 27.5 | 21.6 | n/a | 0 of 15 |
+
+Endpoint error is measured only where the system tracks an object (Foresight and constant velocity). Failures, causes and fixes: [eval/FAILURES.md](eval/FAILURES.md).
 <!-- results: end -->
 
 ## Gemini models, each with a job
@@ -69,7 +88,7 @@ Not run yet.
 | Model | Its job |
 |---|---|
 | Gemini 4 Hydrogen (`gemini-4-hydrogen`) | Reads the clip: objects, sizes, surfaces, motion (agentic video, structured output, thinking level low). 12.5 s in [Phase 0](phase0/REPORT.md). |
-| Gemini 4 Neon (`gemini-4-neon`) | Takes over scene reading if Hydrogen keeps returning 503. |
+| Gemini 4 Neon (`gemini-4-neon`) | On standby: takes over scene reading if Hydrogen keeps returning 503. Not needed in any run today. |
 | Gemini Decision 1 (`gemini-decision-1`) | Checks the fit on real frames: does the outline sit on the object, which motion is it; confidences gate the repair. |
 | Gemini 4 Carbon (`gemini-4-carbon`) | Repairs a fit Decision 1 doubts: proposes another motion model and starting guesses (thinking level medium). |
 | Gemini Omni 1.2 Flash (`gemini-omni-1.2-flash`) | The baseline: continues the same 3 s as video. |
@@ -85,6 +104,9 @@ Not run yet.
   distance by the same factor; falls are cross-checked against gravity, rolls are not.
 - **A subset of Physics-IQ.** 15 of 66 scenes and one of three cameras, so the scores are not comparable with the
   public leaderboard.
+- **Physics is not yet better than a straight line on this score.** Contacts and falls are where the fit breaks;
+  the results above name the clips. Constant velocity shares Foresight's perception and tracking, so most of the
+  gap to Omni comes from reading the real scene rather than generating pixels.
 - **The score likes stillness.** Holding the last frame scores well on Physics-IQ because the pixel-error term
   rewards a video that does not change. The table shows it so you can judge.
 - **Omni is slow and paid.** About 40 s and about $1 a clip, so the stage asks before calling it.
