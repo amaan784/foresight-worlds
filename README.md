@@ -6,6 +6,7 @@
 </p>
 
 <p align="center">
+  <a href="docs/demo.mp4"><b>Watch the demo (34 s)</b></a> ·
   <a href="#why-it-matters">Why it matters</a> ·
   <a href="#try-it-in-30-seconds"><b>Try it in 30 seconds</b></a> ·
   <a href="#results">Results</a> ·
