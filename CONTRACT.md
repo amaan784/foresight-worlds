@@ -136,11 +136,13 @@ Frontend dev server proxies `/api` and `/outputs` to `http://localhost:8000` (so
   - `video`: file (mp4 / webm / mov; phone recording ~8 s) — **or** `sample_id`: string
   - `session`: optional string (links a phone upload to the laptop view)
   - `cond_seconds`: optional float, default 3.0. For an uploaded video, `[0, cond_seconds)` is conditioning and the next 5.0 s is the hidden reality.
-  - `omni`: optional `"true"|"false"`, default `"true"`
+  - `omni`: optional `"true"|"false"`, default `"true"` (each Omni call costs ~$1 — keep it off while developing)
+  - `dynamics`: optional `"physics"` (default; returns **503** until `backend/physics` exists) or `"const_velocity"` (physics-free baseline; the result says `"dynamics": "const_velocity"` — label it as such in the UI)
   - → `202 {"job_id": "j_ab12cd", "events_url": "/api/jobs/j_ab12cd/events", "result_url": "/api/jobs/j_ab12cd"}`
 - `GET /api/jobs?session=<s>` → `[{"job_id": "...", "created": "ISO8601", "status": "running"|"done"|"error"}]` newest first
 - `GET /api/jobs/{job_id}` → the `result` payload once done, else `{"job_id", "status", "events_so_far": [...]}`
-- `GET /api/jobs/{job_id}/events` → `text/event-stream` (EventSource-compatible). Replays past events on connect, then streams. Each message: `event: <name>` + `data: <json>`. Stream ends after `result` or `error`.
+- `GET /api/jobs/{job_id}/events` → `text/event-stream` (EventSource-compatible). Replays past events on connect, then streams. Each message: `event: <name>` + `data: <json>`. `result` is sent as soon as Foresight is done (Omni may still be running); the `omni` lane finishes later; the stream ends with an `end` event (or after `error`). Call `es.close()` on `end`/`error` (otherwise EventSource auto-reconnects and replays). After `omni` done, re-fetch `GET /api/jobs/{id}` for `urls.omni` and `metrics.endpoint_error_cm.omni`.
+- `GET /api/eval` → contents of `eval/results.json` (404 until produced); `GET /api/eval/chart.png`.
 - Static files: `/outputs/<job_id>/{conditioning.mp4, reality.mp4, foresight.mp4, omni.mp4, overlay.mp4, result.json, events.jsonl}` — H.264 yuv420p, browser-playable.
 
 SSE events (every payload also has `"t": seconds since job start`):
@@ -156,9 +158,10 @@ SSE events (every payload also has `"t": seconds since job start`):
 | `verify` | `{"model": "gemini-decision-1", "attempt": 0, "confidences": {"outline_on_object": 0.91, "motion": 0.84}, "answers": {...}, "passed": true}` |
 | `repair` | `{"model": "gemini-4-carbon", "attempt": 1, "proposal": {"motion_model": "bounce", "reason": "..."}}` |
 | `render` | `{"url": "/outputs/<id>/foresight.mp4", "frames": 120, "fps": 24, "duration_s": 5.0}` |
-| `omni` | `{"status": "start"\|"done"\|"error"\|"skipped", "url": "/outputs/<id>/omni.mp4" \| null, "latency_s": 39.1, "error": null}` |
+| `omni` | `{"status": "start"\|"done"\|"error"\|"skipped", "url": "/outputs/<id>/omni.mp4" \| null, "latency_s": 39.1, "error": null, "endpoint_error_cm": 41.0 \| null}` |
 | `result` | final payload below |
 | `error` | `{"stage": "track", "message": "no moving object found"}` |
+| `end` | `{"status": "done"}` — last event; close the EventSource |
 
 `result` payload:
 ```jsonc

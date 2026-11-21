@@ -192,3 +192,4 @@ phase0/out/**/conditioning_*.mp4
 phase0/out/**/omni_raw.mp4
 phase0/out/scene_*/*.png
 phase0/out/**/cond_proc.mp4
+outputs/

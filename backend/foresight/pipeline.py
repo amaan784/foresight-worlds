@@ -207,7 +207,6 @@ def predict_clip(cond_video: Path, out_video: Path, out_fps: int = config.BENCH_
         raise ValueError(f"unknown dynamics {dynamics!r}")
 
     pr = probe(out_video)
-    emit("render", {"url": None, "frames": pr["frames"], "fps": pr["fps"], "duration_s": round(pr["duration"], 3)})
 
     main_id = max(scene["objects"], key=lambda ob: len(ob["track"]))["id"]
     ee = {"foresight": None}
