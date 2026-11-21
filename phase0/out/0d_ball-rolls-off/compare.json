@@ -1,0 +1,39 @@
+{
+  "scene": "ball-rolls-off",
+  "er2_model": "gemini-robotics-er-2-preview",
+  "er2_sampling_fps": 24,
+  "er2_latency_s": 8.54,
+  "csrt_latency_s": 0.137,
+  "per_object": {
+    "grey tennis ball": {
+      "er2_points": 12,
+      "er2_time_span_s": 0.458,
+      "er2_points_per_s": 26.2,
+      "csrt_frames_ok": 12,
+      "csrt_points_per_s": 24.0,
+      "matched_frames": 12,
+      "object_radius_px_proc": 33.0,
+      "err_px_proc_median": 38.71204706296545,
+      "err_px_proc_mean": 38.0633218470745,
+      "err_px_proc_max": 52.46337007856053,
+      "err_px_orig_median": 154.8481882518618,
+      "err_over_radius_median": 1.1730923352413773,
+      "best_time_shift_frames": 1,
+      "err_px_proc_median_best_shift": 36.53944717698944
+    }
+  },
+  "independent_reference": {
+    "reference": "background-subtraction centroid",
+    "ref_frames": 13,
+    "csrt_vs_ref": {
+      "matched": 12,
+      "median_px": 20.1,
+      "max_px": 34.4
+    },
+    "er2_vs_ref": {
+      "matched": 12,
+      "median_px": 39.1,
+      "max_px": 53.2
+    }
+  }
+}

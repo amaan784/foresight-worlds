@@ -1,0 +1,115 @@
+{
+ "tracks": [
+  {
+   "label": "grey tennis ball",
+   "points": [
+    {
+     "t_s": 2.5,
+     "point": [
+      763,
+      121
+     ]
+    },
+    {
+     "t_s": 2.542,
+     "point": [
+      786,
+      137
+     ]
+    },
+    {
+     "t_s": 2.583,
+     "point": [
+      785,
+      149
+     ]
+    },
+    {
+     "t_s": 2.625,
+     "point": [
+      790,
+      271
+     ]
+    },
+    {
+     "t_s": 2.667,
+     "point": [
+      779,
+      316
+     ]
+    },
+    {
+     "t_s": 2.708,
+     "point": [
+      766,
+      351
+     ]
+    },
+    {
+     "t_s": 2.75,
+     "point": [
+      756,
+      394
+     ]
+    },
+    {
+     "t_s": 2.792,
+     "point": [
+      768,
+      425
+     ]
+    },
+    {
+     "t_s": 2.833,
+     "point": [
+      793,
+      445
+     ]
+    },
+    {
+     "t_s": 2.875,
+     "point": [
+      797,
+      477
+     ]
+    },
+    {
+     "t_s": 2.917,
+     "point": [
+      788,
+      513
+     ]
+    },
+    {
+     "t_s": 2.958,
+     "point": [
+      779,
+      552
+     ]
+    }
+   ]
+  }
+ ],
+ "meta": {
+  "latency_s": 8.54,
+  "usage": {
+   "initial_input_tokens": 4830,
+   "input_tokens_by_modality": [
+    {
+     "modality": "text",
+     "tokens": 78
+    },
+    {
+     "modality": "video",
+     "tokens": 4752
+    }
+   ],
+   "total_cached_tokens": 0,
+   "total_input_tokens": 4830,
+   "total_output_tokens": 514,
+   "total_thought_tokens": 1162,
+   "total_tokens": 6506,
+   "total_tool_use_tokens": 0
+  }
+ }
+}

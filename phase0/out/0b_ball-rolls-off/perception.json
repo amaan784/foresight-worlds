@@ -1,0 +1,116 @@
+{
+  "scene": {
+    "objects": [
+      {
+        "name": "grey tennis ball",
+        "shape": "circle",
+        "est_real_size_cm": 6.7,
+        "moving": true,
+        "visible_frame0": false,
+        "bbox_frame0": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "bbox_last_frame": [
+          756,
+          551,
+          868,
+          616
+        ]
+      },
+      {
+        "name": "black cup",
+        "shape": "box",
+        "est_real_size_cm": 10.0,
+        "moving": false,
+        "visible_frame0": true,
+        "bbox_frame0": [
+          703,
+          0,
+          882,
+          65
+        ],
+        "bbox_last_frame": [
+          703,
+          0,
+          882,
+          65
+        ]
+      }
+    ],
+    "support_surfaces": [
+      {
+        "name": "wooden table",
+        "kind": "table",
+        "line": [
+          868,
+          0,
+          868,
+          1000
+        ]
+      }
+    ],
+    "motion_type": "roll",
+    "motion_start_s": 2.4
+  },
+  "meta": {
+    "latency_s": 12.48,
+    "model": "gemini-4-hydrogen",
+    "usage": {
+      "cached_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 402
+        },
+        {
+          "modality": "image",
+          "tokens": 557
+        },
+        {
+          "modality": "video",
+          "tokens": 285
+        }
+      ],
+      "initial_input_tokens": 3601,
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 1401
+        },
+        {
+          "modality": "image",
+          "tokens": 2200
+        }
+      ],
+      "output_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 349
+        }
+      ],
+      "tool_use_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 1581
+        },
+        {
+          "modality": "image",
+          "tokens": 2200
+        },
+        {
+          "modality": "video",
+          "tokens": 1125
+        }
+      ],
+      "total_cached_tokens": 1244,
+      "total_input_tokens": 3601,
+      "total_output_tokens": 349,
+      "total_thought_tokens": 687,
+      "total_tokens": 9543,
+      "total_tool_use_tokens": 4906
+    },
+    "file_uri": "https://generativelanguage.googleapis.com/v1/files/lzslb6a4i2v5"
+  }
+}

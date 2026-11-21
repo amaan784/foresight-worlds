@@ -1,0 +1,49 @@
+{
+  "run": "omni-1.2-flash",
+  "view": "perspective-center",
+  "fps": 24,
+  "n_scenarios": 1,
+  "physics_iq_verified_score_pct": 9.17,
+  "physics_iq_original_score_pct": 5.71,
+  "pooled": {
+    "score_spatiotemporal": 0.0090502090430452,
+    "score_spatial": 0.10335945186340721,
+    "score_weighted_spatial": 0.06092445334841448,
+    "score_mse": 0.0006957433633942856,
+    "final_score_raw": 0.057082294721561344,
+    "final_score_stable": 0.057082294721561344,
+    "final_score_orig": 0.057082294721561344,
+    "variance_mse": 0.00016687643910699989,
+    "variance_spatiotemporal_iou": 0.9207890440649255,
+    "variance_spatial": 0.5533001514823631,
+    "variance_weighted_spatial": 0.4315968347367353,
+    "final_score_view": 0.09169969048963286,
+    "score_spatiotemporal_view": 0.00905020894475766,
+    "score_spatial_view": 0.10335944999535332,
+    "score_weighted_spatial_view": 0.06092445193680886,
+    "score_mse_view": 0.1934646510816116
+  },
+  "per_scenario": [
+    {
+      "scenario": "trimmed-ball-rolls-off.mp4",
+      "spatial_iou_v1_score": 0.10335944999535332,
+      "weighted_spatial_iou_v1_score": 0.06092445193680886,
+      "spatiotemporal_iou_v1_score": 0.00905020894475766,
+      "v1_mse_score": 0.1934646510816116,
+      "final_arithmetic": 0.09169969048963286,
+      "final_geometric": 0.05762361667899486,
+      "final_harmonic": 0.028218255244999157
+    }
+  ],
+  "input_checks": [
+    {
+      "file": "0023_perspective-center_trimmed-ball-rolls-off.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 1280,
+      "height": 720,
+      "valid_5s": true
+    }
+  ]
+}

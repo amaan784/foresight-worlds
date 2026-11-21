@@ -1,0 +1,87 @@
+{
+  "run": "static-last-frame",
+  "view": "perspective-center",
+  "fps": 24,
+  "n_scenarios": 3,
+  "physics_iq_verified_score_pct": 33.9,
+  "physics_iq_original_score_pct": 33.94,
+  "pooled": {
+    "score_spatiotemporal": 1.0271993011129001,
+    "score_spatial": 0.0,
+    "score_weighted_spatial": 0.0,
+    "score_mse": 0.0029611825998775505,
+    "final_score_raw": 0.3394385844377558,
+    "final_score_stable": 0.33037215073345577,
+    "final_score_orig": 0.3394385844377558,
+    "variance_mse": 0.0006536248338509014,
+    "variance_spatiotemporal_iou": 0.6219716935133196,
+    "variance_spatial": 0.6897872711937928,
+    "variance_weighted_spatial": 0.5212051320400565,
+    "final_score_view": 0.3390340837823564,
+    "score_spatiotemporal_view": 0.9377832794334228,
+    "score_spatial_view": 0.0,
+    "score_weighted_spatial_view": 0.0,
+    "score_mse_view": 0.41835305569600284
+  },
+  "per_scenario": [
+    {
+      "scenario": "trimmed-ball-hits-nothing.mp4",
+      "spatial_iou_v1_score": 0.0,
+      "weighted_spatial_iou_v1_score": 0.0,
+      "spatiotemporal_iou_v1_score": 0.8630778991007141,
+      "v1_mse_score": 0.46005409845218787,
+      "final_arithmetic": 0.3307829993882255,
+      "final_geometric": 0.0,
+      "final_harmonic": 1.9999999666769874e-08
+    },
+    {
+      "scenario": "trimmed-ball-in-basket.mp4",
+      "spatial_iou_v1_score": 0.0,
+      "weighted_spatial_iou_v1_score": 0.0,
+      "spatiotemporal_iou_v1_score": 1.0,
+      "v1_mse_score": 0.15907567275857462,
+      "final_arithmetic": 0.2897689181896437,
+      "final_geometric": 0.0,
+      "final_harmonic": 1.9999999271368432e-08
+    },
+    {
+      "scenario": "trimmed-ball-rolls-off.mp4",
+      "spatial_iou_v1_score": 0.0,
+      "weighted_spatial_iou_v1_score": 0.0,
+      "spatiotemporal_iou_v1_score": 0.9502719391995543,
+      "v1_mse_score": 0.6359293958772458,
+      "final_arithmetic": 0.3965503337692,
+      "final_geometric": 0.0,
+      "final_harmonic": 1.999999973751681e-08
+    }
+  ],
+  "input_checks": [
+    {
+      "file": "0011_perspective-center_trimmed-ball-hits-nothing.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 3840,
+      "height": 2160,
+      "valid_5s": true
+    },
+    {
+      "file": "0014_perspective-center_trimmed-ball-in-basket.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 3840,
+      "height": 2160,
+      "valid_5s": true
+    },
+    {
+      "file": "0023_perspective-center_trimmed-ball-rolls-off.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 3840,
+      "height": 2160,
+      "valid_5s": true
+    }
+  ]
+}

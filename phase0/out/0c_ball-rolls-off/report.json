@@ -1,0 +1,50 @@
+{
+  "scene": "ball-rolls-off",
+  "ok": true,
+  "model": "gemini-omni-1.2-flash",
+  "prompt": "Static locked-off single-shot with fixed frame throughout filmed with constant framerate in real-time. The scene shows a realistic scientific demonstration. The scene only contains the described setup and actions. A light wood coffee table in the foreground with a black pipe on the left end of the table. The grey tennis ball rolls out of the pipe over the entire table towards the right. Continue the scene.",
+  "latency_s": 39.1,
+  "raw": {
+    "duration": 13.034667,
+    "fps": 24.0,
+    "frames": 312,
+    "width": 1280,
+    "height": 720
+  },
+  "extracted_5s": {
+    "duration": 5.0,
+    "fps": 24.0,
+    "frames": 120,
+    "width": 1280,
+    "height": 720
+  },
+  "raw_duration_s": 13.0,
+  "raw_fps": 24.0,
+  "start_offset_s": 3.0,
+  "frames_padded_by_holding_last": 0,
+  "usage": {
+    "initial_input_tokens": 17457,
+    "input_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 81
+      },
+      {
+        "modality": "video",
+        "tokens": 17376
+      }
+    ],
+    "output_tokens_by_modality": [
+      {
+        "modality": "video",
+        "tokens": 57920
+      }
+    ],
+    "total_cached_tokens": 0,
+    "total_input_tokens": 17457,
+    "total_output_tokens": 57920,
+    "total_thought_tokens": 533,
+    "total_tokens": 75910,
+    "total_tool_use_tokens": 0
+  }
+}
