@@ -151,26 +151,51 @@ def endpoint_error(pred: list[dict], real_pts: list[dict], scene: dict, oid: str
 
 
 def draw_overlay(base_video: Path, scene: dict, pred: list[dict], out: Path, real_pts: list[dict] | None = None) -> Path:
-    v = read_video(base_video, proc_w=960)
     W, H = scene["orig_size"]
-    ph, pw = v["proc"][0].shape[:2]
-    s = pw / W
     main = max(scene["objects"], key=lambda ob: len(ob["track"]))["id"]
-    path = [(int(st["objects"][main]["x"] * s), int(st["objects"][main]["y"] * s)) for st in pred if main in st["objects"]]
-    frames = []
-    for i, f in enumerate(v["proc"][: len(pred)]):
-        im = f.copy()
-        for a, b in zip(path[:-1], path[1:]):
-            cv2.line(im, a, b, (0, 200, 255), 2)
-        if i < len(path):
-            cv2.circle(im, path[i], 10, (0, 200, 255), 3)
-        if real_pts:
-            for rp in real_pts:
-                if abs(rp["t_s"] - pred[i]["t_s"]) < 0.5 / scene["fps_out"]:
-                    cv2.circle(im, (int(rp["x"] * s), int(rp["y"] * s)), 6, (0, 255, 0), -1)
-        cv2.putText(im, "orange = Foresight prediction", (12, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 200, 255), 2)
-        frames.append(im)
-    return write_mp4(out, frames, scene["fps_out"])
+    cap = cv2.VideoCapture(str(base_video))
+    out = Path(out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    proc = None
+    try:
+        i = 0
+        while i < len(pred):
+            ok, f = cap.read()
+            if not ok:
+                break
+            fh, fw = f.shape[:2]
+            pw = 960 if fw != 960 else fw
+            ph = int(round(fh * pw / fw)) if fw != 960 else fh
+            pw, ph = pw - pw % 2, ph - ph % 2
+            im = cv2.resize(f, (pw, ph), interpolation=cv2.INTER_AREA) if (fw, fh) != (pw, ph) else f
+            if proc is None:
+                s = pw / W
+                path = [(int(st["objects"][main]["x"] * s), int(st["objects"][main]["y"] * s))
+                        for st in pred if main in st["objects"]]
+                fps = scene["fps_out"]
+                cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "bgr24",
+                       "-s", f"{pw}x{ph}", "-r", str(fps), "-i", "-", "-c:v", "libx264", "-preset", "veryfast",
+                       "-threads", "2", "-pix_fmt", "yuv420p", "-crf", "20", "-r", str(fps),
+                       "-movflags", "+faststart", str(out)]
+                proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+            for a, b in zip(path[:-1], path[1:]):
+                cv2.line(im, a, b, (0, 200, 255), 2)
+            if i < len(path):
+                cv2.circle(im, path[i], 10, (0, 200, 255), 3)
+            if real_pts:
+                for rp in real_pts:
+                    if abs(rp["t_s"] - pred[i]["t_s"]) < 0.5 / scene["fps_out"]:
+                        cv2.circle(im, (int(rp["x"] * s), int(rp["y"] * s)), 6, (0, 255, 0), -1)
+            cv2.putText(im, "orange = Foresight prediction", (12, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 200, 255), 2)
+            proc.stdin.write(np.ascontiguousarray(im).tobytes())
+            i += 1
+    finally:
+        cap.release()
+        if proc is not None and proc.stdin is not None:
+            proc.stdin.close()
+    if proc is None or proc.wait() != 0:
+        raise RuntimeError(f"ffmpeg failed writing overlay {out}")
+    return out
 
 
 # ----------------------------------------------------------------------------- main entry

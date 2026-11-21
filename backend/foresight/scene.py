@@ -218,6 +218,9 @@ def build_scene(cond_video: Path, work_dir: Path, fit_video: Path | None = None,
         emit("tracking", ev)
     emit("stage", {"stage": "track", "status": "done", "message": f"{tracks_for_events[0]['frames_ok']} frames"})
 
+    proc_size = list(fit["proc"][0].shape[1::-1])
+    del fit
+    cond["proc"].clear()
     # ---- scale (main object = the one with the longest track)
     main = max(objects, key=lambda ob: len(ob["track"]))
     size_px = 2 * main["radius_px"] if main["shape"] == "circle" else main["w_px"]
@@ -239,7 +242,7 @@ def build_scene(cond_video: Path, work_dir: Path, fit_video: Path | None = None,
         cv2.imwrite(ob["sprite_png"], spr)
     kf_frames = [int(round(p["t_s"] * fit_fps)) for p in main["track"]]
     picks = sorted(set(kf_frames[int(k)] for k in np.linspace(0, len(kf_frames) - 1, min(4, len(kf_frames))))) if kf_frames else []
-    kf_full = read_video(fit_video or cond_video, keep_full=set(picks))["full"] if picks else {}
+    kf_full = read_video(fit_video or cond_video, keep_full=set(picks), keep_proc=False)["full"] if picks else {}
     keyframes = []
     for f_idx in picks:
         p = work_dir / f"kf_{f_idx:03d}.png"
@@ -271,7 +274,7 @@ def build_scene(cond_video: Path, work_dir: Path, fit_video: Path | None = None,
     }
     (work_dir / "scene.json").write_text(json.dumps(scene, indent=2))
     info = {"perception": scene_p.model_dump(), "perception_meta": pmeta, "scale": sc, "timings_s": timings,
-            "raw_tracks": raw_tracks, "fit_fps": fit_fps, "proc_size": list(fit["proc"][0].shape[1::-1])}
+            "raw_tracks": raw_tracks, "fit_fps": fit_fps, "proc_size": proc_size}
     return scene, info
 
 

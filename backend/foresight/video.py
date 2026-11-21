@@ -10,27 +10,33 @@ import numpy as np
 
 
 def read_video(path: str | Path, proc_w: int | None = None, keep_full: set[int] | None = None,
-               max_frames: int | None = None) -> dict:
+               max_frames: int | None = None, keep_proc: bool = True) -> dict:
     """Stream a video. Returns {fps, orig_size, n, proc (list, resized to proc_w if given), full {idx: frame}}."""
     cap = cv2.VideoCapture(str(path))
     fps = cap.get(cv2.CAP_PROP_FPS) or 24.0
     proc, full, i = [], {}, 0
     keep_full = keep_full or set()
+    keep_last = -1 in keep_full
+    last_f = None
     W = H = None
     while True:
         ok, f = cap.read()
         if not ok or (max_frames is not None and i >= max_frames):
             break
         H, W = f.shape[:2]
-        if i in keep_full or -1 in keep_full:
+        if i in keep_full:
             full[i] = f
-        if proc_w and W != proc_w:
-            f = cv2.resize(f, (proc_w, int(round(H * proc_w / W))), interpolation=cv2.INTER_AREA)
-        proc.append(f)
+        if keep_last:
+            last_f = f
+        if keep_proc:
+            if proc_w and W != proc_w:
+                proc.append(cv2.resize(f, (proc_w, int(round(H * proc_w / W))), interpolation=cv2.INTER_AREA))
+            else:
+                proc.append(f)
         i += 1
     cap.release()
-    if -1 in keep_full and i:
-        full[i - 1] = full.get(i - 1)
+    if keep_last and last_f is not None and i:
+        full[i - 1] = last_f
     return {"fps": fps, "orig_size": [W, H], "n": i, "proc": proc, "full": full}
 
 
@@ -56,7 +62,7 @@ def write_mp4(path: str | Path, frames: list[np.ndarray], fps: float) -> Path:
     w2, h2 = w - w % 2, h - h % 2
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{w2}x{h2}",
            "-r", str(fps), "-i", "-", "-frames:v", str(len(frames)), "-c:v", "libx264", "-preset", "veryfast",
-           "-pix_fmt", "yuv420p", "-crf", "20", "-r", str(fps), "-movflags", "+faststart", str(path)]
+           "-threads", "2", "-pix_fmt", "yuv420p", "-crf", "20", "-r", str(fps), "-movflags", "+faststart", str(path)]
     p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
     for f in frames:
         p.stdin.write(np.ascontiguousarray(f[:h2, :w2]).tobytes())
@@ -75,8 +81,8 @@ def transcode(src: str | Path, dst: str | Path, fps: float, start_s: float = 0.0
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{start_s:.3f}", "-i", str(src)]
     if dur_s is not None:
         cmd += ["-t", f"{dur_s:.3f}"]
-    cmd += ["-vf", ",".join(vf), "-an", "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
-            "-crf", "18", "-movflags", "+faststart", str(dst)]
+    cmd += ["-vf", ",".join(vf), "-an", "-c:v", "libx264", "-preset", "veryfast", "-threads", "2",
+            "-pix_fmt", "yuv420p", "-crf", "18", "-movflags", "+faststart", str(dst)]
     subprocess.run(cmd, check=True)
     return Path(dst)
 

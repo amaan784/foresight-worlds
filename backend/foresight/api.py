@@ -8,6 +8,7 @@ from __future__ import annotations
 import csv
 import importlib.util
 import json
+import os
 import socket
 import threading
 import time
@@ -30,7 +31,7 @@ from .video import probe, transcode
 ROOT = config.ROOT
 OUT = ROOT / "outputs"
 OUT.mkdir(exist_ok=True)
-UI_MAX_W = 1920  # browser-friendly size for every video we serve
+UI_MAX_W = int(os.environ.get("FORESIGHT_UI_MAX_W", "1920"))  # browser-friendly size for every video we serve
 
 app = FastAPI(title="Foresight")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
