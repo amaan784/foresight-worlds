@@ -63,7 +63,7 @@ def _status(e: Exception) -> int | None:
     return None
 
 
-_B64_RUN = re.compile(r"[A-Za-z0-9+/=_-]{2000,}")
+_B64_RUN = re.compile(r"(?:[A-Za-z0-9+/=_-]|\\n|\n){2000,}")  # base64, including runs broken by (escaped) newlines
 
 
 def _strip_media(obj: Any) -> Any:
