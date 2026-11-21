@@ -1,6 +1,17 @@
 // Client for the Foresight API (CONTRACT.md §4). Everything shown in the UI comes from these calls.
 import { useEffect, useReducer, useRef } from "react";
 
+export const API_BASE = ((import.meta.env.VITE_API_BASE as string | undefined) ?? "").replace(/\/+$/, "");
+
+export function apiUrl(path: string): string;
+export function apiUrl(path: null | undefined): null;
+export function apiUrl(path: string | null | undefined): string | null;
+export function apiUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 export type Info = {
   lan_ip: string;
   physics_available: boolean;
@@ -92,11 +103,11 @@ export function useJob(jobId: string | null): JobState | null {
   useEffect(() => {
     if (!jobId) return;
     dispatch({ type: "reset", id: jobId });
-    const es = new EventSource(`/api/jobs/${jobId}/events`);
+    const es = new EventSource(apiUrl(`/api/jobs/${jobId}/events`));
     esRef.current = es;
     es.onopen = () => dispatch({ type: "reset", id: jobId });
     const refresh = () =>
-      fetch(`/api/jobs/${jobId}`).then((r) => r.json()).then((r) => r.urls && dispatch({ type: "result", data: r })).catch(() => {});
+      fetch(apiUrl(`/api/jobs/${jobId}`)).then((r) => r.json()).then((r) => r.urls && dispatch({ type: "result", data: r })).catch(() => {});
     for (const name of EVENTS) {
       es.addEventListener(name, (e) => {
         const data = JSON.parse((e as MessageEvent).data);
@@ -117,24 +128,33 @@ export function useJob(jobId: string | null): JobState | null {
 }
 
 export async function getInfo(): Promise<Info> {
-  const r = await fetch("/api/info");
-  if (!r.ok) throw new Error(`The backend did not answer (${r.status}). Start it with uvicorn on port 8000.`);
+  const r = await fetch(apiUrl("/api/info"));
+  if (!r.ok) {
+    const hint = API_BASE ? `Check backend at ${API_BASE}.` : "Start the backend with uvicorn on port 8000 (or set VITE_API_BASE).";
+    throw new Error(`The backend did not answer (${r.status}). ${hint}`);
+  }
   return r.json();
 }
 
 export async function getSamples(): Promise<Sample[]> {
-  const r = await fetch("/api/samples");
+  const r = await fetch(apiUrl("/api/samples"));
   return r.ok ? r.json() : [];
 }
 
+export async function listSessionJobs(session: string): Promise<{ job_id: string; created: string; status: string }[]> {
+  return fetch(apiUrl(`/api/jobs?session=${encodeURIComponent(session)}`))
+    .then((x) => (x.ok ? x.json() : []))
+    .catch(() => []);
+}
+
 export async function startJob(form: FormData): Promise<{ job_id: string }> {
-  const r = await fetch("/api/predict", { method: "POST", body: form });
+  const r = await fetch(apiUrl("/api/predict"), { method: "POST", body: form });
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail ?? `Request failed (${r.status})`);
   return r.json();
 }
 
 export async function cancelJob(id: string): Promise<void> {
-  await fetch(`/api/jobs/${id}/cancel`, { method: "POST" }).catch(() => {});
+  await fetch(apiUrl(`/api/jobs/${id}/cancel`), { method: "POST" }).catch(() => {});
 }
 
 export function fmtCm(v: number | null | undefined): string {

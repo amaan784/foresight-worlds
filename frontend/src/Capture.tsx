@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { getInfo } from "./api";
+import { apiUrl, getInfo } from "./api";
 
 const RECORD_S = 8;
 type Phase = "idle" | "countdown" | "recording" | "uploading" | "sent" | "error";
@@ -68,13 +68,13 @@ export default function Capture() {
     f.set("omni", "true");
     f.set("dynamics", physics ? "physics" : "const_velocity");
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/predict");
+    xhr.open("POST", apiUrl("/api/predict"));
     xhr.upload.onprogress = (e) => e.lengthComputable && setProgress(e.loaded / e.total);
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) setPhase("sent");
       else { setPhase("error"); setMsg(`Upload refused (${xhr.status}): ${xhr.responseText.slice(0, 200)}`); }
     };
-    xhr.onerror = () => { setPhase("error"); setMsg("Upload failed: the phone could not reach the laptop. Check both are on the same Wi-Fi."); };
+    xhr.onerror = () => { setPhase("error"); setMsg("Upload failed: could not reach the Foresight server. Check your connection."); };
     xhr.send(f);
   }
 

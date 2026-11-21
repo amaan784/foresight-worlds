@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { cancelJob, fmtCm, getInfo, getSamples, startJob, useJob, type Info, type JobState, type Sample } from "./api";
+import { apiUrl, cancelJob, fmtCm, getInfo, getSamples, listSessionJobs, startJob, useJob, type Info, type JobState, type Sample } from "./api";
 
 const newSession = () => Math.random().toString(36).slice(2, 10);
 
@@ -25,8 +25,8 @@ export default function Stage() {
     if (jobId) return;
     const since = new Date().toISOString();
     const t = setInterval(async () => {
-      const r = await fetch(`/api/jobs?session=${session}`).then((x) => x.json()).catch(() => []);
-      const fresh = r.find((j: { created: string }) => j.created >= since.slice(0, 19)) ?? r[0];
+      const r = await listSessionJobs(session);
+      const fresh = r.find((j) => j.created >= since.slice(0, 19)) ?? r[0];
       if (fresh) setJobId(fresh.job_id);
     }, 1000);
     return () => clearInterval(t);
@@ -57,7 +57,10 @@ export default function Stage() {
     history.replaceState(null, "", "/");
   }
 
-  const captureUrl = info ? `https://${info.lan_ip}:${location.port || "5173"}/capture?session=${session}` : "";
+  const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  const captureUrl = isLocal
+    ? (info ? `https://${info.lan_ip}:${location.port || "5173"}/capture?session=${session}` : "")
+    : `${location.origin}/capture?session=${session}`;
 
   return (
     <div className="min-h-full flex flex-col">
@@ -153,7 +156,7 @@ function Idle(p: {
           {p.samples.map((s) => (
             <button key={s.id} onClick={() => p.onSample(s)} disabled={!!p.busy} aria-label={`Run ${s.title}`}
                     className="monitor shrink-0 w-[280px] text-left disabled:opacity-60">
-              <img src={s.thumb_url} alt="" />
+              <img src={apiUrl(s.thumb_url)} alt="" />
               <span className="tag"><span className="dot" />{p.busy === s.id ? "Starting…" : s.title}</span>
               <span className="tc">3 s seen</span>
             </button>
@@ -229,7 +232,7 @@ function Running({ job, onReset }: { job: JobState; onReset: () => void }) {
   const physicsStage = job.stages.fit ? "fit" : job.stages.simulate ? "simulate" : "fit";
   return (
     <div className="max-w-[1400px] space-y-8">
-      <Timeline condUrl={job.ingest?.conditioning_url} />
+      <Timeline condUrl={apiUrl(job.ingest?.conditioning_url) ?? undefined} />
       {job.error && (
         <div role="alert" className="rounded-xl border border-bad/40 bg-bad/5 p-5">
           <p className="text-xl font-semibold text-bad">Stopped at {job.error.stage}</p>
@@ -301,9 +304,9 @@ function Reveal({ job, onReset }: { job: JobState; onReset: () => void }) {
   const better = eeF !== null && eeO !== null ? (eeF <= eeO ? "f" : "o") : null;
 
   const panels = [
-    { key: "reality", title: "Reality", sub: "what actually happened", url: r.urls.reality, color: "text-ink", err: null as number | null, note: r.urls.reality ? "" : "no hidden clip for this run" },
-    { key: "foresight", title: foresightTitle, sub: "simulated from 3 s of video", url: showPath && r.urls.overlay ? r.urls.overlay : r.urls.foresight, color: "text-cobalt", err: eeF, note: "" },
-    { key: "omni", title: "Omni (video model)", sub: "generated from the same 3 s", url: omniUrl,
+    { key: "reality", title: "Reality", sub: "what actually happened", url: apiUrl(r.urls.reality), color: "text-ink", err: null as number | null, note: r.urls.reality ? "" : "no hidden clip for this run" },
+    { key: "foresight", title: foresightTitle, sub: "simulated from 3 s of video", url: apiUrl(showPath && r.urls.overlay ? r.urls.overlay : r.urls.foresight), color: "text-cobalt", err: eeF, note: "" },
+    { key: "omni", title: "Omni (video model)", sub: "generated from the same 3 s", url: apiUrl(omniUrl),
       color: "text-amber", err: eeO,
       note: job.omni?.status === "start" ? "still generating…" : job.omni?.status === "skipped" ? "not requested" : job.omni?.status === "error" ? "failed" : "" },
   ];
