@@ -133,6 +133,10 @@ export async function startJob(form: FormData): Promise<{ job_id: string }> {
   return r.json();
 }
 
+export async function cancelJob(id: string): Promise<void> {
+  await fetch(`/api/jobs/${id}/cancel`, { method: "POST" }).catch(() => {});
+}
+
 export function fmtCm(v: number | null | undefined): string {
   if (v === null || v === undefined) return "—";
   return v >= 100 ? `${(v / 100).toFixed(2)} m` : `${v.toFixed(1)} cm`;

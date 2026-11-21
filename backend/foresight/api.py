@@ -40,6 +40,10 @@ app.mount("/outputs", StaticFiles(directory=str(OUT)), name="outputs")
 JOBS: dict[str, "Job"] = {}
 
 
+class JobCancelled(Exception):
+    """Raised inside the worker at its next event once the user stops the job."""
+
+
 class Job:
     def __init__(self, session: str | None):
         self.id = "j_" + uuid.uuid4().hex[:8]
@@ -52,12 +56,15 @@ class Job:
         self.cv = threading.Condition()
         self.status = "running"
         self.closed = False
+        self.cancelled = False
         self.result: dict | None = None
 
     def url(self, name: str) -> str:
         return f"/outputs/{self.id}/{name}"
 
     def emit(self, name: str, payload: dict) -> None:
+        if self.cancelled and name not in ("error", "end"):
+            raise JobCancelled(self.id)
         payload = {**payload, "t": round(time.time() - self.t0, 2)}
         with self.cv:
             self.events.append((name, payload))
@@ -194,13 +201,18 @@ def _run(job: Job, src: dict, run_omni: bool, dynamics: str) -> None:
                     if "scene" in holder and has_reality:
                         pts = track_in_video(job.dir / "omni.mp4", holder["scene"])
                         omni_state["endpoint"] = endpoint_error(_omni_traj(pts, holder["scene"]), holder["real_pts"], holder["scene"], holder["main"]) if pts else None
+                except JobCancelled:
+                    return
                 except SpendCapHit as e:
                     omni_state.update(status="error", error=str(e))
                 except Exception as e:  # noqa: BLE001
                     omni_state.update(status="error", error=f"{type(e).__name__}: {e}"[:400])
-                job.emit("omni", {"status": omni_state["status"], "url": omni_state.get("url"), "latency_s": omni_state.get("latency_s"),
-                                  "error": omni_state.get("error"),
-                                  "endpoint_error_cm": (omni_state.get("endpoint") or {}).get("cm")})
+                try:
+                    job.emit("omni", {"status": omni_state["status"], "url": omni_state.get("url"), "latency_s": omni_state.get("latency_s"),
+                                      "error": omni_state.get("error"),
+                                      "endpoint_error_cm": (omni_state.get("endpoint") or {}).get("cm")})
+                except JobCancelled:
+                    return
             omni_thread = threading.Thread(target=omni_lane, daemon=True)
             omni_thread.start()
         else:
@@ -240,6 +252,8 @@ def _run(job: Job, src: dict, run_omni: bool, dynamics: str) -> None:
         job.status = "done"
         (job.dir / "result.json").write_text(json.dumps(job.result, indent=2))
         job.emit("end", {"status": "done"})
+    except JobCancelled:
+        pass  # the cancel endpoint already reported it
     except SpendCapHit as e:
         job.status = "error"
         job.emit("error", {"stage": "gemini", "message": str(e)})
@@ -324,6 +338,21 @@ def job(job_id: str):
     if j.result is not None:
         return j.result
     return {"job_id": j.id, "status": j.status, "events_so_far": [{"event": n, "data": d} for n, d in j.events]}
+
+
+@app.post("/api/jobs/{job_id}/cancel")
+def cancel(job_id: str):
+    """Stop a running job: the worker stops at its next step; a Gemini call already in flight still finishes."""
+    j = JOBS.get(job_id)
+    if not j:
+        raise HTTPException(404, "unknown job")
+    if j.status == "running":
+        j.cancelled = True
+        j.status = "cancelled"
+        j.emit("error", {"stage": "cancelled", "message": "Stopped by the user."})
+        j.emit("end", {"status": "cancelled"})
+        j.close()
+    return {"job_id": j.id, "status": j.status}
 
 
 @app.get("/api/jobs/{job_id}/events")

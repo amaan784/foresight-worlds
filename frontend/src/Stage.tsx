@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { fmtCm, getInfo, getSamples, startJob, useJob, type Info, type JobState, type Sample } from "./api";
+import { cancelJob, fmtCm, getInfo, getSamples, startJob, useJob, type Info, type JobState, type Sample } from "./api";
 
 const newSession = () => Math.random().toString(36).slice(2, 10);
 
@@ -65,7 +65,18 @@ export default function Stage() {
         <button onClick={reset} className="display text-3xl font-extrabold tracking-tight" aria-label="Foresight, back to start">
           Foresight
         </button>
-        {job && <Elapsed job={job} />}
+        {job && (
+          <div className="flex items-center gap-4">
+            <Elapsed job={job} />
+            {!job.result && !job.ended && (
+              <button onClick={async () => { await cancelJob(job.id); reset(); }}
+                      className="rounded-full border border-bad/50 px-4 py-1.5 text-base font-medium text-bad hover:bg-bad/5">
+                Stop this run
+              </button>
+            )}
+            <button onClick={reset} className="rounded-full bg-ink px-4 py-1.5 text-base font-medium text-paper">New run</button>
+          </div>
+        )}
       </header>
       <main className="flex-1 px-4 sm:px-10 pb-10">
         {!job && (
@@ -140,7 +151,7 @@ function Idle(p: {
         <div className="mt-5 flex gap-4 overflow-x-auto pb-2">
           {p.samples.length === 0 && <p className="text-muted">No local clips found. Run phase0/physiq_data.py to fetch some.</p>}
           {p.samples.map((s) => (
-            <button key={s.id} onClick={() => p.onSample(s)} disabled={!!p.busy}
+            <button key={s.id} onClick={() => p.onSample(s)} disabled={!!p.busy} aria-label={`Run ${s.title}`}
                     className="monitor shrink-0 w-[280px] text-left disabled:opacity-60">
               <img src={s.thumb_url} alt="" />
               <span className="tag"><span className="dot" />{p.busy === s.id ? "Starting…" : s.title}</span>
@@ -226,7 +237,7 @@ function Running({ job, onReset }: { job: JobState; onReset: () => void }) {
           <button onClick={onReset} className="mt-4 rounded-full bg-ink px-5 py-2 text-paper font-medium">Start over</button>
         </div>
       )}
-      <div className="grid grid-cols-[1.4fr_1fr] gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-8 lg:gap-12">
         <ol>
           <StepRow n={1} title="Gemini 4 Hydrogen reads the scene" state={stageState(job, "perceive")}>
             {p && (
