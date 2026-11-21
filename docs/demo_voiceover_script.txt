@@ -1,0 +1,11 @@
+This is Foresight. Robots need to know where things will be in a few seconds. Video models can show that, but they make up the physics.
+
+It watches three seconds of real video. The next five stay hidden.
+
+Gemini 4 Hydrogen reads the scene. We track the ball, measure the scene, and fit a physics world to it. Gemini Decision 1 checks the fit on the real frames, 90 percent confident here, and Gemini 4 Carbon repairs it when unsure.
+
+Then the physics runs forward. Foresight ends 5.3 centimetres from the real ball. Gemini Omni, a video model, ends 34.3 centimetres away.
+
+On 15 real Physics-IQ clips, scored with the official code, Foresight scores 59, ahead of Genie 4 at 42 and Gemini Omni at 27.5. A straight-line baseline still scores higher, because our physics breaks on collisions and falls. That is next.
+
+Foresight. Watch three seconds, predict the next five.

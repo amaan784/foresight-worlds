@@ -68,7 +68,9 @@ def paste(bg: np.ndarray, f: np.ndarray, x: int, y: int, w: int, h: int, r: int 
     roi[mask > 0] = f[mask > 0]
 
 
-def main(job: Path) -> Path:
+def main(job: Path, dur: dict | None = None, out: Path | None = None) -> tuple[Path, list[float]]:
+    dur = {"title": 4.0, "cond": 3.0, "steps": 6.5, "reveal": 10.0, "chart": 7.0, "end": 3.5, **(dur or {})}
+    starts: list[float] = []
     res = json.loads((job / "result.json").read_text())
     ev = [json.loads(line) for line in open(job / "events.jsonl")]
     get = lambda name: next((e["data"] for e in ev if e["event"] == name), {})  # noqa: E731
@@ -81,20 +83,23 @@ def main(job: Path) -> Path:
     hold = lambda img, s: seq.extend([img] * int(s * FPS))  # noqa: E731
 
     # 1. title
+    starts.append(len(seq) / FPS)
     hold(card("""<div style="padding:150px 140px"><div class="d" style="font-size:230px;font-weight:800">Foresight</div>
       <div style="font-size:64px;margin-top:40px">Watch 3 seconds. Predict the next 5.</div>
       <div style="font-size:34px;color:var(--muted);margin-top:30px;max-width:1400px">For robotics teams and world-model builders: physics
-      fitted to real video with Gemini, instead of a video model making up motion.</div></div>""", tmp / "t.png"), 4.0)
+      fitted to real video with Gemini, instead of a video model making up motion.</div></div>""", tmp / "t.png"), dur["title"])
 
     # 2. the 3 seconds the model sees (slot 1280x720)
     sx, sy, sw, sh = 320, 230, 1280, 720
     bg = card(f"""<div style="position:absolute;left:{sx}px;top:80px" class="d"><span style="font-size:72px;font-weight:800">What the model sees: 3 seconds</span></div>
       <div class="slot" style="left:{sx}px;top:{sy}px;width:{sw}px;height:{sh}px"></div>
       <div style="position:absolute;left:{sx}px;top:{sy + sh + 30}px;font-size:28px;color:var(--muted)">Physics-IQ ball-rolls-off, center camera (CC BY 4.0). The next 5 seconds stay hidden.</div>""", tmp / "c.png")
+    starts.append(len(seq) / FPS)
     for f in frames_of(job / "conditioning.mp4"):
         im = bg.copy()
         paste(im, f, sx, sy, sw, sh)
         seq.append(im)
+    hold(seq[-1], max(0.0, dur["cond"] - 3.0))
 
     # 3. the steps, with this run's numbers
     obj = next((o for o in per.get("objects", []) if o.get("moving")), {})
@@ -107,7 +112,8 @@ def main(job: Path) -> Path:
         ("6", "Render the next 5 seconds", f"predicted in {m['latency_s_total']} s; Gemini Omni continues the same clip in parallel"),
     ]
     rows = "".join(f'<div class="step"><div class="n">{n}</div><div><div class="t">{t}</div><div class="s">{s}</div></div></div>' for n, t, s in steps)
-    hold(card(f"""<div style="padding:80px 160px"><div class="d" style="font-size:72px;font-weight:800;margin-bottom:30px">Live, step by step</div>{rows}</div>""", tmp / "s.png"), 6.5)
+    starts.append(len(seq) / FPS)
+    hold(card(f"""<div style="padding:80px 160px"><div class="d" style="font-size:72px;font-weight:800;margin-bottom:30px">Live, step by step</div>{rows}</div>""", tmp / "s.png"), dur["steps"])
 
     # 4. reveal: Reality | Foresight | Omni at half speed, endpoint errors underneath
     pw, ph, gap, top = 576, 324, 36, 250
@@ -124,6 +130,7 @@ def main(job: Path) -> Path:
                  f'<div class="d" style="font-size:88px;font-weight:800;color:{col}">{big}</div></div>')
     html += f'<div style="position:absolute;left:{x0}px;top:{top + ph + 230}px;font-size:28px;color:var(--muted)">Played at half speed. Endpoint error: how far each prediction ends up from the real ball at the last moment it is visible.</div>'
     bg = card(html, tmp / "r.png")
+    starts.append(len(seq) / FPS)
     vids = [frames_of(job / lane[3]) for lane in lanes]
     n = min(len(v) for v in vids)
     for k in range(n):
@@ -138,6 +145,7 @@ def main(job: Path) -> Path:
             cv2.putText(im, lane[0], (x + 46, top + 41), cv2.FONT_HERSHEY_SIMPLEX, 0.72, (239, 242, 242), 2, cv2.LINE_AA)
             cv2.putText(im, f"0:{3 + k / FPS:05.2f}", (x + pw - 120, top + ph - 18), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (239, 242, 242), 2, cv2.LINE_AA)
         seq.extend([im, im])  # half speed
+    hold(seq[-1], max(0.0, dur["reveal"] - 2 * n / FPS))
 
     # 5. results chart
     ranked = sorted(S.items(), key=lambda kv: -kv[1]["physics_iq_verified_pct"])
@@ -152,14 +160,16 @@ def main(job: Path) -> Path:
     im = bg.copy()
     y = 300
     im[y:y + ch.shape[0], 260:260 + ch.shape[1]] = ch[: H - y]
-    hold(im, 7.0)
+    starts.append(len(seq) / FPS)
+    hold(im, dur["chart"])
 
     # 6. end
+    starts.append(len(seq) / FPS)
     hold(card("""<div style="padding:220px 140px"><div class="d" style="font-size:150px;font-weight:800">Foresight</div>
       <div style="font-size:44px;margin-top:40px">github.com/amaan784/foresight-worlds</div>
-      <div style="font-size:30px;color:var(--muted);margin-top:24px">Built during the Gemini 4 NYC Hackathon, November 21, 2026.</div></div>""", tmp / "f.png"), 3.5)
+      <div style="font-size:30px;color:var(--muted);margin-top:24px">Built during the Gemini 4 NYC Hackathon, November 21, 2026.</div></div>""", tmp / "f.png"), dur["end"])
 
-    out = ROOT / "docs" / "demo.mp4"
+    out = out or ROOT / "docs" / "demo.mp4"
     p = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{W}x{H}", "-r", str(FPS),
                           "-i", "-", "-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p",
                           "-movflags", "+faststart", str(out)], stdin=subprocess.PIPE)
@@ -168,7 +178,7 @@ def main(job: Path) -> Path:
     p.stdin.close()
     p.wait()
     print(out, f"{len(seq) / FPS:.1f} s")
-    return out
+    return out, starts
 
 
 if __name__ == "__main__":
