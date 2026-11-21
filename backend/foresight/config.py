@@ -18,6 +18,9 @@ MANAGED_AGENT = "antigravity-preview-09-2026"  # runs batch eval fits in its san
 OMNI = "gemini-omni-1.2-flash"  # video-continuation baseline
 ROBOTICS_ER = "gemini-robotics-er-2-preview"  # point tracking candidate (not a Gemini 4 model)
 
+# Models served only on the v1beta API (ER 2 returned 404 on v1 with "set the API version to v1beta").
+V1BETA_MODELS = {ROBOTICS_ER, OMNI, DECISION, MANAGED_AGENT}
+
 # Scene-parsing fallback pairs on repeated 503 (Hydrogen <-> Neon).
 FALLBACK = {HYDROGEN: NEON, NEON: HYDROGEN}
 

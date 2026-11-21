@@ -15,8 +15,10 @@ import urllib.request
 from pathlib import Path
 
 import yaml
+from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(ROOT / ".env")  # HF_TOKEN for the gated dataset
 DATA = ROOT / "data"
 PHYSIQ = ROOT / "third_party" / "physics-IQ-benchmark"
 HF_REPO = "Anates-Labs-Research/Physics-IQ-Verified"

@@ -59,7 +59,7 @@ def main(scene: str, source: str, view: str = "center", fps: int = config.BENCH_
                       [cv2.resize(f, (IN_W, IN_H), interpolation=cv2.INTER_AREA) for f in full], cfps)
     f = gemini.upload_video(small)
     text = (benchmark_prompt(scene, view) + " Continue the scene.") if with_prompt else "Continue the scene."
-    c = gemini.client()
+    c = gemini.client_for(config.OMNI)
     t0 = time.time()
     resp = gemini.call(
         c.interactions.create, kind="interactions.create", model=config.OMNI, tag=f"0c:{scene}",

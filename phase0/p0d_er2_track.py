@@ -50,7 +50,7 @@ def prompt(names: list[str], fps: float) -> str:
 
 def er2_track(video: Path, names: list[str], fps: float, tag: str) -> tuple[Tracks, dict]:
     f = gemini.upload_video(video)
-    c = gemini.client()
+    c = gemini.client_for(config.ROBOTICS_ER)
     t0 = time.time()
     resp = gemini.call(
         c.interactions.create, kind="interactions.create", model=config.ROBOTICS_ER, tag=tag,

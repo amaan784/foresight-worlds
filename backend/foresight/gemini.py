@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import random
+import re
 import time
 import uuid
 from datetime import datetime, timezone
@@ -49,6 +50,11 @@ def beta_client():
     return _beta_client
 
 
+def client_for(model: str):
+    """v1beta client for preview models (config.V1BETA_MODELS), default client otherwise."""
+    return beta_client() if model in config.V1BETA_MODELS else client()
+
+
 def _status(e: Exception) -> int | None:
     for attr in ("status_code", "code"):
         v = getattr(e, attr, None)
@@ -57,8 +63,13 @@ def _status(e: Exception) -> int | None:
     return None
 
 
+_B64_RUN = re.compile(r"[A-Za-z0-9+/=_-]{2000,}")
+
+
 def _strip_media(obj: Any) -> Any:
     """Drop inline bytes/base64 from requests and responses before logging."""
+    if isinstance(obj, str):
+        return _B64_RUN.sub(lambda m: f"<stripped base64 {len(m.group(0))} chars>", obj)
     if isinstance(obj, dict):
         out = {}
         for k, v in obj.items():
