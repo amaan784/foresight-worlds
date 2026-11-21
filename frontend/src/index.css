@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f2f2ef;
+  --color-card: #ffffff;
+  --color-ink: #15171c;
+  --color-muted: #5f6470;
+  --color-line: #d5d6d1;
+  --color-film: #000000;
+  --color-cobalt: #2350d8;   /* Foresight: the physics path */
+  --color-amber: #b86e00;    /* Omni: the video model */
+  --color-good: #1f7a4d;
+  --color-bad: #b3261e;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --font-sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 18px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, .display { font-family: var(--font-display); font-variation-settings: "wdth" 88; letter-spacing: -0.02em; line-height: 1.02; }
+:focus-visible { outline: 3px solid var(--color-cobalt); outline-offset: 3px; border-radius: 4px; }
+button { cursor: pointer; }
+video { display: block; background: #000; }
+
+/* Film strip: black stock with sprocket holes top and bottom (from Trained Eye's visual language). */
+.film { position: relative; background: var(--color-film); padding: 26px 0; }
+.film::before, .film::after {
+  content: ""; position: absolute; left: 0; right: 0; height: 12px;
+  background-image: repeating-linear-gradient(90deg, transparent 0 9px, #e9e9e6 9px 27px, transparent 27px 36px);
+  -webkit-mask: linear-gradient(#000 0 0); border-radius: 2px;
+}
+.film::before { top: 7px; }
+.film::after { bottom: 7px; }
+.film .stamp { font-family: var(--font-mono); font-size: 13px; color: #e9e9e6; letter-spacing: 0.02em; }
+
+/* The 5 s nobody has seen yet. */
+.unseen {
+  background-image: repeating-linear-gradient(135deg, #1b1d22 0 10px, #111215 10px 20px);
+}
+
+@keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+.live-dot { animation: pulse-dot 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
