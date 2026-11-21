@@ -4,18 +4,18 @@ Each agent edits ONLY its own section. Format: Done / Next / Blockers.
 
 ## Backend (Claude Code)
 
-### Done (15:22)
-- Phase 0 complete (phase0/REPORT.md): Hydrogen perception PASS, CSRT PASS (ER 2 less accurate), Omni continuation PASS, subset scoring PASS (original GT).
-- backend/foresight: perceive (Hydrogen, cached), track (gated CSRT, 30 FPS real timestamps), scale (size + gravity check), scene (CONTRACT §1 scene.json, temporal background fill, sprites, keyframes), pipeline.predict_clip (physics | const_velocity, endpoint error, overlay), omni (continuation lane), api (jobs, SSE with replay + `end`, samples, uploads).
-- Verified live: sample job 18 s end to end (Hydrogen 15 s); phone-style VP9 webm upload → 3.0 s cond / 5.0 s reality / 5.0 s prediction in 22 s.
-- Fixture for physics agent: phase0/out/scene_ball-rolls-off/scene.json.
+### Done (15:44)
+- Phase 0 (phase0/REPORT.md). Backend: perceive, track, scale, scene (support snapping, source-object and occlusion filtering), predict_clip, omni lane, API with SSE.
+- Integrated backend/physics (fit, simulate, render, Decision 1 verify, Carbon repair): ball-rolls-off live stage run, Foresight 5.3 cm vs Omni 34.3 cm endpoint error, Decision 1 0.90 / 0.97, 20.8 s.
+- Frontend (Vite + React + Tailwind, Trained Eye style): QR + phone capture, live steps, synced three-panel reveal with posters.
+- Eval harness (eval/run_eval.py), README + docs + images (docs/img/build.py), FAILURES.md.
 
 ### Next
-- Integrate backend/physics as soon as `physics.predict` lands; run a physics job end to end; help eval wire predict_clip.
+- Clean eval run (static, const_velocity, foresight) in progress; Omni eval batch waits for the user's approval (~$15).
+- Regenerate README results (eval/readme_results.py) and banner from results.json.
 
 ### Blockers
-- backend/physics, frontend, eval not started yet (no commits as of 15:22).
-- HF Physics-IQ-Verified still 403 until the user clicks "Agree and access".
+- HF Physics-IQ-Verified still 403 (terms not accepted): eval uses the original Physics-IQ GT and says so.
 
 ## Physics
 
