@@ -7,18 +7,15 @@
 
 <p align="center">
   <a href="#try-it-in-30-seconds"><b>Try it in 30 seconds</b></a> ·
-  <a href="#how-it-works">How it works</a> ·
   <a href="#results">Results</a> ·
-  <a href="docs/developer-guide.md">Developer guide</a> ·
-  <a href="phase0/REPORT.md">Phase 0 report</a>
+  <a href="#how-it-works">How it works</a> ·
+  <a href="docs/developer-guide.md">Developer guide</a>
 </p>
 
-A robot that pushes, drops or rolls things needs to know where they will be in a few seconds. Video models can
-show it, but they make up physics: in our first test, Gemini Omni continued a clip of a rolling ball by making
-the ball vanish and a new one roll out of the pipe. Foresight does not generate pixels. It reads the scene with
-Gemini 4 Hydrogen, tracks the object, fits a 2D physics world to what it saw, lets Gemini Decision 1 check the
-fit and Gemini 4 Carbon repair it, and then runs the world forward for 5 seconds. You get a video and the
-trajectory behind it.
+A robot that pushes, drops or rolls things needs to know where they will be a few seconds from now. Video models
+can show that, but they make up physics: given a clip of a rolling ball, Gemini Omni made the ball vanish and a
+new one roll out of the pipe. Foresight reads the real scene with Gemini, fits a physics world to what it saw,
+and runs it forward 5 seconds, so you get a prediction and the trajectory behind it.
 
 <p align="center"><img src="docs/img/compare.png" alt="The same 3 seconds, continued three ways: reality, where the ball rolls right and leaves the table within a second; and Gemini Omni, where the ball disappears and a new one emerges from the pipe" width="100%"></p>
 
@@ -31,36 +28,14 @@ PYTHONPATH=backend uvicorn foresight.api:app --app-dir backend --host 0.0.0.0 --
 npm --prefix frontend run dev
 ```
 
-Open `https://<your-lan-ip>:5173`. Pick a Physics-IQ clip, or scan the QR code with a phone, prop it up side-on
-and roll a ball through the frame. The laptop shows only the first 3 seconds while each step reports in, then
-plays reality, Foresight and Omni side by side with how far each prediction ends up from the real object.
+Open `https://<your-lan-ip>:5173`. Pick a Physics-IQ clip (rolling ones take about 20 s), or scan the QR code with
+a phone, prop it up side-on and roll a ball through the frame. You see only the first 3 seconds while each step
+reports in, then reality, Foresight and Omni play side by side with how far each prediction ends up from the
+real object.
 
-## How it works
+<p align="center"><img src="docs/img/app.png" alt="The stage after a run: Reality, Foresight and Omni play in sync; Foresight ends 5.3 cm from the real ball, Omni 34.3 cm; Decision 1 confidences 0.90 and 0.97" width="100%"></p>
 
-1. **Read the scene.** Gemini 4 Hydrogen watches the clip (agentic video) and returns, as structured output, each
-   object as a circle or a box with its real size, the surfaces it moves on, and the kind of motion.
-2. **Track.** OpenCV CSRT follows the object frame by frame, with real timestamps from the 30 FPS clip.
-3. **Measure.** Pixels per metre come from the object's real size; falls are cross-checked against gravity.
-4. **Fit physics.** A pymunk world is fitted to the tracked path with least squares: start position, velocity,
-   and the friction and bounce the clip can reveal.
-5. **Check and repair.** Gemini Decision 1 looks at the fitted outline on real frames and says whether it sits on
-   the object and what the motion is, with a confidence. Under 0.7, Gemini 4 Carbon proposes another motion model
-   and the fit runs again.
-6. **Render.** The world runs for exactly 5.000 s and the object is drawn onto the frame it was cleaned from.
-
-<p align="center"><img src="docs/img/app.png" alt="The stage after a run: Reality, Foresight and Omni play in sync on film; Foresight ends 5.3 cm from the real ball, Omni 34.3 cm; Decision 1 confidences 0.90 and 0.97" width="100%"></p>
-
-<sub>The stage after a live run on a Physics-IQ clip, at 0.25 s into the hidden 5 seconds: the real ball and Foresight's ball are in the same place; Omni's ball has vanished.</sub>
-
-<p align="center"><img src="docs/img/how-it-works.svg" alt="The pipeline in one line: 3 s of video, read the scene with Gemini 4 Hydrogen, track, measure, fit physics, check with Gemini Decision 1 and repair with Gemini 4 Carbon, render 5 s; Gemini Omni continues the same clip as the baseline; both are compared with reality" width="100%"></p>
-
-<sub>The simple view: the six steps, the repair loop, and the Omni baseline. The detailed view below shows where each part runs.</sub>
-
-<p align="center"><img src="docs/img/architecture.svg" alt="Where Foresight runs: the phone records and the stage shows results; a local FastAPI server reads the scene with Gemini 4 Hydrogen, tracks, measures, builds the scene, fits physics, checks it with Gemini Decision 1, repairs it with Gemini 4 Carbon and renders 5 s; Gemini Omni continues the same clip in parallel; an offline eval scores everything on Physics-IQ" width="100%"></p>
-
-<sub>Blue is the live path from the phone to the stage; the numbers on the arrows into the Gemini API are the steps that make each call. Amber is the Omni baseline. Grey dashes are the offline eval, which calls the same pipeline.</sub>
-
-<sub>Details: [docs/architecture.md](docs/architecture.md). Interfaces between the parts: [CONTRACT.md](CONTRACT.md).</sub>
+<sub>The stage after a live run, 0.25 s into the hidden 5 seconds: the real ball and Foresight's ball are in the same place; Omni's ball has vanished.</sub>
 
 <!-- results: start (written by eval/readme_results.py from eval/results.json; edits here are lost) -->
 ## Results
@@ -82,6 +57,27 @@ Foresight beats Gemini Omni by a wide margin. It does **not** yet beat the const
 
 Endpoint error is measured only where the system tracks an object (Foresight and constant velocity). Failures, causes and fixes: [eval/FAILURES.md](eval/FAILURES.md).
 <!-- results: end -->
+
+## How it works
+
+1. **Read the scene.** Gemini 4 Hydrogen watches the clip (agentic video) and returns, as structured output, each
+   object as a circle or a box with its real size, the surfaces it moves on, and the kind of motion.
+2. **Track.** OpenCV CSRT follows the object frame by frame, with real timestamps from the 30 FPS clip.
+3. **Measure.** Pixels per metre come from the object's real size; falls are cross-checked against gravity.
+4. **Fit physics.** A pymunk world is fitted to the tracked path with least squares: start position, velocity,
+   and the friction and bounce the clip can reveal.
+5. **Check and repair.** Gemini Decision 1 looks at the fitted outline on real frames and says whether it sits on
+   the object and what the motion is, with a confidence. Under 0.7, Gemini 4 Carbon proposes another motion model
+   and the fit runs again.
+6. **Render.** The world runs for exactly 5.000 s and the object is drawn onto the frame it was cleaned from.
+
+<p align="center"><img src="docs/img/how-it-works.svg" alt="The pipeline in one line: 3 s of video, read the scene with Gemini 4 Hydrogen, track, measure, fit physics, check with Gemini Decision 1 and repair with Gemini 4 Carbon, render 5 s; Gemini Omni continues the same clip as the baseline; both are compared with reality" width="100%"></p>
+
+<sub>The simple view: six steps, the repair loop, and the Omni baseline.</sub>
+
+<p align="center"><img src="docs/img/architecture.svg" alt="Where Foresight runs: the phone records and the stage shows results; a local FastAPI server reads the scene with Gemini 4 Hydrogen, tracks, measures, builds the scene, fits physics, checks it with Gemini Decision 1, repairs it with Gemini 4 Carbon and renders 5 s; Gemini Omni continues the same clip in parallel; an offline eval scores everything on Physics-IQ" width="100%"></p>
+
+<sub>The detailed view: where each part runs. Blue is the live path from the phone to the stage, with the step that makes each Gemini call on its arrow; amber is the Omni baseline; grey dashes are the offline eval, which calls the same pipeline. More in [docs/architecture.md](docs/architecture.md).</sub>
 
 ## Gemini models, each with a job
 
@@ -111,17 +107,15 @@ Endpoint error is measured only where the system tracks an object (Foresight and
   rewards a video that does not change. The table shows it so you can judge.
 - **Omni is slow and paid.** About 40 s and about $1 a clip, so the stage asks before calling it.
 
-## Links and docs
+## Docs
 
 | | |
 |---|---|
 | **Architecture** | [docs/architecture.md](docs/architecture.md) |
-| **Evaluation method** | [docs/evaluation.md](docs/evaluation.md), results in [eval/](eval/) |
+| **Evaluation** | [docs/evaluation.md](docs/evaluation.md), [per-clip results](eval/results_table.md), [failures and fixes](eval/FAILURES.md) |
 | **Phase 0 checks** | [phase0/REPORT.md](phase0/REPORT.md): scoring a subset, Hydrogen perception, CSRT against Robotics-ER 2, Omni continuation |
 | **Developer guide** | [docs/developer-guide.md](docs/developer-guide.md): setup, demo, eval |
-| **Interfaces** | [CONTRACT.md](CONTRACT.md) |
 | **Data and licenses** | [docs/data-and-licenses.md](docs/data-and-licenses.md) |
-| **Progress and rules** | [PROGRESS.md](PROGRESS.md), [CLAUDE.md](CLAUDE.md), [AGENTS.md](AGENTS.md) |
 
 ## Data and credits
 
