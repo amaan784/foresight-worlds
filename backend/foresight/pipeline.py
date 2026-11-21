@@ -129,11 +129,12 @@ def track_in_video(video: Path, scene: dict, proc_w: int = 960) -> list[dict]:
     out = []
     for rr in run:
         bx, by, bw2, bh2 = rr["box"]
-        if bx <= 1 or by <= 1 or bx + bw2 >= pw - 1 or by + bh2 >= ph - 1:
+        if bx < bw2 / 2 or by < bh2 / 2 or bx + bw2 > pw - bw2 / 2 or by + bh2 > ph - bh2 / 2:
             break  # the object reached the frame edge: anything after is the tracker latching onto background
-        if rr["ok"]:
-            x, y, bw, bh = rr["box"]
-            out.append({"t_s": scene["t_cond_end_s"] + rr["frame"] / v["fps"], "x": (x + bw / 2) / sx, "y": (y + bh / 2) / sy})
+        if not rr["ok"]:
+            break  # first lost frame ends the track: a later "re-find" is usually a background patch
+        x, y, bw, bh = rr["box"]
+        out.append({"t_s": scene["t_cond_end_s"] + rr["frame"] / v["fps"], "x": (x + bw / 2) / sx, "y": (y + bh / 2) / sy})
     return out
 
 
