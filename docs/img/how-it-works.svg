@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 470" font-family="'IBM Plex Sans','Helvetica Neue',Arial,sans-serif">
+  <title>How Foresight works: a 3 second clip goes through scene parsing, tracking, scale, a physics fit, a check and repair loop, and a render; Omni continues the same clip as video; both are compared with reality.</title>
+  <defs>
+    <marker id="c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2350d8"/></marker>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#b86e00"/></marker>
+    <marker id="k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#15171c"/></marker>
+  </defs>
+  <rect width="1280" height="470" fill="#f2f2ef"/>
+
+  <!-- input -->
+  <rect x="24" y="118" width="128" height="96" rx="4" fill="#000"/>
+  <g fill="#e9e9e6"><rect x="32" y="124" width="10" height="6"/><rect x="52" y="124" width="10" height="6"/><rect x="72" y="124" width="10" height="6"/><rect x="92" y="124" width="10" height="6"/><rect x="112" y="124" width="10" height="6"/><rect x="132" y="124" width="10" height="6"/>
+  <rect x="32" y="202" width="10" height="6"/><rect x="52" y="202" width="10" height="6"/><rect x="72" y="202" width="10" height="6"/><rect x="92" y="202" width="10" height="6"/><rect x="112" y="202" width="10" height="6"/><rect x="132" y="202" width="10" height="6"/></g>
+  <text x="88" y="164" fill="#e9e9e6" font-size="17" font-weight="600" text-anchor="middle">3 s of video</text>
+  <text x="88" y="186" fill="#bdbdb8" font-size="13" text-anchor="middle">phone or Physics-IQ</text>
+
+  <!-- Foresight path -->
+  <g font-size="15">
+    <rect x="186" y="110" width="150" height="112" rx="10" fill="#fff" stroke="#d5d6d1"/>
+    <text x="200" y="138" font-weight="700" fill="#2350d8" font-size="22">1</text>
+    <text x="222" y="138" font-weight="600">Read the scene</text>
+    <text x="200" y="164" fill="#5f6470">Gemini 4 Hydrogen</text>
+    <text x="200" y="184" fill="#5f6470">objects, sizes,</text>
+    <text x="200" y="204" fill="#5f6470">surfaces, motion</text>
+
+    <rect x="356" y="110" width="140" height="112" rx="10" fill="#fff" stroke="#d5d6d1"/>
+    <text x="370" y="138" font-weight="700" fill="#2350d8" font-size="22">2</text>
+    <text x="392" y="138" font-weight="600">Track</text>
+    <text x="370" y="164" fill="#5f6470">OpenCV CSRT,</text>
+    <text x="370" y="184" fill="#5f6470">30 FPS timestamps</text>
+
+    <rect x="516" y="110" width="140" height="112" rx="10" fill="#fff" stroke="#d5d6d1"/>
+    <text x="530" y="138" font-weight="700" fill="#2350d8" font-size="22">3</text>
+    <text x="552" y="138" font-weight="600">Measure</text>
+    <text x="530" y="164" fill="#5f6470">pixels per metre</text>
+    <text x="530" y="184" fill="#5f6470">from object size,</text>
+    <text x="530" y="204" fill="#5f6470">gravity check</text>
+
+    <rect x="676" y="110" width="150" height="112" rx="10" fill="#fff" stroke="#2350d8" stroke-width="2"/>
+    <text x="690" y="138" font-weight="700" fill="#2350d8" font-size="22">4</text>
+    <text x="712" y="138" font-weight="600">Fit physics</text>
+    <text x="690" y="164" fill="#5f6470">pymunk 2D world,</text>
+    <text x="690" y="184" fill="#5f6470">least squares on</text>
+    <text x="690" y="204" fill="#5f6470">the tracked path</text>
+
+    <rect x="846" y="110" width="150" height="112" rx="10" fill="#fff" stroke="#d5d6d1"/>
+    <text x="860" y="138" font-weight="700" fill="#2350d8" font-size="22">5</text>
+    <text x="882" y="138" font-weight="600">Check</text>
+    <text x="860" y="164" fill="#5f6470">Gemini Decision 1:</text>
+    <text x="860" y="184" fill="#5f6470">does the outline sit</text>
+    <text x="860" y="204" fill="#5f6470">on the object?</text>
+
+    <rect x="1016" y="110" width="150" height="112" rx="10" fill="#fff" stroke="#d5d6d1"/>
+    <text x="1030" y="138" font-weight="700" fill="#2350d8" font-size="22">6</text>
+    <text x="1052" y="138" font-weight="600">Render 5 s</text>
+    <text x="1030" y="164" fill="#5f6470">simulate 5.000 s,</text>
+    <text x="1030" y="184" fill="#5f6470">paste the object on</text>
+    <text x="1030" y="204" fill="#5f6470">the cleaned frame</text>
+  </g>
+  <g stroke="#2350d8" stroke-width="2.5" fill="none">
+    <path d="M152 166H182" marker-end="url(#c)"/><path d="M336 166H352" marker-end="url(#c)"/>
+    <path d="M496 166H512" marker-end="url(#c)"/><path d="M656 166H672" marker-end="url(#c)"/>
+    <path d="M826 166H842" marker-end="url(#c)"/><path d="M996 166H1012" marker-end="url(#c)"/>
+    <path d="M1166 166H1200V290" marker-end="url(#c)"/>
+  </g>
+  <!-- repair loop -->
+  <path d="M921 110V70H751V106" stroke="#2350d8" stroke-width="2" stroke-dasharray="6 5" fill="none" marker-end="url(#c)"/>
+  <text x="836" y="60" font-size="14" fill="#2350d8" text-anchor="middle">confidence under 0.7: Gemini 4 Carbon proposes another model, refit (up to 2 times)</text>
+
+  <!-- Omni path -->
+  <rect x="356" y="352" width="470" height="70" rx="10" fill="#fff" stroke="#b86e00" stroke-width="2"/>
+  <text x="376" y="382" font-size="16" font-weight="600" fill="#b86e00">Baseline: Gemini Omni 1.2 Flash</text>
+  <text x="376" y="404" font-size="14" fill="#5f6470">continues the same 3 s as video (about 40 s, about $1 a clip)</text>
+  <path d="M88 214V387H352" stroke="#b86e00" stroke-width="2.5" fill="none" marker-end="url(#a)"/>
+  <path d="M826 387H1046" stroke="#b86e00" stroke-width="2.5" fill="none" marker-end="url(#a)"/>
+
+  <!-- compare -->
+  <rect x="1050" y="294" width="206" height="160" rx="10" fill="#15171c"/>
+  <text x="1153" y="326" font-size="16" font-weight="600" fill="#f2f2ef" text-anchor="middle">Compare with reality</text>
+  <text x="1153" y="352" font-size="13" fill="#bdbdb8" text-anchor="middle">the hidden 5 s</text>
+  <text x="1153" y="384" font-size="13" fill="#bdbdb8" text-anchor="middle">Physics-IQ metric code</text>
+  <text x="1153" y="404" font-size="13" fill="#bdbdb8" text-anchor="middle">endpoint error in cm</text>
+  <text x="1153" y="436" font-size="13" fill="#bdbdb8" text-anchor="middle">three synced panels</text>
+</svg>
