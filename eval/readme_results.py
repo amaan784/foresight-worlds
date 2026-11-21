@@ -12,8 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 START = "<!-- results: start (written by eval/readme_results.py from eval/results.json; edits here are lost) -->"
 END = "<!-- results: end -->"
 NAMES = {"foresight": "Foresight (physics)", "omni": "Gemini Omni 1.2 Flash (video model)",
+         "genie": "Genie 4 (world model)", "foresight_carbon": "Foresight with Gemini 4 Carbon reading the scene",
          "const_velocity": "Constant velocity (no physics)", "static": "Last frame held"}
-ORDER = ["foresight", "omni", "const_velocity", "static"]
+ORDER = ["foresight", "foresight_carbon", "omni", "genie", "const_velocity", "static"]
 
 
 def f1(v) -> str:
@@ -41,7 +42,9 @@ def section(r: dict) -> str:
         blown = [sc for sc in r["scenes"] if (runs["foresight"][sc].get("endpoint_error_cm") or 0) > 1000]
         rr = runs["foresight"].get("ball-rolls-off", {}), runs["const_velocity"].get("ball-rolls-off", {})
         lines += [
-            f"Foresight beats Gemini Omni by a wide margin. It does **not** yet beat the constant-velocity baseline, which "
+            f"Foresight scores higher than both video models ("
+            + ", ".join(f"{NAMES[k].split(' (')[0]} {s[k]['physics_iq_verified_pct']:.1f}" for k in ("omni", "genie") if k in s)
+            + f"). It does **not** yet beat the constant-velocity baseline, which "
             f"uses the same Gemini scene reading, tracking and renderer and only drops the physics. Where the physics fit "
             f"works it is more accurate: Foresight's object ends closer to the real one on {len(closer)} of the {len(both)} "
             f"clips with a measurable endpoint (on ball-rolls-off, {rr[0].get('endpoint_error_cm')} cm against "

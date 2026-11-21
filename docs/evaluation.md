@@ -17,6 +17,8 @@ much real outcomes vary. The list is in `phase0/physiq_data.py`.
 | Foresight | perception, tracking, scale, physics fit with Decision 1 and Carbon, render |
 | Constant velocity | the same perception, tracking and renderer, but the object keeps its last velocity: no gravity, no surfaces, no friction |
 | Gemini Omni 1.2 Flash | continues the 3 s clip as video, prompted with the benchmark's own scene description plus "Continue the scene." |
+| Genie 4 | world model, live session: starts from the last conditioning frame and the benchmark's scene description; the first 120 streamed frames are taken as the 5 s at 24 FPS (`eval/run_genie.py`) |
+| Foresight, Carbon reads the scene | the Foresight pipeline with Gemini 4 Carbon (thinking medium) instead of Hydrogen for scene reading, all else equal (`eval/run_variant.py`) |
 | Last frame held | the last conditioning frame for 5 s |
 
 A system that fails on a clip is scored with the held last frame for that clip, and the failure is listed in

@@ -57,9 +57,9 @@ real object.
 
 Every number below comes from `eval/run_eval.py`: [eval/results.json](eval/results.json), [the per-clip table](eval/results_table.md), [the method](docs/evaluation.md). 15 rigid-body clips, center camera, 24 FPS, scored against the original Physics-IQ ground truth (Verified files were not available) with the official Physics-IQ code. Clean run: yes; commit `f84ff62`, 2026-11-21T20:40:02+00:00.
 
-**In short:** Physics-IQ score (Verified formula, %, higher is better): Constant velocity (no physics) 75.2, Foresight (physics) 59.0, Last frame held 35.0, Gemini Omni 1.2 Flash (video model) 27.5.
+**In short:** Physics-IQ score (Verified formula, %, higher is better): Constant velocity (no physics) 75.2, Foresight (physics) 59.0, Genie 4 (world model) 42.2, Last frame held 35.0, Gemini Omni 1.2 Flash (video model) 27.5.
 
-Foresight beats Gemini Omni by a wide margin. It does **not** yet beat the constant-velocity baseline, which uses the same Gemini scene reading, tracking and renderer and only drops the physics. Where the physics fit works it is more accurate: Foresight's object ends closer to the real one on 8 of the 14 clips with a measurable endpoint (on ball-rolls-off, 5.7 cm against 9.9 cm). But the fit blew up on 4 clips with collisions or falls (roll-in-box, ball-and-block-fall, balls-collide, two-balls-pass), and those pull the pooled score down. Making contacts and falls robust is the next step.
+Foresight scores higher than both video models (Gemini Omni 1.2 Flash 27.5, Genie 4 42.2). It does **not** yet beat the constant-velocity baseline, which uses the same Gemini scene reading, tracking and renderer and only drops the physics. Where the physics fit works it is more accurate: Foresight's object ends closer to the real one on 8 of the 14 clips with a measurable endpoint (on ball-rolls-off, 5.7 cm against 9.9 cm). But the fit blew up on 4 clips with collisions or falls (roll-in-box, ball-and-block-fall, balls-collide, two-balls-pass), and those pull the pooled score down. Making contacts and falls robust is the next step.
 
 <p align="center"><img src="eval/chart.png" alt="Physics-IQ score per system" width="88%"></p>
 
@@ -67,6 +67,7 @@ Foresight beats Gemini Omni by a wide margin. It does **not** yet beat the const
 |---|---|---|---|---|
 | Constant velocity (no physics) | **75.2** | 76.2 | 438.1 | 0 of 15 |
 | Foresight (physics) | 59.0 | 55.2 | 42.5 | 0 of 15 |
+| Genie 4 (world model) | 42.2 | 42.3 | n/a | 0 of 15 |
 | Last frame held | 35.0 | 32.4 | n/a | 0 of 15 |
 | Gemini Omni 1.2 Flash (video model) | 27.5 | 21.6 | n/a | 0 of 15 |
 
@@ -104,7 +105,7 @@ Endpoint error is measured only where the system tracks an object (Foresight and
 | Gemini 4 Carbon (`gemini-4-carbon`) | Repairs a fit Decision 1 doubts: proposes another motion model and starting guesses (thinking level medium). |
 | Gemini Omni 1.2 Flash (`gemini-omni-1.2-flash`) | The baseline: continues the same 3 s as video. |
 | Gemini Robotics-ER 2 (`gemini-robotics-er-2-preview`) | Tested as a tracker in Phase 0 and not used: 39 px median error against 20 px for CSRT. |
-| Genie 4 (`genie-4`) | Tried once at the end of the day as a second world model: from the last frame and a prompt it streams live video. One sample, not in the eval. |
+| Genie 4 (`genie-4`) | A second baseline: a world model that starts from the last frame and a prompt and streams live video. |
 
 ## Docs
 
