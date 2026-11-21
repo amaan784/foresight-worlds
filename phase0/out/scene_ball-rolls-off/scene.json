@@ -1,0 +1,146 @@
+{
+  "clip_id": "0023_conditioning-videos_24FPS_perspective-center_take-1_trimmed-ball-rolls-off",
+  "work_dir": "/Users/amaansheikh/Desktop/foresight-worlds/phase0/out/scene_ball-rolls-off",
+  "orig_size": [
+    3840,
+    2160
+  ],
+  "fps_out": 24,
+  "t_cond_end_s": 3.0,
+  "pred_seconds": 5.0,
+  "px_per_m": 3611.94,
+  "px_per_m_source": "size",
+  "gravity_m_s2": 9.81,
+  "motion_type_hint": "roll",
+  "objects": [
+    {
+      "id": "obj0",
+      "name": "grey tennis ball",
+      "shape": "circle",
+      "radius_px": 121.0,
+      "w_px": null,
+      "h_px": null,
+      "est_real_size_cm": 6.7,
+      "track": [
+        {
+          "t_s": 2.5333,
+          "x": 424.0,
+          "y": 1776.0
+        },
+        {
+          "t_s": 2.5667,
+          "x": 576.0,
+          "y": 1766.0
+        },
+        {
+          "t_s": 2.6,
+          "x": 728.0,
+          "y": 1768.0
+        },
+        {
+          "t_s": 2.6333,
+          "x": 872.0,
+          "y": 1762.0
+        },
+        {
+          "t_s": 2.6667,
+          "x": 1020.0,
+          "y": 1766.0
+        },
+        {
+          "t_s": 2.7,
+          "x": 1166.0,
+          "y": 1768.0
+        },
+        {
+          "t_s": 2.7333,
+          "x": 1300.0,
+          "y": 1752.0
+        },
+        {
+          "t_s": 2.7667,
+          "x": 1438.0,
+          "y": 1770.0
+        },
+        {
+          "t_s": 2.8,
+          "x": 1576.0,
+          "y": 1764.0
+        },
+        {
+          "t_s": 2.8333,
+          "x": 1712.0,
+          "y": 1772.0
+        },
+        {
+          "t_s": 2.8667,
+          "x": 1848.0,
+          "y": 1760.0
+        },
+        {
+          "t_s": 2.9,
+          "x": 1978.0,
+          "y": 1756.0
+        },
+        {
+          "t_s": 2.9333,
+          "x": 2106.0,
+          "y": 1754.0
+        },
+        {
+          "t_s": 2.9667,
+          "x": 2236.0,
+          "y": 1752.0
+        }
+      ],
+      "visible_at_end": true,
+      "sprite_png": "/Users/amaansheikh/Desktop/foresight-worlds/phase0/out/scene_ball-rolls-off/obj0.png"
+    }
+  ],
+  "static_objects": [
+    {
+      "name": "black cup",
+      "shape": "box",
+      "bbox": [
+        0.0,
+        1518.5,
+        249.6,
+        1905.1
+      ]
+    }
+  ],
+  "surfaces": [
+    {
+      "name": "wooden table",
+      "kind": "table",
+      "p0": [
+        0.0,
+        1874.9
+      ],
+      "p1": [
+        3840.0,
+        1874.9
+      ]
+    }
+  ],
+  "background_png": "/Users/amaansheikh/Desktop/foresight-worlds/phase0/out/scene_ball-rolls-off/background.png",
+  "last_frame_png": "/Users/amaansheikh/Desktop/foresight-worlds/phase0/out/scene_ball-rolls-off/last_frame.png",
+  "keyframes": [
+    {
+      "t_s": 2.5333,
+      "png": "/Users/amaansheikh/Desktop/foresight-worlds/phase0/out/scene_ball-rolls-off/kf_076.png"
+    },
+    {
+      "t_s": 2.6667,
+      "png": "/Users/amaansheikh/Desktop/foresight-worlds/phase0/out/scene_ball-rolls-off/kf_080.png"
+    },
+    {
+      "t_s": 2.8,
+      "png": "/Users/amaansheikh/Desktop/foresight-worlds/phase0/out/scene_ball-rolls-off/kf_084.png"
+    },
+    {
+      "t_s": 2.9667,
+      "png": "/Users/amaansheikh/Desktop/foresight-worlds/phase0/out/scene_ball-rolls-off/kf_089.png"
+    }
+  ]
+}

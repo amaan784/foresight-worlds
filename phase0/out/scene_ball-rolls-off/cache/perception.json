@@ -1,0 +1,64 @@
+{
+  "scene": {
+    "objects": [
+      {
+        "name": "grey tennis ball",
+        "shape": "circle",
+        "est_real_size_cm": 6.7,
+        "moving": true,
+        "visible_frame0": false,
+        "bbox_frame0": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "bbox_last_frame": [
+          756,
+          551,
+          868,
+          616
+        ]
+      },
+      {
+        "name": "black cup",
+        "shape": "box",
+        "est_real_size_cm": 10.0,
+        "moving": false,
+        "visible_frame0": true,
+        "bbox_frame0": [
+          703,
+          0,
+          882,
+          65
+        ],
+        "bbox_last_frame": [
+          703,
+          0,
+          882,
+          65
+        ]
+      }
+    ],
+    "support_surfaces": [
+      {
+        "name": "wooden table",
+        "kind": "table",
+        "line": [
+          868,
+          0,
+          868,
+          1000
+        ]
+      }
+    ],
+    "motion_type": "roll",
+    "motion_start_s": 2.4
+  },
+  "meta": {
+    "model": "gemini-4-hydrogen",
+    "latency_s": 12.48,
+    "cached": false,
+    "source": "phase0/out/0b_ball-rolls-off (live Hydrogen call 2026-11-21)"
+  }
+}

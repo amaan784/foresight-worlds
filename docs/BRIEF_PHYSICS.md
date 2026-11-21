@@ -22,5 +22,8 @@ Build in order; commit after each step passes:
 6. repair.py — if any confidence < 0.7: gemini-4-carbon (thinking_level "medium", native structured output) gets a trajectory plot + keyframes and proposes a motion model + initial guesses; refit; max 2 repairs.
 7. agent_runner.py — OPTIONAL, last: batch fits inside the Managed Agent "antigravity-preview-09-2026" with one reused environment_id (install pymunk/scipy/opencv once). If its API blocks you for more than 15 minutes, stop and report; eval will run locally.
 
-Real test data: Claude Code will commit phase0/out/scene_ball-rolls-off/scene.json (+ background/sprite/keyframe PNGs) by ~3:40. Until then use the synthetic test.
+Real test data (ready now): phase0/out/scene_ball-rolls-off/scene.json (committed) with the cached Hydrogen perception in phase0/out/scene_ball-rolls-off/cache/. The PNGs it references (background, sprite, keyframes) are dataset frames and are NOT committed; if they are missing, regenerate them in ~5 s with no API key:
+  python phase0/physiq_data.py ball-rolls-off --source gcs --fps 24 && python phase0/physiq_data.py ball-rolls-off --source gcs --fps 30
+  PYTHONPATH=backend python -m foresight.scene data/physics-IQ-benchmark/split-videos/conditioning/24FPS/0023_conditioning-videos_24FPS_perspective-center_take-1_trimmed-ball-rolls-off.mp4 phase0/out/scene_ball-rolls-off --fit-video data/physics-IQ-benchmark/split-videos/conditioning/30FPS/0023_conditioning-videos_30FPS_perspective-center_take-1_trimmed-ball-rolls-off.mp4 --cache-dir phase0/out/scene_ball-rolls-off/cache
+Ground truth for that clip (to eyeball your prediction): data/physics-IQ-benchmark/split-videos/testing/24FPS/0023_testing-videos_24FPS_perspective-center_take-1_trimmed-ball-rolls-off.mp4 (ball rolls right at ~1.2 m/s and falls off the table edge).
 Report at 3:30 (expect steps 1–4 done) and keep your PROGRESS.md section updated.
