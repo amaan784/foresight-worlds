@@ -181,8 +181,6 @@ cython_debug/
 .cursorindexingignore
 # Foresight
 data/
-phase0/out/
-*.mp4
-!frontend/public/*.mp4
+eval/cache/
 third_party/
 .claude/settings.local.json

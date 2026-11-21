@@ -14,11 +14,17 @@ Built during the Gemini 4 NYC Hackathon (Nov 21 2026, submissions due 5:00 PM ET
 - Video inputs to Gemini 4: `{"type": "video", "uri": ..., "processing": "agentic"}` via `client.files.upload`.
 - Managed Agent accepts text+images (verify in docs): send trajectories/keyframes, not raw video. Reuse one `environment_id` so packages persist.
 
-## Spend
-- Tier 1 cap: $10 per rolling 10 min. Pace batch calls. Ask the user before any batch likely to exceed $5.
+## Spend / quota
+- Temporary Tier 3 hackathon account (deleted Nov 22): push all code to GitHub; keep eval outputs + demo assets in the repo (never dataset files).
+- Spend cap: $10 per rolling 10 min. Pace batch calls. Ask the user before any batch likely to exceed $5.
+- Keep total eval traffic to a few hundred requests. Cache each clip's model outputs to `eval/cache/` during development; final reported numbers come from one clean, uncached run.
+- Every Gemini call goes through the shared wrapper: retry + exponential backoff on 429/503; on repeated 503 fall back (Hydrogen <-> Neon for scene parsing). On 429 STOP and tell the user (project spend cap: aistudio.google.com/spend).
+- Centralize all model IDs in `backend/foresight/config.py`.
+- Log every genai call (model, config, prompt; strip inline media) and its output to `logs/` — evidence for judges, committed.
 
 ## Secrets
 - Secrets in `.env` only (commit `.env.example`). Never print keys.
+- Run a secret scan (`gitleaks` or `git grep -n "AIza"` over tracked files + history) before EVERY push. If a key ever lands in history: stop and tell the user immediately.
 
 ## Git
 - Commit with the user's configured git identity. NEVER add Co-Authored-By, "Generated with", or any AI identity lines to commits or PRs.
