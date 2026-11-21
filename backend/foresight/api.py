@@ -6,6 +6,7 @@ Run from the repo root:
 from __future__ import annotations
 
 import csv
+import functools
 import importlib.util
 import json
 import os
@@ -83,10 +84,14 @@ class Job:
 DATA_DIRS = [ROOT / "data" / "physics-IQ-benchmark-verified", ROOT / "data" / "physics-IQ-benchmark"]
 
 
+@functools.lru_cache(maxsize=1)
 def _scene_meta() -> dict:
     import yaml
 
-    d = yaml.safe_load(open(ROOT / "third_party" / "physics-IQ-benchmark" / "descriptions" / "data.yaml"))
+    p = ROOT / "third_party" / "physics-IQ-benchmark" / "descriptions" / "data.yaml"
+    if not p.exists():
+        return {}
+    d = yaml.safe_load(open(p))
     return {s["scene"]: s for s in d["scenes"]}
 
 
