@@ -1,0 +1,6 @@
+---
+description: Foresight hackathon rules (multi-agent repo)
+alwaysApply: true
+---
+Read AGENTS.md, CLAUDE.md, and CONTRACT.md before editing. Edit only the directory you own (see AGENTS.md).
+Commit as the configured git user with NO Co-Authored-By / "Generated with" / AI lines; 150–300 lines per commit; git pull --rebase and a secret scan before every push. No mocks or fake numbers in anything shipped.
