@@ -46,8 +46,27 @@ def section(r: dict) -> str:
     return "\n".join(lines)
 
 
+F_START = "<!-- failures: start (written by eval/readme_results.py; edits here are lost) -->"
+F_END = "<!-- failures: end -->"
+
+
+def failures_section(r: dict) -> str:
+    rows = []
+    for system, clips in r.get("runs", {}).items():
+        for scene, c in clips.items():
+            if not c.get("ok", True):
+                rows.append(f"| {system} | {scene} | {c.get('error', '')[:160]} | scored with the held last frame |")
+    body = ("No system failed on any clip." if not rows else
+            "| System | Clip | Error | Handling |\n|---|---|---|---|\n" + "\n".join(rows))
+    return f"{F_START}\n{body}\n{F_END}"
+
+
 def main() -> None:
     r = json.loads((ROOT / "eval" / "results.json").read_text())
+    fpath = ROOT / "eval" / "FAILURES.md"
+    ft = fpath.read_text()
+    fa, fb = ft.index(F_START), ft.index(F_END) + len(F_END)
+    fpath.write_text(ft[:fa] + failures_section(r) + ft[fb:])
     readme = ROOT / "README.md"
     text = readme.read_text()
     a, b = text.index(START), text.index(END) + len(END)
