@@ -50,6 +50,12 @@ def section(r: dict) -> str:
             f"clips with a measurable endpoint (on ball-rolls-off, {rr[0].get('endpoint_error_cm')} cm against "
             f"{rr[1].get('endpoint_error_cm')} cm). But the fit blew up on {len(blown)} clips with collisions or falls "
             f"({', '.join(blown)}), and those pull the pooled score down. Making contacts and falls robust is the next step.", ""]
+        if "foresight_carbon" in s:
+            fc, fh = s["foresight_carbon"], s["foresight"]
+            lines += [f"Reading the scene with Gemini 4 Carbon instead of Hydrogen gives about the same score "
+                      f"({fc['physics_iq_verified_pct']:.1f} against {fh['physics_iq_verified_pct']:.1f}) and a lower median "
+                      f"endpoint error ({f1(fc.get('endpoint_error_cm_median'))} cm against {f1(fh.get('endpoint_error_cm_median'))} cm); "
+                      f"the stage uses Hydrogen because it is faster.", ""]
     if "foresight" not in s:
         lines += ["Foresight itself has not been scored in this run yet; the rows below are the baselines.", ""]
     lines += ['<p align="center"><img src="eval/chart.png" alt="Physics-IQ score per system" width="88%"></p>', "",

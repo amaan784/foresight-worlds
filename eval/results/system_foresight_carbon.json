@@ -1,0 +1,253 @@
+{
+  "scenes": [
+    "ball-hits-nothing",
+    "ball-rolls-off",
+    "ball-rolls-on-glass",
+    "ball-ramp",
+    "roll-behind-box",
+    "roll-front-box",
+    "roll-in-box",
+    "ball-hits-duck",
+    "weight-protects-duck",
+    "ball-in-basket",
+    "duck-falls-in-box",
+    "ball-and-block-fall",
+    "ball-train",
+    "balls-collide",
+    "two-balls-pass"
+  ],
+  "gt_source": "gcs",
+  "gt_source_name": "physics-IQ-benchmark (original)",
+  "view": "center",
+  "fps": 24,
+  "n_clips": 15,
+  "git_commit": "f84ff62",
+  "systems": {
+    "foresight_carbon": {
+      "physics_iq_verified_pct": 58.8,
+      "physics_iq_original_pct": 56.25,
+      "per_scenario_verified_pct": {
+        "ball-and-block-fall": 59.34,
+        "ball-hits-duck": 73.59,
+        "ball-hits-nothing": 67.42,
+        "ball-in-basket": 27.17,
+        "ball-ramp": 49.7,
+        "ball-rolls-off": 87.56,
+        "ball-rolls-on-glass": 89.09,
+        "ball-train": 24.7,
+        "balls-collide": 81.95,
+        "duck-falls-in-box": 11.7,
+        "roll-behind-box": 45.79,
+        "roll-front-box": 100.0,
+        "roll-in-box": 72.57,
+        "two-balls-pass": 41.59,
+        "weight-protects-duck": 49.87
+      },
+      "n_ok": 15,
+      "n_failed": 0,
+      "endpoint_error_cm_median": 17.8,
+      "run_at": "2026-11-21T21:39:52+00:00",
+      "clean_run": true,
+      "perception_model": "gemini-4-carbon"
+    }
+  },
+  "runs": {
+    "foresight_carbon": {
+      "ball-hits-nothing": {
+        "ok": true,
+        "latency_s": 71.57,
+        "endpoint_error_cm": 14.7,
+        "fit_error_px": 4.474,
+        "decision1_confidences": {
+          "outline_on_object": 0.8909,
+          "motion": 0.9155
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-carbon",
+        "motion_model": "roll"
+      },
+      "ball-rolls-off": {
+        "ok": true,
+        "latency_s": 52.09,
+        "endpoint_error_cm": 9.5,
+        "fit_error_px": 10.585,
+        "decision1_confidences": {
+          "outline_on_object": 0.9094,
+          "motion": 0.9767
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-carbon",
+        "motion_model": "roll"
+      },
+      "ball-rolls-on-glass": {
+        "ok": true,
+        "latency_s": 91.35,
+        "endpoint_error_cm": 8.4,
+        "fit_error_px": 19.896,
+        "decision1_confidences": {
+          "outline_on_object": 0.8809,
+          "motion": 0.9469
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-carbon",
+        "motion_model": "roll"
+      },
+      "ball-ramp": {
+        "ok": true,
+        "latency_s": 127.76,
+        "endpoint_error_cm": 4665.9,
+        "fit_error_px": 11701.54,
+        "decision1_confidences": {
+          "outline_on_object": 0.7278,
+          "motion": 0.9085
+        },
+        "repairs_used": 2,
+        "perception_model": "gemini-4-carbon",
+        "motion_model": "roll"
+      },
+      "roll-behind-box": {
+        "ok": true,
+        "latency_s": 89.16,
+        "endpoint_error_cm": 6.6,
+        "fit_error_px": 10.238,
+        "decision1_confidences": {
+          "outline_on_object": 0.8446,
+          "motion": 0.9337
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-carbon",
+        "motion_model": "roll"
+      },
+      "roll-front-box": {
+        "ok": true,
+        "latency_s": 66.08,
+        "endpoint_error_cm": 3.1,
+        "fit_error_px": 39.281,
+        "decision1_confidences": {
+          "outline_on_object": 0.8771,
+          "motion": 0.9605
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-carbon",
+        "motion_model": "roll"
+      },
+      "roll-in-box": {
+        "ok": true,
+        "latency_s": 39.8,
+        "endpoint_error_cm": 2357.9,
+        "fit_error_px": 4.727,
+        "decision1_confidences": {
+          "outline_on_object": 0.8752,
+          "motion": 0.9766
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-carbon",
+        "motion_model": "roll"
+      },
+      "ball-hits-duck": {
+        "ok": true,
+        "latency_s": 90.21,
+        "endpoint_error_cm": 15.6,
+        "fit_error_px": 7.235,
+        "decision1_confidences": {
+          "outline_on_object": 0.8622,
+          "motion": 0.9645
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-carbon",
+        "motion_model": "roll"
+      },
+      "weight-protects-duck": {
+        "ok": true,
+        "latency_s": 68.97,
+        "endpoint_error_cm": 41.2,
+        "fit_error_px": 5.124,
+        "decision1_confidences": {
+          "outline_on_object": 0.9222,
+          "motion": 0.9629
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-carbon",
+        "motion_model": "roll"
+      },
+      "ball-in-basket": {
+        "ok": true,
+        "latency_s": 708.44,
+        "endpoint_error_cm": null,
+        "fit_error_px": 7.925,
+        "decision1_confidences": {
+          "outline_on_object": 0.6138,
+          "motion": 0.7647
+        },
+        "repairs_used": 2,
+        "perception_model": "gemini-4-carbon",
+        "motion_model": "fall"
+      },
+      "duck-falls-in-box": {
+        "ok": true,
+        "latency_s": 485.21,
+        "endpoint_error_cm": 26937.3,
+        "fit_error_px": 16.306,
+        "decision1_confidences": {
+          "outline_on_object": 0.5161,
+          "motion": 0.7187
+        },
+        "repairs_used": 2,
+        "perception_model": "gemini-4-carbon",
+        "motion_model": "fall"
+      },
+      "ball-and-block-fall": {
+        "ok": true,
+        "latency_s": 496.13,
+        "endpoint_error_cm": 17.8,
+        "fit_error_px": 16.792,
+        "decision1_confidences": {
+          "outline_on_object": 0.6826,
+          "motion": 0.911
+        },
+        "repairs_used": 2,
+        "perception_model": "gemini-4-carbon",
+        "motion_model": "fall"
+      },
+      "ball-train": {
+        "ok": true,
+        "latency_s": 91.18,
+        "endpoint_error_cm": 5.2,
+        "fit_error_px": 11.869,
+        "decision1_confidences": {
+          "outline_on_object": 0.9004,
+          "motion": 0.9625
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-carbon",
+        "motion_model": "roll"
+      },
+      "balls-collide": {
+        "ok": true,
+        "latency_s": 240.5,
+        "endpoint_error_cm": 8363.3,
+        "fit_error_px": 858.979,
+        "decision1_confidences": {
+          "outline_on_object": 0.7357,
+          "motion": 0.9697
+        },
+        "repairs_used": 1,
+        "perception_model": "gemini-4-carbon",
+        "motion_model": "roll"
+      },
+      "two-balls-pass": {
+        "ok": true,
+        "latency_s": 412.05,
+        "endpoint_error_cm": 4764.0,
+        "fit_error_px": 572.307,
+        "decision1_confidences": {
+          "outline_on_object": 0.5684,
+          "motion": 0.8717
+        },
+        "repairs_used": 2,
+        "perception_model": "gemini-4-carbon",
+        "motion_model": "roll"
+      }
+    }
+  }
+}
