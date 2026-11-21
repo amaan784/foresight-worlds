@@ -1,0 +1,480 @@
+[
+ {
+  "event_type": "interaction.connected"
+ },
+ {
+  "index": 0,
+  "step": {
+   "content": [
+    {
+     "mime_type": "video/jpeg2000",
+     "type": "video"
+    },
+    {
+     "channels": 2,
+     "mime_type": "audio/s16le",
+     "sample_rate": 48000,
+     "type": "audio"
+    }
+   ],
+   "type": "model_output"
+  },
+  "event_type": "step.start"
+ },
+ {
+  "delta": {
+   "data": "<stripped 168172 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 169148 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 168848 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 168492 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 165628 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 166144 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 165648 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 165468 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 159140 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 159680 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 159108 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 158840 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 157752 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 158000 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 157680 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 156908 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 156168 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 156604 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 156444 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 156012 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 155052 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 155736 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 155224 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "data": "<stripped 154772 chars>",
+   "mime_type": "video/jpeg2000",
+   "type": "video"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ },
+ {
+  "delta": {
+   "channels": 2,
+   "data": "<stripped 10668 chars>",
+   "sample_rate": 48000,
+   "type": "audio"
+  },
+  "index": 0,
+  "event_type": "step.delta"
+ }
+]

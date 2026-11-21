@@ -22,27 +22,17 @@ and runs it forward 5 seconds, so you get a prediction and the trajectory behind
 
 ## Why it matters
 
-A robot that acts around moving things needs more than a plausible video: it needs to know where the object will
-be, how sure that is, and why. Foresight gives all three.
+Video models are getting good at making things look right, but not at making them move right. Anyone building
+world models or running robot experiments needs predictions that follow real physics.
 
-- **A trajectory a planner can use.** Every run returns the object's path in metres and the physics behind it:
-  starting speed, friction, bounce. A robot can ask "where will the ball be when my gripper gets there?" or
-  "will it roll off the bench?" and get an answer it can act on, not pixels to interpret.
-- **It says when it might be wrong.** Gemini Decision 1 checks the fitted motion against the real frames and
-  returns a confidence with every prediction; a doubtful fit is repaired by Gemini 4 Carbon, and the confidence is
-  reported either way. A robot can slow down or look again when the check is unsure.
-- **Nothing to train.** No dataset, no fine-tuning: a few seconds of phone video and a handful of Gemini calls,
-  on a scene it has never seen.
-- **Real footage, real scores.** It is scored with the official Physics-IQ code on real clips, next to a video
-  model and two simple baselines, so you can see where it helps and where it does not yet.
-
-Where it fits:
-
-- **Manipulation around moving objects:** catching, pushing, or clearing a rolling or falling object.
-- **Tuning a simulator from real video:** the fitted friction, bounce and damping come out as numbers you can put
-  into your own simulator (`physics.fit_params` in each run's `result.json`).
-- **Checking a video world model:** run Foresight next to it on your own footage and see where the video model
-  makes up physics, like the ball that vanished above.
+- **For world-model builders:** a physics-checked reference to test video models against. On your own footage,
+  Foresight shows where a video model makes up physics, like the ball that vanished above.
+- **For robotics experiments:** a few seconds of phone video becomes a simulation of the real object. Its speed,
+  friction and bounce come out as numbers you can use in your own simulator, so what you try in simulation
+  matches the real world.
+- **For robots that act around moving things:** a predicted path in metres plus a confidence, so a robot knows
+  where an object will be and how sure that is.
+- **Nothing to train:** a few seconds of video and a few Gemini calls, on a scene it has never seen.
 
 ## Try it in 30 seconds
 
@@ -114,24 +104,7 @@ Endpoint error is measured only where the system tracks an object (Foresight and
 | Gemini 4 Carbon (`gemini-4-carbon`) | Repairs a fit Decision 1 doubts: proposes another motion model and starting guesses (thinking level medium). |
 | Gemini Omni 1.2 Flash (`gemini-omni-1.2-flash`) | The baseline: continues the same 3 s as video. |
 | Gemini Robotics-ER 2 (`gemini-robotics-er-2-preview`) | Tested as a tracker in Phase 0 and not used: 39 px median error against 20 px for CSRT. |
-
-## Limitations, in plain words
-
-- **Side view, rigid objects, still camera.** Foresight models balls and boxes moving in the image plane. A ball
-  rolling toward the camera, a cloth or a liquid is out of scope.
-- **Short motion.** In Physics-IQ the object often moves for only the last 0.2 to 0.6 s of the 3 s it is shown,
-  so the fit leans on gravity and the object's known size.
-- **Scale comes from Gemini's size estimate.** A wrong size (a 6.7 cm tennis ball called 10 cm) scales every
-  distance by the same factor; falls are cross-checked against gravity, rolls are not.
-- **A subset of Physics-IQ.** 15 of 66 scenes and one of three cameras, so the scores are not comparable with the
-  public leaderboard.
-- **Physics is not yet better than a straight line on this score.** Contacts and falls are where the fit breaks;
-  the results above name the clips. Constant velocity shares Foresight's perception and tracking, so most of the
-  gap to Omni comes from reading the real scene rather than generating pixels.
-- **The score likes stillness.** Holding the last frame scores well on Physics-IQ because the pixel-error term
-  rewards a video that does not change. The table shows it so you can judge.
-- **Omni is slow and paid.** It took a median 38.9 s a clip in the eval and is billed per second of video, so
-  the stage asks before calling it.
+| Genie 4 (`genie-4`) | Tried once at the end of the day as a second world model: from the last frame and a prompt it streams live video. One sample, not in the eval. |
 
 ## Docs
 
@@ -141,6 +114,7 @@ Endpoint error is measured only where the system tracks an object (Foresight and
 | **Evaluation** | [docs/evaluation.md](docs/evaluation.md), [per-clip results](eval/results_table.md), [failures and fixes](eval/FAILURES.md) |
 | **Phase 0 checks** | [phase0/REPORT.md](phase0/REPORT.md): scoring a subset, Hydrogen perception, CSRT against Robotics-ER 2, Omni continuation |
 | **Developer guide** | [docs/developer-guide.md](docs/developer-guide.md): setup, demo, eval |
+| **Limitations** | [docs/limitations.md](docs/limitations.md): what Foresight does not do yet, in plain words |
 | **Data and licenses** | [docs/data-and-licenses.md](docs/data-and-licenses.md) |
 
 ## Data and credits
