@@ -12,6 +12,7 @@ from physics.agent_runner import (
     build_fit_prompt,
     build_setup_prompt,
     fit_batch_local,
+    parse_remote_fit_output,
     strip_scene_for_agent,
 )
 
@@ -64,3 +65,18 @@ def test_fit_batch_local_on_real_ball_rolls_off_scene() -> None:
     assert 1.0 < p["vx0"] < 1.6
     assert 0.55 <= p["elasticity"] <= 0.75
     assert 0.40 <= p["friction"] <= 0.60
+
+
+def test_parse_remote_fit_output_handles_fenced_markdown() -> None:
+    md = (
+        "The scene JSON was fitted using `physics.fit.fit_scene`.\n\n"
+        "```json\n"
+        '{"clip_id": "ball-rolls-off", "motion_model": "roll", "fit_error_px": 7.884, '
+        '"fit_params": {"obj0": {"x0": 0.118, "y0": 0.110, "vx0": 1.265, "vy0": -0.018, '
+        '"friction": 0.5, "elasticity": 0.65, "damping": 0.424}}}\n'
+        "```"
+    )
+    parsed = parse_remote_fit_output(md)
+    assert parsed.clip_id == "ball-rolls-off"
+    assert parsed.fit_error_px == 7.884
+    assert parsed.fit_params["obj0"].vx0 == 1.265

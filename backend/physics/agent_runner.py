@@ -10,6 +10,7 @@ call through `foresight.gemini.call(...)` with `foresight.gemini.client_for(conf
 from __future__ import annotations
 
 import json
+import re
 import time
 from pathlib import Path
 from typing import Any, Dict, List
@@ -115,6 +116,32 @@ def build_fit_prompt(scene: dict[str, Any]) -> str:
     )
 
 
+_FENCED_JSON_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
+
+
+def parse_remote_fit_output(text: str) -> RemoteFitOutput:
+    """Parse RemoteFitOutput from raw JSON or Managed Agent markdown with fenced JSON."""
+    raw = (text or "").strip()
+    try:
+        return RemoteFitOutput.model_validate_json(raw)
+    except Exception:
+        pass
+
+    matches = _FENCED_JSON_RE.findall(raw)
+    for candidate in reversed(matches):
+        try:
+            return RemoteFitOutput.model_validate_json(candidate)
+        except Exception:
+            continue
+
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start != -1 and end > start:
+        return RemoteFitOutput.model_validate_json(raw[start : end + 1])
+
+    raise ValueError(f"Could not extract RemoteFitOutput JSON from Managed Agent response: {raw[:240]}")
+
+
 class ManagedPhysicsBatchRunner:
     """Runs batch physics fits in antigravity-preview-09-2026 reusing one environment_id."""
 
@@ -166,7 +193,7 @@ class ManagedPhysicsBatchRunner:
                 "schema": RemoteFitOutput.model_json_schema(),
             },
         )
-        parsed = RemoteFitOutput.model_validate_json(resp.output_text)
+        parsed = parse_remote_fit_output(resp.output_text)
         return {
             "clip_id": parsed.clip_id,
             "motion_model": parsed.motion_model,
