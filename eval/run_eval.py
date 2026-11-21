@@ -169,14 +169,49 @@ def table(results: dict, path: Path) -> None:
     path.write_text("\n".join(lines) + "\n")
 
 
+def merge_write(results: dict, system: str | None) -> dict:
+    """Merge this run's systems into eval/results.json as it is on disk now (another run may be writing too)."""
+    path = EVAL / "results.json"
+    if system is not None:  # also keep this system's block on its own, for --merge-only
+        RESULTS.mkdir(parents=True, exist_ok=True)
+        (RESULTS / f"system_{system}.json").write_text(json.dumps(
+            {k: results[k] for k in ("scenes", "gt_source", "gt_source_name", "view", "fps", "n_clips", "git_commit")}
+            | {"systems": {system: results["systems"][system]}, "runs": {system: results["runs"][system]}}, indent=2))
+    disk = json.loads(path.read_text()) if path.exists() else {}
+    if disk.get("scenes") == results["scenes"] and disk.get("gt_source") == results["gt_source"]:
+        for key in ("systems", "runs"):
+            merged = dict(disk.get(key, {}))
+            merged.update({k: v for k, v in results[key].items() if system is None or k == system})
+            results[key] = {**results[key], **merged} if system is None else merged
+    results["clean_run"] = all(v.get("clean_run") for v in results["systems"].values())
+    results["generated_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    path.write_text(json.dumps(results, indent=2))
+    return results
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--systems", nargs="+", default=SYSTEMS, choices=SYSTEMS)
     ap.add_argument("--scenes", nargs="+", default=SCENES)
     ap.add_argument("--gt", default="auto", choices=["auto", "hf", "gcs"])
     ap.add_argument("--clean", action="store_true", help="fresh Gemini outputs for this run (reported numbers)")
-    ap.add_argument("--omni-pace", type=float, default=90.0, help="minimum seconds per Omni call")
+    ap.add_argument("--omni-pace", type=float, default=90.0, help="minimum seconds per Omni call (sequential mode)")
+    ap.add_argument("--workers", type=int, default=1, help="concurrent clips for the omni system")
+    ap.add_argument("--merge-only", action="store_true", help="fold eval/results/system_*.json into results.json, redraw table + chart")
     a = ap.parse_args()
+    if a.merge_only:
+        r = json.loads((EVAL / "results.json").read_text())
+        for f in sorted(RESULTS.glob("system_*.json")):
+            blk = json.loads(f.read_text())
+            if blk["scenes"] == r["scenes"] and blk["gt_source"] == r["gt_source"]:
+                r["systems"].update(blk["systems"])
+                r.setdefault("runs", {}).update(blk["runs"])
+        r["clean_run"] = all(v.get("clean_run") for v in r["systems"].values())
+        (EVAL / "results.json").write_text(json.dumps(r, indent=2))
+        table(r, EVAL / "results_table.md")
+        chart(r, EVAL / "chart.png")
+        print(json.dumps({k: v["physics_iq_verified_pct"] for k, v in r["systems"].items()}, indent=1))
+        return
 
     src = gt_source(a.gt)
     bench = fetch(a.scenes, src)
@@ -198,11 +233,13 @@ def main() -> None:
             shutil.rmtree(out_dir)
         out_dir.mkdir(parents=True)
         per_clip = {}
-        for scene in a.scenes:
+
+        def one(scene: str) -> None:
             out = out_dir / pred_name(scene)
             print(f"[{system}] {scene}", flush=True)
             try:
-                per_clip[scene] = {"ok": True, **run_system(system, scene, bench, out, cache_root, a.omni_pace)}
+                pace = 0.0 if (system == "omni" and a.workers > 1) else a.omni_pace
+                per_clip[scene] = {"ok": True, **run_system(system, scene, bench, out, cache_root, pace)}
             except Exception as e:  # noqa: BLE001
                 if "SpendCapHit" in type(e).__name__:
                     raise
@@ -210,6 +247,15 @@ def main() -> None:
                 static_prediction(bench, scene, VIEW, FPS, out_dir)  # fallback keeps the pooled score over all clips
                 per_clip[scene] = {"ok": False, "error": f"{type(e).__name__}: {e}"[:400], "fallback": "static"}
                 failures.append({"system": system, "scene": scene, "error": per_clip[scene]["error"]})
+
+        if system == "omni" and a.workers > 1:
+            from concurrent.futures import ThreadPoolExecutor
+
+            with ThreadPoolExecutor(max_workers=a.workers) as ex:
+                list(ex.map(one, a.scenes))
+        else:
+            for scene in a.scenes:
+                one(scene)
         scored = score_folder(out_dir, bench, FPS, RESULTS)
         per = {r["scenario"].removeprefix("trimmed-").removesuffix(".mp4"): round(r["final_arithmetic"] * 100, 2)
                for r in scored["per_scenario"]}
@@ -225,11 +271,10 @@ def main() -> None:
             "run_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "clean_run": a.clean,
         }
         results["runs"][system] = per_clip
-        (EVAL / "results.json").write_text(json.dumps(results, indent=2))
+        results = merge_write(results, system)
         print(f"== {system}: verified {scored['physics_iq_verified_score_pct']}", flush=True)
 
-    results["clean_run"] = all(v.get("clean_run") for v in results["systems"].values())
-    (EVAL / "results.json").write_text(json.dumps(results, indent=2))
+    results = merge_write(results, None)
     table(results, EVAL / "results_table.md")
     chart(results, EVAL / "chart.png")
     fl = EVAL / "failures_auto.json"

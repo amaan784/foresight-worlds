@@ -16,7 +16,7 @@ Built during the Gemini 4 NYC Hackathon (Nov 21 2026, submissions due 5:00 PM ET
 
 ## Spend / quota
 - Temporary Tier 3 hackathon account (deleted Nov 22): push all code to GitHub; keep eval outputs + demo assets in the repo (never dataset files).
-- Spend cap: $10 per rolling 10 min. Pace batch calls. Ask the user before any batch likely to exceed $5.
+- Spend cap: $80 per rolling 10 min (raised by the user at 15:45; was $10). Pace batch calls. Ask the user before any batch likely to exceed $5.
 - Keep total eval traffic to a few hundred requests. Cache each clip's model outputs to `eval/cache/` during development; final reported numbers come from one clean, uncached run.
 - Every Gemini call goes through the shared wrapper: retry + exponential backoff on 429/503; on repeated 503 fall back (Hydrogen <-> Neon for scene parsing). On 429 STOP and tell the user (project spend cap: aistudio.google.com/spend).
 - Centralize all model IDs in `backend/foresight/config.py`.

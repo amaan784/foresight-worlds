@@ -19,6 +19,6 @@ Non-negotiable rules (full list in CLAUDE.md):
 - Before every push: `git pull --rebase`, then secret scan `git grep -nE "AIza" $(git rev-list --all)` (must print nothing). If push/pull asks for credentials: `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push`.
 - Secrets only in `.env` (exists, gitignored). Never print keys. Never commit `data/` or any Physics-IQ dataset file.
 - No mocks, no hardcoded or cached outputs presented as live. Every number in README/demo comes from an eval output file.
-- Model IDs only from `backend/foresight/config.py`; every Gemini call through `foresight.gemini.call(...)`; preview models via `foresight.gemini.client_for(model)` (v1beta). 429 = project spend cap → stop and tell the user. Ask the user before any batch likely to cost > $5. Cap is $10 per rolling 10 min shared by ALL agents.
+- Model IDs only from `backend/foresight/config.py`; every Gemini call through `foresight.gemini.call(...)`; preview models via `foresight.gemini.client_for(model)` (v1beta). 429 = project spend cap → stop and tell the user. Ask the user before any batch likely to cost > $5. Cap is $80 per rolling 10 min shared by ALL agents.
 - Never pass temperature/top_p/top_k/thinking_budget; never thinking_level "minimal" on Hydrogen/Neon; native structured outputs only (no "reply in JSON" prompting). Confirm Gemini field names in the SDK source or with `python phase0/docs_mcp.py search "..."`.
 - No Streamlit. Update only your own section of `PROGRESS.md` after each milestone.

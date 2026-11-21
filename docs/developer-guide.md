@@ -28,7 +28,8 @@ npm --prefix frontend run dev       # open https://<lan-ip>:5173 and scan the QR
 
 ```bash
 PYTHONPATH=backend:phase0 python eval/run_eval.py --systems static const_velocity foresight --clean
-PYTHONPATH=backend:phase0 python eval/run_eval.py --systems omni --clean      # about $1 a clip, paced
+PYTHONPATH=backend:phase0 python eval/run_eval.py --systems omni --clean --workers 5   # about $1 a clip
+PYTHONPATH=backend:phase0 python eval/run_eval.py --merge-only                   # fold all systems into results.json
 PYTHONPATH=backend:phase0 python eval/readme_results.py                       # rewrites the README results
 ```
 
