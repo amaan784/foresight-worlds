@@ -1,0 +1,16 @@
+.git
+.env
+.env.*
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+data/
+third_party/
+outputs/
+logs/
+frontend/
+docs/
+eval/cache/
+eval/preds/
+phase0/out/
