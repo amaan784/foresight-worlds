@@ -1,0 +1,250 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 810" font-family="'IBM Plex Sans','Helvetica Neue',Arial,sans-serif">
+  <title>Foresight architecture: a phone records and the stage shows results; a local FastAPI server reads the scene with Gemini 4 Hydrogen, tracks, measures and builds a scene; the physics module fits it, checks the fit with Gemini Decision 1, repairs it with Gemini 4 Carbon and renders 5 seconds; Gemini Omni continues the same clip as a baseline; an offline eval scores all systems on Physics-IQ with the official metric code.</title>
+  <defs>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2350d8"/></marker>
+    <marker id="o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#b86e00"/></marker>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#5f6470"/></marker>
+  </defs>
+  <style>
+    .zone{font-size:15px;font-weight:700;fill:#15171c}
+    .zs{font-size:12px;fill:#5f6470}
+    .bx{fill:#fff;stroke:#d5d6d1;stroke-width:1.2}
+    .t{font-size:13.5px;font-weight:600;fill:#15171c}
+    .s{font-size:11.5px;fill:#5f6470}
+    .m{font-family:'IBM Plex Mono',Menlo,monospace;font-size:11px;fill:#5f6470}
+    .n{font-weight:700;fill:#2350d8}
+    .lab{font-size:12px;font-weight:700;fill:#2350d8}
+    .live{stroke:#2350d8;stroke-width:2.2;fill:none}
+    .omni{stroke:#b86e00;stroke-width:2.2;fill:none}
+    .ev{stroke:#5f6470;stroke-width:1.8;fill:none;stroke-dasharray:6 5}
+  </style>
+  <rect width="1280" height="810" fill="#f2f2ef"/>
+
+  <!-- ================= zones ================= -->
+  <rect x="20" y="20" width="214" height="552" rx="14" fill="#e6ecfb"/>
+  <text x="38" y="48" class="zone">Your devices</text>
+  <text x="38" y="66" class="zs">same Wi-Fi, HTTPS</text>
+
+  <rect x="250" y="20" width="620" height="552" rx="14" fill="#e7f1e6"/>
+  <text x="268" y="48" class="zone">Laptop: local server</text>
+  <text x="268" y="66" class="zs">frontend/ (Vite + React) and backend/ (FastAPI, Python 3.12)</text>
+
+  <rect x="886" y="20" width="374" height="552" rx="14" fill="#f1eafa"/>
+  <text x="904" y="48" class="zone">Gemini API</text>
+  <text x="904" y="66" class="zs">every call through foresight/gemini.py: retry, fallback, log</text>
+
+  <rect x="20" y="590" width="1240" height="200" rx="14" fill="#e9eaec"/>
+  <text x="38" y="618" class="zone">Evaluation, offline</text>
+  <text x="38" y="636" class="zs">every number in the README comes from these files</text>
+
+  <!-- ================= devices ================= -->
+  <rect x="38" y="88" width="178" height="132" rx="10" class="bx"/>
+  <text x="52" y="112" class="t">Phone</text>
+  <text x="52" y="130" class="m">/capture</text>
+  <text x="52" y="152" class="s">records 8 s, side view,</text>
+  <text x="52" y="168" class="s">rear camera; the first 3 s</text>
+  <text x="52" y="184" class="s">are seen, the next 5 s</text>
+  <text x="52" y="200" class="s">stay hidden as reality</text>
+
+  <rect x="38" y="250" width="178" height="304" rx="10" class="bx"/>
+  <text x="52" y="274" class="t">Stage (laptop, projector)</text>
+  <text x="52" y="292" class="m">/</text>
+  <text x="52" y="316" class="s">QR code links the phone,</text>
+  <text x="52" y="332" class="s">or pick a Physics-IQ clip</text>
+  <text x="52" y="358" class="s">shows only the first 3 s</text>
+  <text x="52" y="374" class="s">while each step reports in</text>
+  <text x="52" y="400" class="s">then plays three synced</text>
+  <text x="52" y="416" class="s">panels: Reality, Foresight</text>
+  <text x="52" y="432" class="s">and Omni, with how far each</text>
+  <text x="52" y="448" class="s">prediction ends up from</text>
+  <text x="52" y="464" class="s">the real object, in cm</text>
+
+  <!-- devices <-> laptop -->
+  <path d="M216 106H260" class="live" marker-end="url(#b)"/>
+  <text x="219" y="99" class="lab" font-size="11">upload</text>
+  <path d="M268 120H242V300H220" class="live" marker-end="url(#b)"/>
+  <text transform="translate(236 232) rotate(-90)" class="lab" font-size="11" text-anchor="middle">live events, videos</text>
+
+  <!-- ================= laptop ================= -->
+  <rect x="268" y="84" width="584" height="44" rx="10" class="bx"/>
+  <text x="284" y="111" class="t">Vite dev server</text>
+  <text x="400" y="111" class="m">https :5173</text>
+  <text x="560" y="111" class="s">proxies /api and /outputs to FastAPI</text>
+
+  <rect x="268" y="140" width="584" height="418" rx="10" fill="#f7faf6" stroke="#b9cdb7" stroke-width="1.2"/>
+  <text x="284" y="164" class="t">FastAPI</text>
+  <text x="344" y="164" class="m">backend/foresight/api.py :8000</text>
+  <text x="284" y="182" class="s">POST /api/predict starts a job; GET /api/jobs/{id}/events streams every step as server-sent events</text>
+
+  <!-- row 1: clip -> scene -->
+  <text x="284" y="207" class="m">backend/foresight/</text>
+  <rect x="284" y="214" width="98" height="62" rx="8" class="bx"/>
+  <text x="294" y="234" class="t"><tspan class="n">1 </tspan>Ingest</text>
+  <text x="294" y="252" class="s">3 s at 24 FPS,</text>
+  <text x="294" y="267" class="s">same 3 s at 30</text>
+
+  <rect x="396" y="214" width="98" height="62" rx="8" class="bx"/>
+  <text x="406" y="234" class="t"><tspan class="n">2 </tspan>Read</text>
+  <text x="406" y="252" class="s">objects, sizes,</text>
+  <text x="406" y="267" class="s">surfaces, motion</text>
+
+  <rect x="508" y="214" width="98" height="62" rx="8" class="bx"/>
+  <text x="518" y="234" class="t"><tspan class="n">3 </tspan>Track</text>
+  <text x="518" y="252" class="s">OpenCV CSRT,</text>
+  <text x="518" y="267" class="s">appearance gate</text>
+
+  <rect x="620" y="214" width="98" height="62" rx="8" class="bx"/>
+  <text x="630" y="234" class="t"><tspan class="n">4 </tspan>Measure</text>
+  <text x="630" y="252" class="s">px per metre,</text>
+  <text x="630" y="267" class="s">gravity check</text>
+
+  <rect x="732" y="214" width="104" height="62" rx="8" class="bx"/>
+  <text x="742" y="234" class="t"><tspan class="n">5 </tspan>Scene</text>
+  <text x="742" y="252" class="m">scene.json</text>
+  <text x="742" y="267" class="s">clean frame, sprite</text>
+
+  <g class="live">
+    <path d="M382 245H392" marker-end="url(#b)"/><path d="M494 245H504" marker-end="url(#b)"/>
+    <path d="M606 245H616" marker-end="url(#b)"/><path d="M718 245H728" marker-end="url(#b)"/>
+    <path d="M784 276V290H410V308" marker-end="url(#b)"/>
+  </g>
+
+  <!-- row 2: physics -->
+  <text x="284" y="305" class="m">backend/physics/</text>
+  <rect x="284" y="312" width="146" height="62" rx="8" class="bx" stroke="#2350d8" stroke-width="1.8"/>
+  <text x="294" y="332" class="t"><tspan class="n">6 </tspan>Fit</text>
+  <text x="294" y="350" class="s">pymunk 2D world,</text>
+  <text x="294" y="365" class="s">least squares on the track</text>
+
+  <rect x="450" y="312" width="146" height="62" rx="8" class="bx"/>
+  <text x="460" y="332" class="t"><tspan class="n">7 </tspan>Check</text>
+  <text x="460" y="350" class="s">fitted outline on real</text>
+  <text x="460" y="365" class="s">frames: render or repair</text>
+
+  <rect x="616" y="312" width="220" height="62" rx="8" class="bx"/>
+  <text x="626" y="332" class="t"><tspan class="n">9 </tspan>Simulate and render</text>
+  <text x="626" y="350" class="s">exactly 5.000 s; the object drawn</text>
+  <text x="626" y="365" class="s">on the cleaned last frame</text>
+
+  <rect x="450" y="392" width="146" height="54" rx="8" class="bx"/>
+  <text x="460" y="412" class="t"><tspan class="n">8 </tspan>Repair</text>
+  <text x="460" y="430" class="s">another motion model,</text>
+  <text x="460" y="444" class="s" dy="-1">refit (at most twice)</text>
+
+  <g class="live">
+    <path d="M430 343H446" marker-end="url(#b)"/>
+    <path d="M596 343H612" marker-end="url(#b)"/>
+    <path d="M523 374V388" marker-end="url(#b)"/>
+    <path d="M450 419H357V378" stroke-dasharray="5 4" marker-end="url(#b)"/>
+  </g>
+  <text x="366" y="436" class="lab" font-size="10.5">refit</text>
+
+  <!-- row 3 -->
+  <rect x="284" y="478" width="190" height="66" rx="8" class="bx"/>
+  <text x="296" y="498" class="t">outputs/&lt;job&gt;/</text>
+  <text x="296" y="515" class="s">reality, foresight, omni, overlay</text>
+  <text x="296" y="532" class="m">result.json, events.jsonl</text>
+
+  <rect x="488" y="478" width="158" height="66" rx="8" class="bx"/>
+  <text x="500" y="498" class="t">logs/</text>
+  <text x="500" y="515" class="s">one JSON line per Gemini</text>
+  <text x="500" y="532" class="s">call, media stripped</text>
+
+  <rect x="660" y="478" width="176" height="66" rx="8" class="bx" stroke="#b86e00" stroke-width="1.8"/>
+  <text x="672" y="498" class="t">Omni lane, in parallel</text>
+  <text x="672" y="515" class="m">foresight/omni.py</text>
+  <text x="672" y="532" class="s">keeps the 5 s after the input</text>
+
+  <!-- ================= gemini ================= -->
+  <rect x="904" y="84" width="338" height="44" rx="10" class="bx"/>
+  <text x="920" y="111" class="t">Files API</text>
+  <text x="992" y="111" class="s">uploads the clip for Hydrogen and Omni</text>
+
+  <rect x="904" y="138" width="338" height="48" rx="10" class="bx" stroke-dasharray="4 3"/>
+  <text x="920" y="158" class="t">Managed Agent</text>
+  <text x="1028" y="158" class="m">antigravity-preview-09-2026</text>
+  <text x="920" y="176" class="s">batch fits in a reused sandbox; the eval ran fits locally</text>
+
+  <rect x="904" y="198" width="338" height="80" rx="10" class="bx"/>
+  <text x="920" y="220" class="t">Gemini 4 Hydrogen</text>
+  <text x="1056" y="220" class="m">gemini-4-hydrogen</text>
+  <text x="920" y="240" class="s">agentic video plus first and last frames, thinking</text>
+  <text x="920" y="256" class="s">low, structured output: the scene as JSON</text>
+  <text x="920" y="272" class="s">Gemini 4 Neon takes over on repeated 503s</text>
+
+  <rect x="904" y="298" width="338" height="78" rx="10" class="bx"/>
+  <text x="920" y="320" class="t">Gemini Decision 1</text>
+  <text x="1052" y="320" class="m">gemini-decision-1</text>
+  <text x="920" y="340" class="s">does the outline sit on the object; which motion</text>
+  <text x="920" y="356" class="s">(roll, slide, fall, bounce or other); each answer</text>
+  <text x="920" y="372" class="s" dy="-2">comes with a confidence, 0.7 to pass</text>
+
+  <rect x="904" y="388" width="338" height="70" rx="10" class="bx"/>
+  <text x="920" y="410" class="t">Gemini 4 Carbon</text>
+  <text x="1040" y="410" class="m">gemini-4-carbon</text>
+  <text x="920" y="430" class="s">thinking medium: reads a plot of the track and</text>
+  <text x="920" y="446" class="s">the frames, proposes another motion model</text>
+
+  <rect x="904" y="474" width="338" height="76" rx="10" class="bx" stroke="#b86e00" stroke-width="1.8"/>
+  <text x="920" y="496" class="t">Gemini Omni 1.2 Flash</text>
+  <text x="1082" y="496" class="m">gemini-omni-1.2-flash</text>
+  <text x="920" y="516" class="s">video extension: the 3 s plus about 10 s more;</text>
+  <text x="920" y="532" class="s">about 40 s and $1 a clip</text>
+
+  <!-- calls into Gemini, each from the step that makes it -->
+  <text x="904" y="564" class="s">Numbers on the arrows: the step that makes the call.</text>
+  <path d="M445 214V194H876V236H900" class="live" marker-end="url(#b)"/>
+  <text x="868" y="216" class="lab" text-anchor="end">2</text>
+    <path d="M560 312V300H876V337H900" class="live" marker-end="url(#b)"/>
+  <text x="868" y="318" class="lab" text-anchor="end">7</text>
+  <path d="M596 419H900" class="live" marker-end="url(#b)"/>
+  <text x="868" y="413" class="lab" text-anchor="end">8</text>
+  <path d="M836 511H900" class="omni" marker-end="url(#o)"/>
+
+  <!-- ================= evaluation ================= -->
+  <rect x="38" y="650" width="230" height="128" rx="10" class="bx"/>
+  <text x="52" y="672" class="t">Physics-IQ clips</text>
+  <text x="52" y="692" class="s">15 rigid-body scenes, center</text>
+  <text x="52" y="708" class="s">camera (the side view), 24 FPS,</text>
+  <text x="52" y="724" class="s">two real takes each; Verified on</text>
+  <text x="52" y="740" class="s">Hugging Face or the original files</text>
+  <text x="52" y="762" class="m">data/ (never committed)</text>
+
+  <rect x="300" y="650" width="300" height="128" rx="10" class="bx"/>
+  <text x="314" y="672" class="t">eval/run_eval.py</text>
+  <text x="434" y="672" class="s">four systems</text>
+  <text x="314" y="692" class="s">Foresight: the full pipeline above</text>
+  <text x="314" y="708" class="s">Gemini Omni 1.2 Flash, 5 clips at a time</text>
+  <text x="314" y="724" class="s">constant velocity: same tracking, no physics</text>
+  <text x="314" y="740" class="s">last frame held for 5 s</text>
+  <text x="314" y="762" class="s">clean run: fresh Gemini calls, nothing reused</text>
+
+  <rect x="632" y="650" width="260" height="128" rx="10" class="bx"/>
+  <text x="646" y="672" class="t">Official Physics-IQ metric code</text>
+  <text x="646" y="692" class="m">phase0/score_subset.py</text>
+  <text x="646" y="712" class="s">spatial, spatiotemporal and weighted</text>
+  <text x="646" y="728" class="s">IoU and pixel error, each against the</text>
+  <text x="646" y="744" class="s">gap between the two real takes</text>
+
+  <rect x="924" y="650" width="318" height="128" rx="10" class="bx"/>
+  <text x="938" y="672" class="t">What gets published</text>
+  <text x="938" y="692" class="m">eval/results.json, results_table.md</text>
+  <text x="938" y="708" class="m">eval/chart.png, eval/FAILURES.md</text>
+  <text x="938" y="730" class="s">eval/readme_results.py writes the README's</text>
+  <text x="938" y="746" class="s">results section from these files</text>
+
+  <g class="ev">
+    <path d="M268 714H296" marker-end="url(#g)"/>
+    <path d="M600 714H628" marker-end="url(#g)"/>
+    <path d="M892 714H920" marker-end="url(#g)"/>
+    <path d="M450 650V562" marker-end="url(#g)"/>
+  </g>
+  <text x="458" y="608" class="s">calls the same predict_clip()</text>
+
+  <!-- legend -->
+  <g transform="translate(924,612)">
+    <path d="M0 0H30" class="live" marker-end="url(#b)"/><text x="38" y="4" class="s">live prediction</text>
+    <path d="M128 0H158" class="omni" marker-end="url(#o)"/><text x="166" y="4" class="s">Omni baseline</text>
+    <path d="M0 20H30" class="ev" marker-end="url(#g)"/><text x="38" y="24" class="s">offline evaluation</text>
+  </g>
+</svg>

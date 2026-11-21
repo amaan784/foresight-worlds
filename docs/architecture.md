@@ -5,6 +5,10 @@ physics engine can run; the **physics module** (`backend/physics/`), which fits 
 and checks itself with Gemini; and the **stage** (`frontend/`), which records on a phone and shows the result next
 to reality and next to Gemini Omni. The interfaces between them are in [../CONTRACT.md](../CONTRACT.md).
 
+<p align="center"><img src="img/architecture.svg" alt="Where each part runs: devices, the laptop server, the Gemini API, and the offline eval" width="100%"></p>
+
+The same pipeline as a flow:
+
 <p align="center"><img src="img/how-it-works.svg" alt="The pipeline: 3 s of video, read the scene with Gemini 4 Hydrogen, track with CSRT, measure pixels per metre, fit physics, check with Decision 1 and repair with Carbon, render 5 s; Omni continues the same clip; both are compared with reality" width="100%"></p>
 
 ## From a clip to a scene (`backend/foresight/`)

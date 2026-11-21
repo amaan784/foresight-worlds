@@ -52,7 +52,9 @@ plays reality, Foresight and Omni side by side with how far each prediction ends
 
 <sub>The stage after a live run on a Physics-IQ clip, at 0.25 s into the hidden 5 seconds: the real ball and Foresight's ball are in the same place; Omni's ball has vanished.</sub>
 
-<p align="center"><img src="docs/img/how-it-works.svg" alt="The pipeline from a 3 second clip to a 5 second prediction, with Omni as the baseline and both compared with reality" width="100%"></p>
+<p align="center"><img src="docs/img/architecture.svg" alt="Where Foresight runs: the phone records and the stage shows results; a local FastAPI server reads the scene with Gemini 4 Hydrogen, tracks, measures, builds the scene, fits physics, checks it with Gemini Decision 1, repairs it with Gemini 4 Carbon and renders 5 s; Gemini Omni continues the same clip in parallel; an offline eval scores everything on Physics-IQ" width="100%"></p>
+
+<sub>Blue is the live path from the phone to the stage; the numbers on the arrows into the Gemini API are the steps that make each call. Amber is the Omni baseline. Grey dashes are the offline eval, which calls the same pipeline.</sub>
 
 <sub>Details: [docs/architecture.md](docs/architecture.md). Interfaces between the parts: [CONTRACT.md](CONTRACT.md).</sub>
 
