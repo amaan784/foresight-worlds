@@ -95,21 +95,60 @@ def perceive(video_path: Path, frames: list[np.ndarray], fps: float, tag: str) -
     return scene, {"latency_s": round(latency, 2), "model": getattr(resp, "model", config.HYDROGEN), "usage": usage, "file_uri": f.uri}
 
 
+def clip_box(box, w: int, h: int) -> list[int]:
+    x, y, bw, bh = [int(v) for v in box]
+    x0, y0 = max(0, x), max(0, y)
+    x1, y1 = min(w, x + bw), min(h, y + bh)
+    return [x0, y0, max(1, x1 - x0), max(1, y1 - y0)]
+
+
+def patch(frame: np.ndarray, box) -> np.ndarray | None:
+    x, y, bw, bh = clip_box(box, frame.shape[1], frame.shape[0])
+    p = frame[y:y + bh, x:x + bw]
+    return cv2.resize(p, (32, 32)).astype(np.float32) if p.size else None
+
+
+APPEARANCE_GATE = 45.0  # mean abs BGR diff (0-255) vs. the init patch; above = treat as lost
+
+
 def csrt_track(frames: list[np.ndarray], init_idx: int, init_box: tuple, direction: int) -> list[dict]:
-    """Track from frames[init_idx] in `direction` (+1 forward, -1 backward). Stops after 3 consecutive losses."""
+    """Track from frames[init_idx] in `direction` (+1 forward, -1 backward).
+
+    CSRT almost never reports loss on its own (it latches onto background when the object
+    hides), so a frame only counts as ok if the patch still looks like the init patch.
+    Stops after 3 consecutive losses.
+    """
+    h, w = frames[0].shape[:2]
+    init_box = tuple(clip_box(init_box, w, h))
     tr = cv2.TrackerCSRT_create()
     tr.init(frames[init_idx], init_box)
-    out = [{"frame": init_idx, "ok": True, "box": list(map(int, init_box))}]
+    ref = patch(frames[init_idx], init_box)
+    out = [{"frame": init_idx, "ok": True, "box": list(init_box), "app": 0.0}]
     misses = 0
     idx = init_idx + direction
     while 0 <= idx < len(frames):
         ok, box = tr.update(frames[idx])
-        out.append({"frame": idx, "ok": bool(ok), "box": [int(v) for v in box]})
+        box = clip_box(box, w, h)
+        p = patch(frames[idx], box)
+        app = float(np.abs(p - ref).mean()) if p is not None else 999.0
+        ok = bool(ok) and app < APPEARANCE_GATE
+        out.append({"frame": idx, "ok": ok, "box": box, "app": round(app, 1)})
         misses = 0 if ok else misses + 1
         if misses >= 3:
             break
         idx += direction
     return sorted(out, key=lambda r: r["frame"])
+
+
+def merge_tracks(runs: list[list[dict]], n: int) -> list[dict]:
+    """Per frame keep the ok entry with the best appearance score across forward/backward runs."""
+    by_frame: dict[int, dict] = {}
+    for run in runs:
+        for r in run:
+            cur = by_frame.get(r["frame"])
+            if cur is None or (r["ok"] and (not cur["ok"] or r["app"] < cur["app"])):
+                by_frame[r["frame"]] = r
+    return [by_frame[i] for i in range(n) if i in by_frame]
 
 
 def motion_energy(frames: list[np.ndarray]) -> list[float]:
@@ -122,16 +161,7 @@ def track_quality(track: list[dict], frames: list[np.ndarray]) -> dict:
     centers = np.array([[r["box"][0] + r["box"][2] / 2, r["box"][1] + r["box"][3] / 2] for r in ok]) if ok else np.zeros((0, 2))
     areas = np.array([r["box"][2] * r["box"][3] for r in ok]) if ok else np.zeros(0)
     jumps = np.linalg.norm(np.diff(centers, axis=0), axis=1) if len(centers) > 1 else np.zeros(0)
-    # appearance check: mean abs color diff of the tracked patch vs. the init patch
-    r0 = next(r for r in track if r["ok"])
-    x, y, w, h = r0["box"]
-    ref = cv2.resize(frames[r0["frame"]][y:y + h, x:x + w], (32, 32)).astype(np.float32)
-    app = []
-    for r in ok:
-        x, y, w, h = r["box"]
-        patch = frames[r["frame"]][max(0, y):y + h, max(0, x):x + w]
-        if patch.size:
-            app.append(float(np.abs(cv2.resize(patch, (32, 32)).astype(np.float32) - ref).mean()))
+    app = [r["app"] for r in ok]
     return {
         "frames_total": len(frames),
         "frames_tracked_ok": len(ok),
@@ -180,10 +210,13 @@ def main(scene_name: str, source: str, view: str = "center", fps: int = config.B
     for o in scene.objects:
         if not o.moving:
             continue
+        runs = []
         if o.bbox_last_frame != [0, 0, 0, 0]:
-            tracks[o.name] = csrt_track(frames, len(frames) - 1, norm_to_px(o.bbox_last_frame, PROC_W, PROC_H), -1)
-        elif o.visible_frame0:
-            tracks[o.name] = csrt_track(frames, 0, norm_to_px(o.bbox_frame0, PROC_W, PROC_H), +1)
+            runs.append(csrt_track(frames, len(frames) - 1, norm_to_px(o.bbox_last_frame, PROC_W, PROC_H), -1))
+        if o.visible_frame0 and o.bbox_frame0 != [0, 0, 0, 0]:
+            runs.append(csrt_track(frames, 0, norm_to_px(o.bbox_frame0, PROC_W, PROC_H), +1))
+        if runs:
+            tracks[o.name] = merge_tracks(runs, len(frames))
     track_s = time.time() - t0
     quality = {k: track_quality(v, frames) for k, v in tracks.items()}
     energy = motion_energy(frames)
