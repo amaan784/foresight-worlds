@@ -48,6 +48,10 @@ plays reality, Foresight and Omni side by side with how far each prediction ends
    and the fit runs again.
 6. **Render.** The world runs for exactly 5.000 s and the object is drawn onto the frame it was cleaned from.
 
+<p align="center"><img src="docs/img/app.png" alt="The stage after a run: Reality, Foresight and Omni play in sync on film; Foresight ends 5.3 cm from the real ball, Omni 34.3 cm; Decision 1 confidences 0.90 and 0.97" width="100%"></p>
+
+<sub>The stage after a live run on a Physics-IQ clip, at 0.25 s into the hidden 5 seconds: the real ball and Foresight's ball are in the same place; Omni's ball has vanished.</sub>
+
 <p align="center"><img src="docs/img/how-it-works.svg" alt="The pipeline from a 3 second clip to a 5 second prediction, with Omni as the baseline and both compared with reality" width="100%"></p>
 
 <sub>Details: [docs/architecture.md](docs/architecture.md). Interfaces between the parts: [CONTRACT.md](CONTRACT.md).</sub>
