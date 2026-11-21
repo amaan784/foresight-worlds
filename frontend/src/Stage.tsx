@@ -61,13 +61,13 @@ export default function Stage() {
 
   return (
     <div className="min-h-full flex flex-col">
-      <header className="flex items-baseline justify-between px-10 pt-8 pb-4">
+      <header className="flex flex-wrap items-baseline justify-between gap-x-6 px-4 sm:px-10 pt-8 pb-4">
         <button onClick={reset} className="display text-3xl font-extrabold tracking-tight" aria-label="Foresight, back to start">
           Foresight
         </button>
         {job && <Elapsed job={job} />}
       </header>
-      <main className="flex-1 px-10 pb-10">
+      <main className="flex-1 px-4 sm:px-10 pb-10">
         {!job && (
           <Idle info={info} infoErr={infoErr} samples={samples} captureUrl={captureUrl} askOmni={askOmni}
                 setAskOmni={setAskOmni} busy={busy} onSample={runSample} startErr={startErr} />
@@ -137,17 +137,16 @@ function Idle(p: {
       <section className="col-span-2">
         <h2 className="text-2xl font-bold">Or use a Physics-IQ clip</h2>
         <p className="mt-1 text-base text-muted">Real footage from the benchmark. The last 5 seconds stay hidden until the reveal.</p>
-        <div className="film mt-5 rounded-sm">
-          <div className="flex gap-3 overflow-x-auto px-3">
-            {p.samples.length === 0 && <p className="stamp px-4 py-10">No local clips found. Run phase0/physiq_data.py to fetch some.</p>}
-            {p.samples.map((s) => (
-              <button key={s.id} onClick={() => p.onSample(s)} disabled={!!p.busy}
-                      className="group relative shrink-0 w-[300px] text-left disabled:opacity-60">
-                <img src={s.thumb_url} alt="" className="block aspect-video w-full object-cover group-hover:brightness-110" />
-                <span className="stamp mt-2 block px-0.5">{p.busy === s.id ? "starting…" : s.title}</span>
-              </button>
-            ))}
-          </div>
+        <div className="mt-5 flex gap-4 overflow-x-auto pb-2">
+          {p.samples.length === 0 && <p className="text-muted">No local clips found. Run phase0/physiq_data.py to fetch some.</p>}
+          {p.samples.map((s) => (
+            <button key={s.id} onClick={() => p.onSample(s)} disabled={!!p.busy}
+                    className="monitor shrink-0 w-[280px] text-left disabled:opacity-60">
+              <img src={s.thumb_url} alt="" />
+              <span className="tag"><span className="dot" />{p.busy === s.id ? "Starting…" : s.title}</span>
+              <span className="tc">3 s seen</span>
+            </button>
+          ))}
         </div>
         {p.startErr && <p role="alert" className="mt-4 text-bad font-medium">{p.startErr}</p>}
       </section>
@@ -158,20 +157,18 @@ function Idle(p: {
 /* ----------------------------------------------------------------------------------------- running */
 function Timeline({ condUrl }: { condUrl?: string }) {
   return (
-    <div className="film rounded-sm">
-      <div className="grid grid-cols-[3fr_5fr] gap-3 px-3 items-stretch">
-        <div>
-          {condUrl ? <video src={condUrl} poster={condUrl.replace(/\.mp4$/, ".jpg")} autoPlay muted loop playsInline className="aspect-video w-full object-cover" />
-                   : <div className="aspect-video w-full bg-[#111]" />}
-          <span className="stamp mt-2 block">0:00 to 0:03, what the model sees</span>
-        </div>
-        <div>
-          <div className="unseen w-full aspect-[25/9] grid place-items-center" style={{ aspectRatio: "auto", height: "calc(100% - 1.9rem)" }}>
-            <span className="stamp text-base opacity-80">0:03 to 0:08 has not been seen</span>
-          </div>
-          <span className="stamp mt-2 block">0:03 to 0:08, hidden until the reveal</span>
-        </div>
-      </div>
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <figure className="monitor lane-reality">
+        {condUrl ? <video src={condUrl} poster={condUrl.replace(/\.mp4$/, ".jpg")} autoPlay muted loop playsInline />
+                 : <div className="slate">Loading the clip</div>}
+        <figcaption className="tag"><span className="dot" />What the model sees</figcaption>
+        <span className="tc">0:00 – 0:03</span>
+      </figure>
+      <figure className="monitor">
+        <div className="slate">The next 5 seconds stay hidden until every step below is done.</div>
+        <figcaption className="tag"><span className="dot" style={{ background: "#5f6470" }} />Not seen yet</figcaption>
+        <span className="tc">0:03 – 0:08</span>
+      </figure>
     </div>
   );
 }
@@ -369,32 +366,22 @@ function SyncedPanels({ panels, better }: { panels: Panel[]; better: "f" | "o" |
 
   return (
     <div>
-      <div className="film rounded-sm">
-        <div className="grid grid-cols-3 gap-3 px-3">
-          {panels.map((p) => (
-            <figure key={p.key} className="m-0">
-              {p.url ? (
-                <video ref={(el) => { refs.current[p.key] = el; }} src={p.url} poster={p.url.replace(/\.mp4$/, ".jpg")} muted playsInline loop
-                       className="aspect-video w-full object-cover" onLoadedData={(e) => { if (playing) e.currentTarget.play().catch(() => {}); }} />
-              ) : (
-                <div className="unseen aspect-video w-full grid place-items-center"><span className="stamp text-base">{p.note || "no video"}</span></div>
-              )}
-              <figcaption className="stamp mt-2 flex justify-between">
-                <span>{p.title}</span><span className="opacity-70">{p.sub}</span>
-              </figcaption>
-            </figure>
-          ))}
-        </div>
-      </div>
-      <div className="grid grid-cols-3 gap-3 px-3 mt-5">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {panels.map((p) => (
           <div key={p.key}>
-            <div className={`text-lg font-semibold ${p.color}`}>{p.title}</div>
+            <figure className={`monitor lane-${p.key}`}>
+              {p.url ? (
+                <video ref={(el) => { refs.current[p.key] = el; }} src={p.url} poster={p.url.replace(/\.mp4$/, ".jpg")} muted playsInline loop
+                       onLoadedData={(e) => { if (playing) e.currentTarget.play().catch(() => {}); }} />
+              ) : (
+                <div className="slate">{p.note || "No video"}</div>
+              )}
+              <figcaption className="tag"><span className="dot" />{p.title}</figcaption>
+              <span className="tc">0:{(3 + t).toFixed(2).padStart(5, "0")}</span>
+            </figure>
+            <div className="mt-4 text-base text-muted">{p.sub}</div>
             {p.key === "reality" ? (
-              <>
-                <div className="display text-6xl font-extrabold">Reference</div>
-                <div className="text-base text-muted">the hidden 5 seconds, filmed</div>
-              </>
+              <div className="display text-6xl font-extrabold">Reference</div>
             ) : (
               <>
                 <div className={`display text-6xl font-extrabold ${(p.key === "foresight" && better === "f") || (p.key === "omni" && better === "o") ? "text-good" : "text-ink"}`}>
@@ -406,12 +393,12 @@ function SyncedPanels({ panels, better }: { panels: Panel[]; better: "f" | "o" |
           </div>
         ))}
       </div>
-      <div className="mt-6 flex items-center gap-4">
+      <div className="mt-6 flex flex-wrap items-center gap-4">
         <button onClick={() => setPlaying((x) => !x)} className="rounded-full bg-ink px-5 py-2 text-paper font-medium w-24">{playing ? "Pause" : "Play"}</button>
         <button onClick={() => setSlow((x) => !x)} aria-pressed={slow} className={`rounded-full border px-4 py-2 font-medium ${slow ? "border-cobalt text-cobalt" : "border-line"}`}>Half speed</button>
         <input type="range" min={0} max={5} step={1 / 24} value={t} onChange={(e) => seek(Number(e.target.value))}
                className="flex-1 accent-[var(--color-cobalt)]" aria-label="Scrub all three videos" />
-        <span className="font-mono text-base w-36 text-right">0:{(3 + t).toFixed(2).padStart(5, "0")} of 0:08</span>
+        <span className="font-mono text-base sm:w-36 text-right">0:{(3 + t).toFixed(2).padStart(5, "0")} of 0:08</span>
       </div>
     </div>
   );

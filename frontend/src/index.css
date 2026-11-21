@@ -31,21 +31,25 @@ h1, h2, h3, .display { font-family: var(--font-display); font-variation-settings
 button { cursor: pointer; }
 video { display: block; background: #000; }
 
-/* Film strip: black stock with sprocket holes top and bottom (from Trained Eye's visual language). */
-.film { position: relative; background: var(--color-film); padding: 26px 0; }
-.film::before, .film::after {
-  content: ""; position: absolute; left: 0; right: 0; height: 12px;
-  background-image: repeating-linear-gradient(90deg, transparent 0 9px, #e9e9e6 9px 27px, transparent 27px 36px);
-  -webkit-mask: linear-gradient(#000 0 0); border-radius: 2px;
-}
-.film::before { top: 7px; }
-.film::after { bottom: 7px; }
-.film .stamp { font-family: var(--font-mono); font-size: 13px; color: #e9e9e6; letter-spacing: 0.02em; }
-
-/* The 5 s nobody has seen yet. */
-.unseen {
-  background-image: repeating-linear-gradient(135deg, #1b1d22 0 10px, #111215 10px 20px);
-}
+/* Monitor: a rounded video panel with a lane colour (ring + dot), a label pill and a live timecode. */
+.monitor { position: relative; margin: 0; border-radius: 16px; overflow: hidden; background: #0d0e11;
+  box-shadow: 0 0 0 1px var(--color-line), 0 1px 2px rgb(0 0 0 / 0.06); }
+.monitor > video, .monitor > img, .monitor > .slate { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.monitor::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  box-shadow: inset 0 0 0 3px var(--lane, transparent); }
+.monitor .tag { position: absolute; left: 12px; top: 12px; display: inline-flex; align-items: center; gap: 8px;
+  padding: 5px 12px 5px 10px; border-radius: 999px; background: rgb(13 14 17 / 0.72); color: #f2f2ef;
+  font: 600 14px/1.25 var(--font-sans); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.monitor .tag .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dot, var(--lane, #f2f2ef)); }
+.monitor .tc { position: absolute; right: 12px; bottom: 10px; padding: 2px 8px; border-radius: 6px;
+  background: rgb(13 14 17 / 0.6); color: #f2f2ef; font: 500 12px var(--font-mono); letter-spacing: 0.02em; }
+.lane-reality { --lane: transparent; --dot: #f2f2ef; }
+.lane-foresight { --lane: var(--color-cobalt); }
+.lane-omni { --lane: var(--color-amber); }
+.slate { display: grid; place-items: center; text-align: center; padding: 0 24px; color: #c9cac5;
+  font: 500 15px/1.5 var(--font-sans);
+  background-image: repeating-linear-gradient(135deg, #17191e 0 12px, #111216 12px 24px); }
+button.monitor:hover > img { filter: brightness(1.08); }
 
 @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 .live-dot { animation: pulse-dot 1.2s ease-in-out infinite; }
