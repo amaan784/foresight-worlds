@@ -48,6 +48,65 @@ def _inpaint(img: np.ndarray, boxes: list[list[float]], grow: float = 0.35) -> n
     return out
 
 
+def snap_support(surfaces: list[dict], main: dict, motion: str, W: float | None = None) -> tuple[list[dict], dict | None]:
+    """For rolling/sliding objects the contact line is where the tracked object's bottom actually is.
+
+    Hydrogen sometimes draws a table's back edge (higher in the image, in perspective) instead of the line the
+    object rolls on, which puts the object under its own support. Fit a line through the tracked bottoms and move
+    the nearest table/floor/ramp onto it, keeping that surface's left/right ends (so the object can still fall off).
+    """
+    if motion not in ("roll", "slide") or len(main["track"]) < 3:
+        return surfaces, None
+    r = main.get("radius_px") or (main.get("h_px") or 0) / 2
+    xs = np.array([p["x"] for p in main["track"]])
+    ys = np.array([p["y"] for p in main["track"]]) + r
+    b, a = np.polyfit(xs, ys, 1)  # y = a + b x
+    xm = float(xs.mean())
+    cands = [s for s in surfaces if s["kind"] in ("table", "floor", "ramp")] or surfaces
+    if not cands:
+        W = max(xs.max() * 1.5, 1.0)
+        surfaces = surfaces + [{"name": "support (from track)", "kind": "table", "p0": [0.0, a], "p1": [W, a + b * W]}]
+        return surfaces, {"created": True, "slope": round(float(b), 4)}
+
+    def y_at(s, x):
+        (x0, y0), (x1, y1) = s["p0"], s["p1"]
+        return y0 + (y1 - y0) * (x - x0) / (x1 - x0) if x1 != x0 else y0
+
+    s = min(cands, key=lambda c: abs(y_at(c, xm) - (a + b * xm)))
+    before = y_at(s, xm)
+    x0 = min(s["p0"][0], s["p1"][0], float(xs.min()) - r)
+    x1 = max(s["p0"][0], s["p1"][0], float(xs.max()) + r)
+    if W and abs((a + b * xm) - before) > 2 * r:
+        # Hydrogen drew a different edge (e.g. the table's back edge in perspective); its ends are not the
+        # ends of the line the object rolls on, so let the support span the frame.
+        x0, x1 = 0.0, float(W)
+    s["p0"], s["p1"] = [round(float(x0), 1), round(float(a + b * x0), 1)], [round(float(x1), 1), round(float(a + b * x1), 1)]
+    return surfaces, {"surface": s["name"], "shift_px_at_track": round(float(a + b * xm - before), 1), "slope": round(float(b), 4)}
+
+
+def drop_source_statics(statics: list[dict], objects: list[dict]) -> tuple[list[dict], list[str]]:
+    """Remove static objects the moving object overlaps while tracked (the pipe it rolls out of, the hand or
+    grabber that drops it). In the simulation they would start interpenetrating the body and launch it."""
+    keep, dropped = [], []
+    for st in statics:
+        x0, y0, x1, y1 = st["bbox"]
+        hit = False
+        for ob in objects:
+            r = ob.get("radius_px") or max(ob.get("w_px") or 0, ob.get("h_px") or 0) / 2
+            for p in ob["track"]:
+                if x0 - r < p["x"] < x1 + r and y0 - r < p["y"] < y1 + r:
+                    hit = True
+                    break
+        (dropped if hit else keep).append(st if not hit else st["name"])
+        if hit:  # points where the object is still partly inside its source are occluded: unreliable centres
+            for ob in objects:
+                r = ob.get("radius_px") or max(ob.get("w_px") or 0, ob.get("h_px") or 0) / 2
+                clear = [p for p in ob["track"] if not (x0 - r < p["x"] < x1 + r and y0 - r < p["y"] < y1 + r)]
+                if len(clear) >= 3:
+                    ob["track"] = clear
+    return keep, dropped
+
+
 def _overlap(a: list[float], b: list[float]) -> bool:
     return not (a[2] <= b[0] or b[2] <= a[0] or a[3] <= b[1] or b[3] <= a[1])
 
@@ -197,6 +256,10 @@ def build_scene(cond_video: Path, work_dir: Path, fit_video: Path | None = None,
     surfaces = [{"name": s.name, "kind": s.kind,
                  "p0": [round(s.line[1] / 1000 * W, 1), round(s.line[0] / 1000 * H, 1)],
                  "p1": [round(s.line[3] / 1000 * W, 1), round(s.line[2] / 1000 * H, 1)]} for s in scene_p.support_surfaces]
+    surfaces, snap = snap_support(surfaces, main, scene_p.motion_type, W)
+    statics, dropped = drop_source_statics(statics, objects)
+    timings["surface_snap"] = snap
+    timings["statics_dropped"] = dropped
 
     scene = {
         "clip_id": clip_id or Path(cond_video).stem, "work_dir": str(work_dir), "orig_size": [W, H],

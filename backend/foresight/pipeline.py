@@ -128,6 +128,9 @@ def track_in_video(video: Path, scene: dict, proc_w: int = 960) -> list[dict]:
     run = track.csrt_run(v["proc"], 0, box, +1)
     out = []
     for rr in run:
+        bx, by, bw2, bh2 = rr["box"]
+        if bx <= 1 or by <= 1 or bx + bw2 >= pw - 1 or by + bh2 >= ph - 1:
+            break  # the object reached the frame edge: anything after is the tracker latching onto background
         if rr["ok"]:
             x, y, bw, bh = rr["box"]
             out.append({"t_s": scene["t_cond_end_s"] + rr["frame"] / v["fps"], "x": (x + bw / 2) / sx, "y": (y + bh / 2) / sy})
