@@ -87,11 +87,12 @@ function Elapsed({ job }: { job: JobState }) {
     const t = setInterval(() => tick((x) => x + 1), 100);
     return () => clearInterval(t);
   }, [job.ended]);
-  const s = job.ended ? job.lastT : (Date.now() - started.current) / 1000;
+  const done = job.result?.metrics.latency_s_total;
+  const s = done ?? (job.ended ? job.lastT : (Date.now() - started.current) / 1000);
   return (
     <div className="font-mono text-base text-muted flex items-center gap-2">
-      {!job.ended && <span className="live-dot inline-block size-2.5 rounded-full bg-cobalt" aria-hidden />}
-      {s.toFixed(1)} s
+      {!job.ended && !done && <span className="live-dot inline-block size-2.5 rounded-full bg-cobalt" aria-hidden />}
+      {done ? `predicted in ${s.toFixed(1)} s` : `${s.toFixed(1)} s`}
     </div>
   );
 }
@@ -119,7 +120,7 @@ function Idle(p: {
         )}
       </section>
 
-      <aside className="row-span-2 self-start mt-6 rounded-2xl bg-card p-7 shadow-[0_1px_0_var(--color-line)] border border-line w-[340px]">
+      <aside className="self-start mt-6 rounded-2xl bg-card p-7 shadow-[0_1px_0_var(--color-line)] border border-line w-[340px]">
         <h2 className="text-2xl font-bold">Record on your phone</h2>
         <p className="mt-2 text-base text-muted">Scan, hold the phone still, side view, roll or drop one ball. It records 8 seconds.</p>
         <div className="mt-5 grid place-items-center rounded-xl bg-paper p-5">
@@ -133,7 +134,7 @@ function Idle(p: {
         </label>
       </aside>
 
-      <section>
+      <section className="col-span-2">
         <h2 className="text-2xl font-bold">Or use a Physics-IQ clip</h2>
         <p className="mt-1 text-base text-muted">Real footage from the benchmark. The last 5 seconds stay hidden until the reveal.</p>
         <div className="film mt-5 rounded-sm">
@@ -158,14 +159,14 @@ function Idle(p: {
 function Timeline({ condUrl }: { condUrl?: string }) {
   return (
     <div className="film rounded-sm">
-      <div className="grid grid-cols-[3fr_5fr] gap-3 px-3">
+      <div className="grid grid-cols-[3fr_5fr] gap-3 px-3 items-stretch">
         <div>
           {condUrl ? <video src={condUrl} poster={condUrl.replace(/\.mp4$/, ".jpg")} autoPlay muted loop playsInline className="aspect-video w-full object-cover" />
                    : <div className="aspect-video w-full bg-[#111]" />}
           <span className="stamp mt-2 block">0:00 to 0:03, what the model sees</span>
         </div>
         <div>
-          <div className="unseen aspect-[25/9] w-full h-[calc(100%-1.9rem)] grid place-items-center">
+          <div className="unseen w-full aspect-[25/9] grid place-items-center" style={{ aspectRatio: "auto", height: "calc(100% - 1.9rem)" }}>
             <span className="stamp text-base opacity-80">0:03 to 0:08 has not been seen</span>
           </div>
           <span className="stamp mt-2 block">0:03 to 0:08, hidden until the reveal</span>
@@ -390,7 +391,10 @@ function SyncedPanels({ panels, better }: { panels: Panel[]; better: "f" | "o" |
           <div key={p.key}>
             <div className={`text-lg font-semibold ${p.color}`}>{p.title}</div>
             {p.key === "reality" ? (
-              <div className="display text-5xl font-extrabold text-muted/40">ground truth</div>
+              <>
+                <div className="display text-6xl font-extrabold">Reference</div>
+                <div className="text-base text-muted">the hidden 5 seconds, filmed</div>
+              </>
             ) : (
               <>
                 <div className={`display text-6xl font-extrabold ${(p.key === "foresight" && better === "f") || (p.key === "omni" && better === "o") ? "text-good" : "text-ink"}`}>
