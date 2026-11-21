@@ -6,6 +6,7 @@
 </p>
 
 <p align="center">
+  <a href="#why-it-matters">Why it matters</a> ·
   <a href="#try-it-in-30-seconds"><b>Try it in 30 seconds</b></a> ·
   <a href="#results">Results</a> ·
   <a href="#how-it-works">How it works</a> ·
@@ -19,6 +20,30 @@ and runs it forward 5 seconds, so you get a prediction and the trajectory behind
 
 <p align="center"><img src="docs/img/compare.png" alt="The same 3 seconds, continued three ways: reality, where the ball rolls right and leaves the table within a second; and Gemini Omni, where the ball disappears and a new one emerges from the pipe" width="100%"></p>
 
+## Why it matters
+
+A robot that acts around moving things needs more than a plausible video: it needs to know where the object will
+be, how sure that is, and why. Foresight gives all three.
+
+- **A trajectory a planner can use.** Every run returns the object's path in metres and the physics behind it:
+  starting speed, friction, bounce. A robot can ask "where will the ball be when my gripper gets there?" or
+  "will it roll off the bench?" and get an answer it can act on, not pixels to interpret.
+- **It says when it might be wrong.** Gemini Decision 1 checks the fitted motion against the real frames and
+  returns a confidence with every prediction; a doubtful fit is repaired by Gemini 4 Carbon, and the confidence is
+  reported either way. A robot can slow down or look again when the check is unsure.
+- **Nothing to train.** No dataset, no fine-tuning: a few seconds of phone video and a handful of Gemini calls,
+  on a scene it has never seen.
+- **Real footage, real scores.** It is scored with the official Physics-IQ code on real clips, next to a video
+  model and two simple baselines, so you can see where it helps and where it does not yet.
+
+Where it fits:
+
+- **Manipulation around moving objects:** catching, pushing, or clearing a rolling or falling object.
+- **Tuning a simulator from real video:** the fitted friction, bounce and damping come out as numbers you can put
+  into your own simulator (`physics.fit_params` in each run's `result.json`).
+- **Checking a video world model:** run Foresight next to it on your own footage and see where the video model
+  makes up physics, like the ball that vanished above.
+
 ## Try it in 30 seconds
 
 With the [setup](docs/developer-guide.md#setup-about-2-minutes) done and a Gemini API key in `.env`:
@@ -28,7 +53,7 @@ PYTHONPATH=backend uvicorn foresight.api:app --app-dir backend --host 0.0.0.0 --
 npm --prefix frontend run dev
 ```
 
-Open `https://<your-lan-ip>:5173`. Pick a Physics-IQ clip (rolling ones take about 20 s), or scan the QR code with
+Open `https://<your-lan-ip>:5173`. Pick a Physics-IQ clip (rolling ones are quick; falls can take a few minutes while Gemini repairs the fit), or scan the QR code with
 a phone, prop it up side-on and roll a ball through the frame. You see only the first 3 seconds while each step
 reports in, then reality, Foresight and Omni play side by side with how far each prediction ends up from the
 real object.
@@ -105,7 +130,8 @@ Endpoint error is measured only where the system tracks an object (Foresight and
   gap to Omni comes from reading the real scene rather than generating pixels.
 - **The score likes stillness.** Holding the last frame scores well on Physics-IQ because the pixel-error term
   rewards a video that does not change. The table shows it so you can judge.
-- **Omni is slow and paid.** About 40 s and about $1 a clip, so the stage asks before calling it.
+- **Omni is slow and paid.** It took a median 38.9 s a clip in the eval and is billed per second of video, so
+  the stage asks before calling it.
 
 ## Docs
 

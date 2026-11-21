@@ -62,7 +62,7 @@ def perceive(video_path: Path, first: np.ndarray, last: np.ndarray, tag: str = "
     t0 = time.time()
     resp = gemini.call(
         gemini.client().interactions.create,
-        kind="interactions.create", model=config.HYDROGEN, tag=tag, fallback=True,
+        kind="interactions.create", model=config.PERCEPTION, tag=tag, fallback=True,
         input=[
             {"type": "video", "uri": f.uri, "mime_type": f.mime_type, "processing": "agentic"},
             {"type": "text", "text": "Image A (first frame):"},
@@ -71,11 +71,11 @@ def perceive(video_path: Path, first: np.ndarray, last: np.ndarray, tag: str = "
             {"type": "image", "data": _jpg_b64(last), "mime_type": "image/jpeg"},
             {"type": "text", "text": PROMPT},
         ],
-        generation_config={"thinking_level": "low"},
+        generation_config={"thinking_level": config.PERCEPTION_THINKING},
         response_format={"type": "text", "mime_type": "application/json", "schema": ScenePerception.model_json_schema()},
     )
     scene = ScenePerception.model_validate_json(resp.output_text)
-    meta = {"model": getattr(resp, "model", None) or config.HYDROGEN, "latency_s": round(time.time() - t0, 2), "cached": False}
+    meta = {"model": getattr(resp, "model", None) or config.PERCEPTION, "latency_s": round(time.time() - t0, 2), "cached": False}
     if cache_file:
         cache_file.parent.mkdir(parents=True, exist_ok=True)
         cache_file.write_text(json.dumps({"scene": scene.model_dump(), "meta": meta}, indent=2))

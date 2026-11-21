@@ -13,6 +13,11 @@ CARBON = "gemini-4-carbon"  # repair: choose a different physics model / initial
 NEON = "gemini-4-neon"  # 503 fallback for scene parsing
 DECISION = "gemini-decision-1"  # verification (noul / choice with "other"; check .confidence)
 
+# Scene reading: Hydrogen by default (fast); FORESIGHT_PERCEPTION_MODEL=gemini-4-carbon for the most capable model.
+import os as _os
+PERCEPTION = _os.environ.get("FORESIGHT_PERCEPTION_MODEL", HYDROGEN)
+PERCEPTION_THINKING = _os.environ.get("FORESIGHT_PERCEPTION_THINKING", "low")
+
 # --- Other models ---
 MANAGED_AGENT = "antigravity-preview-09-2026"  # runs batch eval fits in its sandbox
 OMNI = "gemini-omni-1.2-flash"  # video-continuation baseline
