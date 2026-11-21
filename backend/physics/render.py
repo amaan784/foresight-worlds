@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import importlib.util
 import math
+import os
+import subprocess
 from pathlib import Path
 from typing import Any, Callable
 
@@ -169,6 +171,12 @@ def render_trajectory(
         tw, th = int(out_size[0]), int(out_size[1])
     else:
         tw, th = orig_w, orig_h
+        max_w_env = os.environ.get("FORESIGHT_RENDER_MAX_W")
+        if max_w_env:
+            max_w = int(max_w_env)
+            if tw > max_w:
+                th = int(round(th * (max_w / float(tw))))
+                tw = max_w
     # H.264 yuv420p requires even width and height
     tw = max(2, tw - (tw % 2))
     th = max(2, th - (th % 2))
@@ -190,29 +198,45 @@ def render_trajectory(
         if sprite_path:
             sprites[oid] = _load_sprite_premul(sprite_path, scale_x, scale_y)
 
-    frames: list[np.ndarray] = []
-    for step in trajectory:
-        frame = bg.copy()
-        objs_state = step.get("objects", {})
-        for oid in obj_order:
-            st = objs_state.get(oid)
-            if st is None or oid not in sprites:
-                continue
-            if not st.get("visible", True):
-                continue
-            bgr_pre, alpha = sprites[oid]
-            _composite_sprite(
-                frame,
-                bgr_pre,
-                alpha,
-                cx=float(st["x"]) * scale_x,
-                cy=float(st["y"]) * scale_y,
-                angle_rad=float(st.get("angle", 0.0)),
-            )
-        frames.append(frame)
+    # Stream one frame at a time into ffmpeg stdin (avoids holding 120 full-res frames in RAM)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    cmd = [
+        "ffmpeg", "-y", "-loglevel", "error",
+        "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{tw}x{th}", "-r", str(fps_out), "-i", "-",
+        "-frames:v", str(len(trajectory)), "-c:v", "libx264", "-preset", "veryfast", "-threads", "2",
+        "-pix_fmt", "yuv420p", "-crf", "18", "-movflags", "+faststart",
+        "-r", str(fps_out), str(out_path),
+    ]
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    assert proc.stdin is not None
+    frame = np.empty_like(bg)
+    try:
+        for step in trajectory:
+            np.copyto(frame, bg)
+            objs_state = step.get("objects", {})
+            for oid in obj_order:
+                st = objs_state.get(oid)
+                if st is None or oid not in sprites:
+                    continue
+                if not st.get("visible", True):
+                    continue
+                bgr_pre, alpha = sprites[oid]
+                _composite_sprite(
+                    frame,
+                    bgr_pre,
+                    alpha,
+                    cx=float(st["x"]) * scale_x,
+                    cy=float(st["y"]) * scale_y,
+                    angle_rad=float(st.get("angle", 0.0)),
+                )
+            proc.stdin.write(np.ascontiguousarray(frame[:th, :tw]).tobytes())
+    finally:
+        proc.stdin.close()
+    if proc.wait() != 0:
+        raise RuntimeError(f"ffmpeg failed writing {out_path}")
 
     vidio = _vidio()
-    written = vidio.write_mp4(out_path, frames, fps_out)
+    written = out_path
     info = vidio.probe(written)
 
     expected_dur = len(trajectory) / fps_out

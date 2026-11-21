@@ -4,6 +4,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/backend \
     MPLCONFIGDIR=/tmp/foresight_mplconfig \
+    FORESIGHT_RENDER_MAX_W=1280 \
+    OMP_NUM_THREADS=1 \
+    OPENBLAS_NUM_THREADS=1 \
+    MALLOC_ARENA_MAX=2 \
     PORT=8000
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
