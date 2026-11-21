@@ -29,13 +29,13 @@ CSS = """
 :root{--paper:#f2f2ef;--ink:#15171c;--muted:#5f6470;--cobalt:#2350d8;--amber:#b86e00}
 *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans",sans-serif}
 .display{font-family:"Bricolage Grotesque",sans-serif;font-variation-settings:"wdth" 88;letter-spacing:-.02em;line-height:1}
-.film{position:relative;background:#000;padding:30px 0}
-.film:before,.film:after{content:"";position:absolute;left:0;right:0;height:14px;
- background-image:repeating-linear-gradient(90deg,transparent 0 10px,#e9e9e6 10px 30px,transparent 30px 40px)}
-.film:before{top:8px}.film:after{bottom:8px}
-.row{display:flex;gap:12px;padding:0 12px}.fr{flex:1}.fr img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
-.stamp{font:13px "IBM Plex Mono",monospace;color:#e9e9e6;margin-top:7px;display:flex;justify-content:space-between}
-.lane{font:600 15px "IBM Plex Mono",monospace;color:#e9e9e6;padding:0 12px 8px}
+.film{padding:0 64px}
+.row{display:flex;gap:14px}.fr{flex:1;position:relative;border-radius:14px;overflow:hidden;background:#0d0e11;box-shadow:0 0 0 1px #d5d6d1}
+.fr img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
+.fr::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 3px var(--ring,transparent)}
+.stamp{position:absolute;right:10px;top:8px;font:500 12px "IBM Plex Mono",monospace;color:#f2f2ef;background:rgba(13,14,17,.62);padding:2px 7px;border-radius:6px}
+.lane{display:inline-flex;align-items:center;gap:9px;font:600 17px "IBM Plex Sans",sans-serif;color:var(--ink);margin:0 0 10px}
+.lane i{width:11px;height:11px;border-radius:50%;background:var(--dot,#15171c);display:inline-block}
 """
 
 
@@ -67,10 +67,12 @@ def shoot(html: str, out: Path, w: int, h: int) -> Path:
     return out
 
 
-def strip(imgs: list, stamps: list[str], lane: str | None = None) -> str:
-    cells = "".join(f'<div class="fr"><img src="{b64(i)}"><div class="stamp"><span>{s}</span></div></div>'
+def strip(imgs: list, stamps: list[str], lane: str | None = None, color: str | None = None) -> str:
+    ring = f"--ring:{color};" if color else ""
+    cells = "".join(f'<div class="fr" style="{ring}"><img src="{b64(i)}"><span class="stamp">{s}</span></div>'
                     for i, s in zip(imgs, stamps) if i is not None)
-    return f'<div class="film">{f"<div class=lane>{lane}</div>" if lane else ""}<div class="row">{cells}</div></div>'
+    head = f'<div class="lane" style="--dot:{color or "#15171c"}"><i></i>{lane}</div>' if lane else ""
+    return f'<div class="film">{head}<div class="row">{cells}</div></div>'
 
 
 def banner(cond: Path, stat_line: str) -> Path:
@@ -80,11 +82,11 @@ def banner(cond: Path, stat_line: str) -> Path:
   <div class="display" style="font-size:150px;font-weight:800">Foresight</div>
   <div style="font-size:40px;margin-top:18px">Watch 3 seconds. Predict the next 5.</div>
 </div>
-{strip(frames_at(cond, times), [f"0:{t:05.2f}" for t in times])}
+<div style="margin-top:4px">{strip(frames_at(cond, times), [f"0:{t:05.2f}" for t in times])}</div>
 <div style="display:flex;justify-content:space-between;gap:40px;padding:34px 64px 40px">
   <div style="max-width:720px"><div style="font-size:26px;font-weight:600">{stat_line}</div>
   <div style="color:var(--muted);font-size:18px;margin-top:6px">For robotics teams: physics fitted to real video, checked against what really happened.</div></div>
-  <div style="color:var(--muted);font-size:17px;text-align:right">Gemini 4 Hydrogen reads the scene, Decision 1 checks the fit,<br>Carbon repairs it, Omni is the video-model baseline.<br>Built during the Gemini 4 NYC Hackathon, Nov 21 2026.</div>
+  <div style="color:var(--muted);font-size:17px;text-align:right;white-space:nowrap;line-height:1.6">Gemini 4 Hydrogen reads the scene.<br>Decision 1 checks the fit; Carbon repairs it.<br>Gemini Omni is the video-model baseline.<br>Built during the Gemini 4 NYC Hackathon, Nov 21 2026.</div>
 </div>"""
     return shoot(html, IMG / "banner.png", 1280, 720)
 
@@ -94,12 +96,12 @@ def compare(real: Path, omni_v: Path, fore: Path | None, fore_label: str) -> Pat
     stamps = [f"0:{3 + t:05.2f}" for t in times]
     lanes = [strip(frames_at(real, times), stamps, "Reality: what actually happened")]
     if fore:
-        lanes.append(strip(frames_at(fore, times), stamps, fore_label))
-    lanes.append(strip(frames_at(omni_v, times), stamps, "Gemini Omni 1.2 Flash: continues the same 3 s as video"))
+        lanes.append(strip(frames_at(fore, times), stamps, fore_label, "#2350d8"))
+    lanes.append(strip(frames_at(omni_v, times), stamps, "Gemini Omni 1.2 Flash: continues the same 3 s as video", "#b86e00"))
     html = f"""<div style="padding:48px 64px 22px"><div class="display" style="font-size:64px;font-weight:800">The same 3 seconds, three futures</div></div>
-<div style="display:flex;flex-direction:column;gap:14px">{''.join(lanes)}</div>
+<div style="display:flex;flex-direction:column;gap:26px">{''.join(lanes)}</div>
 <div style="padding:18px 64px 34px;color:var(--muted);font-size:16px">Physics-IQ ball-rolls-off, center camera (frames CC BY 4.0, Physics-IQ). Timestamps from the start of the clip; the model saw 0:00 to 0:03.</div>"""
-    return shoot(html, IMG / "compare.png", 1280, 210 + 268 * len(lanes))
+    return shoot(html, IMG / "compare.png", 1280, 160 + 213 * len(lanes))
 
 
 if __name__ == "__main__":
