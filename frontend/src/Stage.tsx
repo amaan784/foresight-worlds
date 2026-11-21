@@ -160,7 +160,7 @@ function Timeline({ condUrl }: { condUrl?: string }) {
     <div className="film rounded-sm">
       <div className="grid grid-cols-[3fr_5fr] gap-3 px-3">
         <div>
-          {condUrl ? <video src={condUrl} autoPlay muted loop playsInline className="aspect-video w-full object-cover" />
+          {condUrl ? <video src={condUrl} poster={condUrl.replace(/\.mp4$/, ".jpg")} autoPlay muted loop playsInline className="aspect-video w-full object-cover" />
                    : <div className="aspect-video w-full bg-[#111]" />}
           <span className="stamp mt-2 block">0:00 to 0:03, what the model sees</span>
         </div>
@@ -373,7 +373,7 @@ function SyncedPanels({ panels, better }: { panels: Panel[]; better: "f" | "o" |
           {panels.map((p) => (
             <figure key={p.key} className="m-0">
               {p.url ? (
-                <video ref={(el) => { refs.current[p.key] = el; }} src={p.url} muted playsInline loop
+                <video ref={(el) => { refs.current[p.key] = el; }} src={p.url} poster={p.url.replace(/\.mp4$/, ".jpg")} muted playsInline loop
                        className="aspect-video w-full object-cover" onLoadedData={(e) => { if (playing) e.currentTarget.play().catch(() => {}); }} />
               ) : (
                 <div className="unseen aspect-video w-full grid place-items-center"><span className="stamp text-base">{p.note || "no video"}</span></div>

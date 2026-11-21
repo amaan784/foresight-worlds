@@ -143,6 +143,17 @@ def _physics_available() -> bool:
     return importlib.util.find_spec("physics") is not None
 
 
+def _poster(video: Path, t_s: float = 0.25) -> None:
+    """Write <video>.jpg (a frame at t_s) so the stage never shows a black panel while a video loads."""
+    cap = cv2.VideoCapture(str(video))
+    fps = cap.get(cv2.CAP_PROP_FPS) or 24
+    cap.set(cv2.CAP_PROP_POS_FRAMES, int(t_s * fps))
+    ok, f = cap.read()
+    cap.release()
+    if ok:
+        cv2.imwrite(str(video.with_suffix(".jpg")), f, [cv2.IMWRITE_JPEG_QUALITY, 85])
+
+
 def _ui_size(w: int, h: int) -> tuple[int, int] | None:
     if w <= UI_MAX_W:
         return None
@@ -163,6 +174,9 @@ def _run(job: Job, src: dict, run_omni: bool, dynamics: str) -> None:
         has_reality = bool(reality and Path(reality).exists())
         if has_reality:
             transcode(reality, job.dir / "reality.mp4", 24, dur_s=5.0, max_w=UI_MAX_W)
+        _poster(job.dir / "conditioning.mp4", 2.9)
+        if has_reality:
+            _poster(job.dir / "reality.mp4")
         job.emit("ingest", {"fps": 24, "cond_frames": pc["frames"], "reality_frames": probe(job.dir / "reality.mp4")["frames"] if has_reality else 0,
                             "width": pc["width"], "height": pc["height"], "conditioning_url": job.url("conditioning.mp4"),
                             "has_reality": has_reality})
@@ -174,6 +188,7 @@ def _run(job: Job, src: dict, run_omni: bool, dynamics: str) -> None:
                 try:
                     info = omni.continue_clip(Path(cond), job.dir / "omni.mp4", prompt=src.get("omni_prompt") or omni.GENERIC_PROMPT,
                                               tag=f"api:{job.id}")
+                    _poster(job.dir / "omni.mp4")
                     omni_state.update(status="done", url=job.url("omni.mp4"), latency_s=info["latency_s"], info=info)
                     scene_ready.wait(timeout=600)
                     if "scene" in holder and has_reality:
@@ -201,6 +216,8 @@ def _run(job: Job, src: dict, run_omni: bool, dynamics: str) -> None:
         scene_ready.set()
         draw_overlay(job.dir / ("reality.mp4" if has_reality else "foresight.mp4"), scene, meta["_traj_full"],
                      job.dir / "overlay.mp4", meta["_real_pts"])
+        _poster(job.dir / "foresight.mp4")
+        _poster(job.dir / "overlay.mp4")
         job.emit("render", {"url": job.url("foresight.mp4"), "frames": meta["probe"]["frames"], "fps": meta["probe"]["fps"],
                             "duration_s": round(meta["probe"]["duration"], 3)})
         result = {k: v for k, v in meta.items() if not k.startswith("_")}
