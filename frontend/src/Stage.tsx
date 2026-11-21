@@ -103,9 +103,9 @@ function Idle(p: {
   setAskOmni: (v: boolean) => void; busy: string | null; onSample: (s: Sample) => void; startErr: string | null;
 }) {
   return (
-    <div className="grid grid-cols-[1fr_auto] gap-x-16 gap-y-10 max-w-[1400px]">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-x-16 gap-y-10 max-w-[1400px]">
       <section className="pt-6">
-        <h1 className="text-[clamp(3.5rem,8vw,7.5rem)] font-extrabold">Watch 3 seconds.<br />Predict the next 5.</h1>
+        <h1 className="text-[clamp(2.75rem,8vw,7.5rem)] font-extrabold">Watch 3 seconds.<br />Predict the next 5.</h1>
         <p className="mt-6 max-w-[38rem] text-xl text-muted">
           For robotics teams. Foresight reads a short side-view clip, fits real physics to what it saw, and
           renders what happens next. Next to it, Gemini's video model continues the same clip, and both are
@@ -120,7 +120,7 @@ function Idle(p: {
         )}
       </section>
 
-      <aside className="self-start mt-6 rounded-2xl bg-card p-7 shadow-[0_1px_0_var(--color-line)] border border-line w-[340px]">
+      <aside className="self-start lg:mt-6 rounded-2xl bg-card p-7 shadow-[0_1px_0_var(--color-line)] border border-line w-full max-w-[380px] lg:w-[340px]">
         <h2 className="text-2xl font-bold">Record on your phone</h2>
         <p className="mt-2 text-base text-muted">Scan, hold the phone still, side view, roll or drop one ball. It records 8 seconds.</p>
         <div className="mt-5 grid place-items-center rounded-xl bg-paper p-5">
@@ -134,7 +134,7 @@ function Idle(p: {
         </label>
       </aside>
 
-      <section className="col-span-2">
+      <section className="lg:col-span-2 min-w-0">
         <h2 className="text-2xl font-bold">Or use a Physics-IQ clip</h2>
         <p className="mt-1 text-base text-muted">Real footage from the benchmark. The last 5 seconds stay hidden until the reveal.</p>
         <div className="mt-5 flex gap-4 overflow-x-auto pb-2">

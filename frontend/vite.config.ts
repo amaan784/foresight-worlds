@@ -4,8 +4,8 @@ import tailwindcss from "@tailwindcss/vite";
 import basicSsl from "@vitejs/plugin-basic-ssl";
 
 // HTTPS so phones allow camera access; /api and /outputs go to the FastAPI backend.
-// `npm run dev --http` serves plain HTTP (for a laptop-only browser on localhost).
-const plainHttp = process.env.npm_config_http === "true";
+// `FORESIGHT_HTTP=1 npm run dev` serves plain HTTP on :5174 (for a laptop-only browser on localhost).
+const plainHttp = process.env.FORESIGHT_HTTP === "1" || process.env.npm_config_http === "true";
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), ...(plainHttp ? [] : [basicSsl()])],
