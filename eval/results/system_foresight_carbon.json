@@ -45,10 +45,11 @@
       },
       "n_ok": 15,
       "n_failed": 0,
-      "endpoint_error_cm_median": 21.3,
+      "endpoint_error_cm_median": 13.6,
       "run_at": "2026-11-22T07:55:14+00:00",
       "clean_run": true,
-      "perception_model": "gemini-4-carbon"
+      "perception_model": "gemini-4-carbon",
+      "endpoint_rule": "real track ends at the frame edge, at loss, or behind an object in front (Nov 22)"
     }
   },
   "runs": {
@@ -134,7 +135,7 @@
       "roll-in-box": {
         "ok": true,
         "latency_s": 37.4,
-        "endpoint_error_cm": 90.4,
+        "endpoint_error_cm": 3.3,
         "fit_error_px": 6.527,
         "decision1_confidences": {
           "outline_on_object": 0.8831,

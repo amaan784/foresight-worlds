@@ -44,6 +44,9 @@ in the wider eval (`eval/run_wide.py`) were not used while developing.
 
 | 25 | a live roll-behind-box run showed Foresight 1.11 m off and Genie 2.5 cm | the real ball went behind the container and the reality tracker latched onto the container's edge for the rest of the 5 s, so "where it really ended up" was a still patch any static prediction matched | the real track also ends when the object reaches something standing in front of it (with two radii of margin: perception's box is loose); `eval/remeasure_endpoints.py` recomputed the eval's endpoint errors from the saved paths, no model calls |
 
+| 26 | ball-hits-nothing: Foresight's plastic ball lagged the real one, which barely slowed | every ball braked at 0.04 g, a felt tennis-ball value | Hydrogen now reports each object's material and balls brake by material (felt 0.04, rubber 0.015, hard plastic and wood 0.005, metal and glass 0.002; textbook orders of magnitude, not tuned). On the same fresh scene readings (offline): 73.75 with the fixed value, 74.47 by material; only ball-hits-nothing changed (58.6 to 69.4). The reported clean runs predate this change |
+| 27 | the Managed Agent could no longer fit after the physics changes | its sandbox setup shipped world.py and fit.py only, and both now import layers.py | the setup ships all three modules and each object's mass; 15 of 15 eval scenes then fitted remotely, identical to the local fit (`eval/agent_batch.json`) |
+
 A simulated object that gains energy (moves faster than its start speed plus free fall allows) now makes the run
 fall back to constant velocity, and the run says so (`dynamics_used`, `fallback_reason`).
 

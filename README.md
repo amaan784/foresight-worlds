@@ -66,12 +66,16 @@ was added after the event, starting November 22, and the work is ongoing on `mai
   at two distances from the camera pass each other, and only objects at the same depth collide.
 - Resting objects (balls in a row, a rubber duck) are bodies that can be knocked; containers are open on top.
 - Tables stay level even when perspective draws them sloped, surfaces are solid, and balls brake with rolling
-  resistance instead of creeping on for seconds.
-- Gemini 4 Hydrogen now also reports whether each surface is hard or soft, and each object's mass.
+  resistance that depends on what they are made of, instead of creeping on for seconds.
+- Gemini 4 Hydrogen now also reports whether each surface is hard or soft, and each object's mass and material.
 - Cleaner tracks: the moment a grabber lets go, and points from a half-hidden object, are handled before fitting.
 - An energy check: if a simulated object speeds up in a way real contacts cannot cause, the run falls back to
   constant velocity and says so.
 - Faster repairs: Gemini 4 Carbon runs at thinking level low inside a 90 s budget.
+
+**Every Gemini model, run for real**
+- Gemini 4 Neon read all 15 eval scenes as a variant (it is also Hydrogen's automatic backup).
+- The Managed Agent fitted all 15 eval scenes in one remote sandbox and matched the local fits exactly.
 
 **The stage**
 - Genie 4 plays next to Omni as a fourth panel.
@@ -93,18 +97,23 @@ was added after the event, starting November 22, and the work is ongoing on `mai
 
 Every number below comes from `eval/run_eval.py`: [eval/results.json](eval/results.json), [the per-clip table](eval/results_table.md), [the method](docs/evaluation.md). 15 rigid-body clips, center camera, 24 FPS, scored against the original Physics-IQ ground truth (Verified files were not available) with the official Physics-IQ code. Clean run: yes; commit `5e5ba33`, 2026-11-22T07:50:00+00:00.
 
-**In short:** Physics-IQ score (Verified formula, %, higher is better): Constant velocity (no physics) 77.1, Foresight with Gemini 4 Carbon reading the scene 76.8, Foresight (physics) 74.4, Genie 4 (world model) 42.2, Last frame held 35.0, Gemini Omni 1.2 Flash (video model) 27.5.
+**In short:** Physics-IQ score (Verified formula, %, higher is better): Constant velocity (no physics) 77.1, Foresight with Gemini 4 Carbon reading the scene 76.8, Foresight with Gemini 4 Neon reading the scene 74.6, Foresight (physics) 74.4, Genie 4 (world model) 42.2, Last frame held 35.0, Gemini Omni 1.2 Flash (video model) 27.5.
 
 On the Physics-IQ score Foresight (74.4) is above both video models (Gemini Omni 1.2 Flash 27.5, Genie 4 42.2), and still **below** the constant-velocity baseline (77.1), which uses the same Gemini scene reading, tracking and renderer and only drops the physics. On where the object actually ends up, Foresight is closer to reality than constant velocity on 12 of the 14 clips with a measurable endpoint (median 9.9 cm against 192.5 cm). The two measures disagree because the Physics-IQ score compares where pixels change: a constant-velocity object that leaves the frame early leaves a still picture, which matches a real scene that has come to rest, even when the object went the wrong way. The physics fit blew up (endpoint over 10 m off) on 0 clips; the energy check fell back to constant velocity on 0.
 
-Reading the scene with Gemini 4 Carbon instead of Hydrogen: 76.8 against 74.4, median endpoint error 21.3 cm against 9.9 cm; the stage uses Hydrogen because it is faster.
+Reading the scene with Gemini 4 Carbon instead of Hydrogen: 76.8 against 74.4, median endpoint error 13.6 cm against 9.9 cm.
+
+Reading the scene with Gemini 4 Neon instead of Hydrogen: 74.6 against 74.4, median endpoint error 9.6 cm against 9.9 cm.
+
+The stage reads scenes with Hydrogen because it is the fastest; Neon takes over automatically if Hydrogen keeps failing.
 
 <p align="center"><img src="eval/chart.png" alt="Physics-IQ score per system" width="88%"></p>
 
 | System | Physics-IQ score (Verified formula) | Original formula | Median endpoint error (cm) | Failed clips | Run |
 |---|---|---|---|---|---|
 | Constant velocity (no physics) | **77.1** | 78.6 | 192.5 | 0 of 15 | 2026-11-22 |
-| Foresight with Gemini 4 Carbon reading the scene | 76.8 | 81.3 | 21.3 | 0 of 15 | 2026-11-22 |
+| Foresight with Gemini 4 Carbon reading the scene | 76.8 | 81.3 | 13.6 | 0 of 15 | 2026-11-22 |
+| Foresight with Gemini 4 Neon reading the scene | 74.6 | 79.4 | 9.6 | 0 of 15 | 2026-11-22 |
 | Foresight (physics) | 74.4 | 77.2 | 9.9 | 0 of 15 | 2026-11-22 |
 | Genie 4 (world model) | 42.2 | 42.3 | n/a | 0 of 15 | 2026-11-21 |
 | Last frame held | 35.0 | 32.4 | n/a | 0 of 15 | 2026-11-22 |
@@ -162,11 +171,12 @@ Across the 60 scene-views Foresight scores below constant velocity on the Physic
 | Model | Its job |
 |---|---|
 | Gemini 4 Hydrogen (`gemini-4-hydrogen`) | Reads the clip: objects, sizes, surfaces, motion (agentic video, structured output, thinking level low). 12.5 s in [Phase 0](phase0/REPORT.md). |
-| Gemini 4 Neon (`gemini-4-neon`) | On standby: takes over scene reading if Hydrogen keeps returning 503. Not needed in any run today. |
+| Gemini 4 Neon (`gemini-4-neon`) | Takes over scene reading automatically if Hydrogen keeps returning 503 (it never had to); also run as a scene-reading variant on the 15 clips, in the results below. |
 | Gemini Decision 1 (`gemini-decision-1`) | Checks the fit on real frames: does the outline sit on the object, which motion is it; confidences gate the repair. |
 | Gemini 4 Carbon (`gemini-4-carbon`) | Repairs a fit Decision 1 doubts: proposes another motion model and starting guesses (thinking level low, inside a 90 s budget). |
 | Gemini Omni 1.2 Flash (`gemini-omni-1.2-flash`) | The baseline: continues the same 3 s as video. |
 | Gemini Robotics-ER 2 (`gemini-robotics-er-2-preview`) | Tested as a tracker in Phase 0 and not used: 39 px median error against 20 px for CSRT. |
+| Managed Agent (`antigravity-preview-09-2026`) | Runs the physics fit for a batch of scenes in one remote sandbox it sets up once (scene JSON in, never video). On the 15 eval scenes its fits matched the local ones exactly ([eval/agent_batch.json](eval/agent_batch.json), `eval/run_agent_batch.py`). |
 | Genie 4 (`genie-4`) | A second baseline, in the eval and on the stage: a world model that starts from the last frame and a prompt and streams live video. |
 
 ## Docs

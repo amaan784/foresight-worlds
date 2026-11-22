@@ -1,0 +1,315 @@
+{
+  "run": "foresight_neon",
+  "view": "perspective-center",
+  "fps": 24,
+  "n_scenarios": 15,
+  "physics_iq_verified_score_pct": 74.57,
+  "physics_iq_original_score_pct": 79.38,
+  "pooled": {
+    "score_spatiotemporal": 0.9791395195963971,
+    "score_spatial": 0.7389245289586084,
+    "score_weighted_spatial": 0.6662232674827445,
+    "score_mse": 0.0009508518411368842,
+    "final_score_raw": 0.793811586838113,
+    "final_score_stable": 0.793811586838113,
+    "final_score_orig": 0.793811586838113,
+    "variance_mse": 0.0006061046181922493,
+    "variance_spatiotemporal_iou": 0.682909570536074,
+    "variance_spatial": 0.6174245270018821,
+    "variance_weighted_spatial": 0.47962473329336225,
+    "final_score_view": 0.7457397736988045,
+    "score_spatiotemporal_view": 0.9185612698804017,
+    "score_spatial_view": 0.7126711357112846,
+    "score_weighted_spatial_view": 0.675050695513797,
+    "score_mse_view": 0.6766759936897352
+  },
+  "per_scenario": [
+    {
+      "scenario": "trimmed-ball-and-block-fall.mp4",
+      "spatial_iou_v1_score": 0.6921412315056261,
+      "weighted_spatial_iou_v1_score": 0.8188336569998071,
+      "spatiotemporal_iou_v1_score": 1.0,
+      "v1_mse_score": 0.3153745697095808,
+      "final_arithmetic": 0.7065873645537535,
+      "final_geometric": 0.6502109356219438,
+      "final_harmonic": 0.5850627340790112
+    },
+    {
+      "scenario": "trimmed-ball-hits-duck.mp4",
+      "spatial_iou_v1_score": 1.0,
+      "weighted_spatial_iou_v1_score": 1.0,
+      "spatiotemporal_iou_v1_score": 0.990756550149329,
+      "v1_mse_score": 0.7399983536895084,
+      "final_arithmetic": 0.9326887259597093,
+      "final_geometric": 0.9253359314264593,
+      "final_harmonic": 0.9172872842391924
+    },
+    {
+      "scenario": "trimmed-ball-hits-nothing.mp4",
+      "spatial_iou_v1_score": 0.7662005325429232,
+      "weighted_spatial_iou_v1_score": 0.5820623012799877,
+      "spatiotemporal_iou_v1_score": 0.8374745906046642,
+      "v1_mse_score": 0.6576639789054168,
+      "final_arithmetic": 0.710850350833248,
+      "final_geometric": 0.7039987760527671,
+      "final_harmonic": 0.6971349707053514
+    },
+    {
+      "scenario": "trimmed-ball-in-basket.mp4",
+      "spatial_iou_v1_score": 0.5005411238180092,
+      "weighted_spatial_iou_v1_score": 0.785863524016621,
+      "spatiotemporal_iou_v1_score": 1.0,
+      "v1_mse_score": 0.15837861466927397,
+      "final_arithmetic": 0.611195815625976,
+      "final_geometric": 0.49959819300979613,
+      "final_harmonic": 0.37791799740605714
+    },
+    {
+      "scenario": "trimmed-ball-ramp.mp4",
+      "spatial_iou_v1_score": 0.7146911156797402,
+      "weighted_spatial_iou_v1_score": 0.6727089283437601,
+      "spatiotemporal_iou_v1_score": 0.6292501920927929,
+      "v1_mse_score": 0.5570040298662245,
+      "final_arithmetic": 0.6434135664956294,
+      "final_geometric": 0.6407030882153407,
+      "final_harmonic": 0.6379336122294818
+    },
+    {
+      "scenario": "trimmed-ball-rolls-off.mp4",
+      "spatial_iou_v1_score": 0.9611667759509201,
+      "weighted_spatial_iou_v1_score": 0.674054385027644,
+      "spatiotemporal_iou_v1_score": 0.981602729845045,
+      "v1_mse_score": 1.0,
+      "final_arithmetic": 0.9042059727059023,
+      "final_geometric": 0.8930121371983698,
+      "final_harmonic": 0.8805328246581046
+    },
+    {
+      "scenario": "trimmed-ball-rolls-on-glass.mp4",
+      "spatial_iou_v1_score": 0.7898147271480075,
+      "weighted_spatial_iou_v1_score": 0.8554679817738369,
+      "spatiotemporal_iou_v1_score": 1.0,
+      "v1_mse_score": 1.0,
+      "final_arithmetic": 0.9113206772304611,
+      "final_geometric": 0.9066345116544313,
+      "final_harmonic": 0.9019022337469227
+    },
+    {
+      "scenario": "trimmed-ball-train.mp4",
+      "spatial_iou_v1_score": 0.4877195280259968,
+      "weighted_spatial_iou_v1_score": 0.38004469687453735,
+      "spatiotemporal_iou_v1_score": 0.8816042368097031,
+      "v1_mse_score": 0.4476399844916115,
+      "final_arithmetic": 0.5492521115504622,
+      "final_geometric": 0.5200580707768353,
+      "final_harmonic": 0.49690293424310544
+    },
+    {
+      "scenario": "trimmed-balls-collide.mp4",
+      "spatial_iou_v1_score": 0.8221880595198543,
+      "weighted_spatial_iou_v1_score": 0.7314348498762127,
+      "spatiotemporal_iou_v1_score": 1.0,
+      "v1_mse_score": 1.0,
+      "final_arithmetic": 0.8884057273490167,
+      "final_geometric": 0.880616266856397,
+      "final_harmonic": 0.8727064898541933
+    },
+    {
+      "scenario": "trimmed-duck-falls-in-box.mp4",
+      "spatial_iou_v1_score": 0.2196732112048193,
+      "weighted_spatial_iou_v1_score": 0.07116032201754174,
+      "spatiotemporal_iou_v1_score": 0.6365114982323777,
+      "v1_mse_score": 1.4541909886812398e-05,
+      "final_arithmetic": 0.2318398933411564,
+      "final_geometric": 0.01950341565239324,
+      "final_harmonic": 5.8190554794391556e-05
+    },
+    {
+      "scenario": "trimmed-roll-behind-box.mp4",
+      "spatial_iou_v1_score": 0.4537493522684033,
+      "weighted_spatial_iou_v1_score": 0.37430679374854126,
+      "spatiotemporal_iou_v1_score": 0.8942162362792067,
+      "v1_mse_score": 1.0,
+      "final_arithmetic": 0.6805680955740379,
+      "final_geometric": 0.6242687132138525,
+      "final_harmonic": 0.5719381871593539
+    },
+    {
+      "scenario": "trimmed-roll-front-box.mp4",
+      "spatial_iou_v1_score": 1.0,
+      "weighted_spatial_iou_v1_score": 1.0,
+      "spatiotemporal_iou_v1_score": 1.0,
+      "v1_mse_score": 1.0,
+      "final_arithmetic": 1.0,
+      "final_geometric": 1.0,
+      "final_harmonic": 1.0
+    },
+    {
+      "scenario": "trimmed-roll-in-box.mp4",
+      "spatial_iou_v1_score": 1.0,
+      "weighted_spatial_iou_v1_score": 1.0,
+      "spatiotemporal_iou_v1_score": 1.0,
+      "v1_mse_score": 1.0,
+      "final_arithmetic": 1.0,
+      "final_geometric": 1.0,
+      "final_harmonic": 1.0
+    },
+    {
+      "scenario": "trimmed-two-balls-pass.mp4",
+      "spatial_iou_v1_score": 1.0,
+      "weighted_spatial_iou_v1_score": 1.0,
+      "spatiotemporal_iou_v1_score": 1.0,
+      "v1_mse_score": 0.8124468913868145,
+      "final_arithmetic": 0.9531117228467036,
+      "final_geometric": 0.9493989461898658,
+      "final_harmonic": 0.9454365700827452
+    },
+    {
+      "scenario": "trimmed-weight-protects-duck.mp4",
+      "spatial_iou_v1_score": 0.28218137800496873,
+      "weighted_spatial_iou_v1_score": 0.179822992748468,
+      "spatiotemporal_iou_v1_score": 0.9270030141929075,
+      "v1_mse_score": 0.4616189407177101,
+      "final_arithmetic": 0.46265658141601357,
+      "final_geometric": 0.38387036389436996,
+      "final_harmonic": 0.3238898481775914
+    }
+  ],
+  "input_checks": [
+    {
+      "file": "0002_perspective-center_trimmed-ball-and-block-fall.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 960,
+      "height": 540,
+      "valid_5s": true
+    },
+    {
+      "file": "0008_perspective-center_trimmed-ball-hits-duck.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 960,
+      "height": 540,
+      "valid_5s": true
+    },
+    {
+      "file": "0011_perspective-center_trimmed-ball-hits-nothing.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 960,
+      "height": 540,
+      "valid_5s": true
+    },
+    {
+      "file": "0014_perspective-center_trimmed-ball-in-basket.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 960,
+      "height": 540,
+      "valid_5s": true
+    },
+    {
+      "file": "0020_perspective-center_trimmed-ball-ramp.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 960,
+      "height": 540,
+      "valid_5s": true
+    },
+    {
+      "file": "0023_perspective-center_trimmed-ball-rolls-off.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 960,
+      "height": 540,
+      "valid_5s": true
+    },
+    {
+      "file": "0026_perspective-center_trimmed-ball-rolls-on-glass.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 960,
+      "height": 540,
+      "valid_5s": true
+    },
+    {
+      "file": "0029_perspective-center_trimmed-ball-train.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 960,
+      "height": 540,
+      "valid_5s": true
+    },
+    {
+      "file": "0032_perspective-center_trimmed-balls-collide.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 960,
+      "height": 540,
+      "valid_5s": true
+    },
+    {
+      "file": "0059_perspective-center_trimmed-duck-falls-in-box.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 960,
+      "height": 540,
+      "valid_5s": true
+    },
+    {
+      "file": "0146_perspective-center_trimmed-roll-behind-box.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 960,
+      "height": 540,
+      "valid_5s": true
+    },
+    {
+      "file": "0149_perspective-center_trimmed-roll-front-box.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 960,
+      "height": 540,
+      "valid_5s": true
+    },
+    {
+      "file": "0152_perspective-center_trimmed-roll-in-box.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 960,
+      "height": 540,
+      "valid_5s": true
+    },
+    {
+      "file": "0179_perspective-center_trimmed-two-balls-pass.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 960,
+      "height": 540,
+      "valid_5s": true
+    },
+    {
+      "file": "0197_perspective-center_trimmed-weight-protects-duck.mp4",
+      "duration": 5.0,
+      "fps": 24.0,
+      "frames": 120,
+      "width": 960,
+      "height": 540,
+      "valid_5s": true
+    }
+  ]
+}

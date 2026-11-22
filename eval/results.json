@@ -184,10 +184,39 @@
       },
       "n_ok": 15,
       "n_failed": 0,
-      "endpoint_error_cm_median": 21.3,
+      "endpoint_error_cm_median": 13.6,
       "run_at": "2026-11-22T07:55:14+00:00",
       "clean_run": true,
-      "perception_model": "gemini-4-carbon"
+      "perception_model": "gemini-4-carbon",
+      "endpoint_rule": "real track ends at the frame edge, at loss, or behind an object in front (Nov 22)"
+    },
+    "foresight_neon": {
+      "physics_iq_verified_pct": 74.57,
+      "physics_iq_original_pct": 79.38,
+      "per_scenario_verified_pct": {
+        "ball-and-block-fall": 70.66,
+        "ball-hits-duck": 93.27,
+        "ball-hits-nothing": 71.09,
+        "ball-in-basket": 61.12,
+        "ball-ramp": 64.34,
+        "ball-rolls-off": 90.42,
+        "ball-rolls-on-glass": 91.13,
+        "ball-train": 54.93,
+        "balls-collide": 88.84,
+        "duck-falls-in-box": 23.18,
+        "roll-behind-box": 68.06,
+        "roll-front-box": 100.0,
+        "roll-in-box": 100.0,
+        "two-balls-pass": 95.31,
+        "weight-protects-duck": 46.27
+      },
+      "n_ok": 15,
+      "n_failed": 0,
+      "endpoint_error_cm_median": 9.6,
+      "run_at": "2026-11-22T09:10:14+00:00",
+      "clean_run": true,
+      "perception_model": "gemini-4-neon",
+      "endpoint_rule": "real track ends at the frame edge, at loss, or behind an object in front (Nov 22)"
     }
   },
   "runs": {
@@ -928,7 +957,7 @@
       "roll-in-box": {
         "ok": true,
         "latency_s": 37.4,
-        "endpoint_error_cm": 90.4,
+        "endpoint_error_cm": 3.3,
         "fit_error_px": 6.527,
         "decision1_confidences": {
           "outline_on_object": 0.8831,
@@ -1040,6 +1069,203 @@
         },
         "repairs_used": 0,
         "perception_model": "gemini-4-carbon",
+        "motion_model": "roll"
+      }
+    },
+    "foresight_neon": {
+      "ball-hits-nothing": {
+        "ok": true,
+        "latency_s": 29.0,
+        "endpoint_error_cm": 7.3,
+        "fit_error_px": 3.59,
+        "decision1_confidences": {
+          "outline_on_object": 0.8931,
+          "motion": 0.9426
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-neon",
+        "motion_model": "roll"
+      },
+      "ball-rolls-off": {
+        "ok": true,
+        "latency_s": 40.62,
+        "endpoint_error_cm": 9.6,
+        "fit_error_px": 21.201,
+        "decision1_confidences": {
+          "outline_on_object": 0.8984,
+          "motion": 0.9424
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-neon",
+        "motion_model": "roll"
+      },
+      "ball-rolls-on-glass": {
+        "ok": true,
+        "latency_s": 29.23,
+        "endpoint_error_cm": 3.9,
+        "fit_error_px": 8.307,
+        "decision1_confidences": {
+          "outline_on_object": 0.8914,
+          "motion": 0.9739
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-neon",
+        "motion_model": "roll"
+      },
+      "ball-ramp": {
+        "ok": true,
+        "latency_s": 28.79,
+        "endpoint_error_cm": 47.9,
+        "fit_error_px": 7.172,
+        "decision1_confidences": {
+          "outline_on_object": 0.7847,
+          "motion": 0.9535
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-neon",
+        "motion_model": "roll"
+      },
+      "roll-behind-box": {
+        "ok": true,
+        "latency_s": 54.49,
+        "endpoint_error_cm": 8.7,
+        "fit_error_px": 9.312,
+        "decision1_confidences": {
+          "outline_on_object": 0.8107,
+          "motion": 0.9367
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-neon",
+        "motion_model": "roll"
+      },
+      "roll-front-box": {
+        "ok": true,
+        "latency_s": 43.21,
+        "endpoint_error_cm": 7.5,
+        "fit_error_px": 13.888,
+        "decision1_confidences": {
+          "outline_on_object": 0.8801,
+          "motion": 0.9558
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-neon",
+        "motion_model": "roll"
+      },
+      "roll-in-box": {
+        "ok": true,
+        "latency_s": 27.77,
+        "endpoint_error_cm": 2.8,
+        "fit_error_px": 6.901,
+        "decision1_confidences": {
+          "outline_on_object": 0.8735,
+          "motion": 0.9831
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-neon",
+        "motion_model": "roll"
+      },
+      "ball-hits-duck": {
+        "ok": true,
+        "latency_s": 29.61,
+        "endpoint_error_cm": 13.9,
+        "fit_error_px": 7.795,
+        "decision1_confidences": {
+          "outline_on_object": 0.9261,
+          "motion": 0.9759
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-neon",
+        "motion_model": "roll"
+      },
+      "weight-protects-duck": {
+        "ok": true,
+        "latency_s": 49.68,
+        "endpoint_error_cm": 40.6,
+        "fit_error_px": 6.554,
+        "decision1_confidences": {
+          "outline_on_object": 0.8573,
+          "motion": 0.9283
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-neon",
+        "motion_model": "roll"
+      },
+      "ball-in-basket": {
+        "ok": true,
+        "latency_s": 255.0,
+        "endpoint_error_cm": null,
+        "fit_error_px": 10.869,
+        "decision1_confidences": {
+          "outline_on_object": 0.7321,
+          "motion": 0.6246
+        },
+        "repairs_used": 2,
+        "perception_model": "gemini-4-neon",
+        "motion_model": "fall"
+      },
+      "duck-falls-in-box": {
+        "ok": true,
+        "latency_s": 84.4,
+        "endpoint_error_cm": 13.1,
+        "fit_error_px": 5.118,
+        "decision1_confidences": {
+          "outline_on_object": 0.7197,
+          "motion": 0.9453
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-neon",
+        "motion_model": "fall"
+      },
+      "ball-and-block-fall": {
+        "ok": true,
+        "latency_s": 111.07,
+        "endpoint_error_cm": 3.9,
+        "fit_error_px": 10.758,
+        "decision1_confidences": {
+          "outline_on_object": 0.6962,
+          "motion": 0.9123
+        },
+        "repairs_used": 2,
+        "perception_model": "gemini-4-neon",
+        "motion_model": "fall"
+      },
+      "ball-train": {
+        "ok": true,
+        "latency_s": 27.5,
+        "endpoint_error_cm": 3.9,
+        "fit_error_px": 10.251,
+        "decision1_confidences": {
+          "outline_on_object": 0.8376,
+          "motion": 0.9623
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-neon",
+        "motion_model": "roll"
+      },
+      "balls-collide": {
+        "ok": true,
+        "latency_s": 91.3,
+        "endpoint_error_cm": 29.3,
+        "fit_error_px": 16.733,
+        "decision1_confidences": {
+          "outline_on_object": 0.8758,
+          "motion": 0.9708
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-neon",
+        "motion_model": "roll"
+      },
+      "two-balls-pass": {
+        "ok": true,
+        "latency_s": 31.92,
+        "endpoint_error_cm": 69.1,
+        "fit_error_px": 8.333,
+        "decision1_confidences": {
+          "outline_on_object": 0.8607,
+          "motion": 0.9505
+        },
+        "repairs_used": 0,
+        "perception_model": "gemini-4-neon",
         "motion_model": "roll"
       }
     }
