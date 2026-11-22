@@ -94,8 +94,11 @@ def one(system: str, scene: str, view: str, cache_root: str) -> dict:
 
             work = Path(cache_root) / "omni_work" / f"{scene}_{view}"
             work.mkdir(parents=True, exist_ok=True)
-            info = omni.continue_clip(cond_path(bench, scene, view, E.FPS), out, prompt=prompt(scene, view) + " Continue the scene.",
-                                      fps=E.FPS, tag=f"wide:{scene}_{view}")
+            info = omni.continue_clip(cond_path(bench, scene, view, E.FPS), work / "omni_5s.mp4",
+                                      prompt=prompt(scene, view) + " Continue the scene.", fps=E.FPS, tag=f"wide:{scene}_{view}")
+            import shutil
+
+            shutil.copyfile(work / "omni_5s.mp4", out)  # Omni's scratch files stay in its work folder
             rec |= {"omni_latency_s": info["latency_s"], "frames_padded": info["frames_padded"]}
         elif system == "genie":
             from foresight import genie
@@ -183,7 +186,9 @@ def main() -> None:
         cache_root = str(E.CACHE / f"wide_{stamp}")
         for system in a.systems:  # foresight first: it caches the scene readings const_velocity reuses
             jobs = [(system, sc, v, cache_root) for sc in a.scenes for v in VIEWS]
-            with ProcessPoolExecutor(max_workers=a.workers if system != "static" else 8) as ex:
+            # Omni costs about $1 a clip: 3 at a time stays well under the $80 per 10 minutes project cap.
+            n = 8 if system == "static" else min(a.workers, 3) if system in ("omni", "genie") else a.workers
+            with ProcessPoolExecutor(max_workers=n) as ex:
                 recs = list(ex.map(one, *zip(*jobs)))
             results["runs"][system] = {f"{r['scene']}|{r['view']}": r for r in recs}
             results["systems"][system] = {"run_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "clean_run": True}

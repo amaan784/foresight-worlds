@@ -1,3 +1,6 @@
 cache/
 preds/
 results/*.csv
+preds_wide/
+wide/scores/**/generated_masks/
+wide/scores/**/*.csv
