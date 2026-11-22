@@ -73,6 +73,49 @@ def track_object(frames: list[np.ndarray], bbox_first: list[int] | None, bbox_la
     return merge(runs, len(frames)) if runs else []
 
 
+def _loo_miss(pts: list[dict], i: int) -> float:
+    """Distance (px) between point i and the low-order polynomial through all the other points."""
+    rest = [p for j, p in enumerate(pts) if j != i]
+    t = np.array([p["t_s"] for p in rest])
+    deg = 2 if len(rest) >= 4 else 1
+    miss = 0.0
+    for k in ("x", "y"):
+        c = np.polyfit(t - t[0], np.array([p[k] for p in rest]), deg)
+        miss += (np.polyval(c, pts[i]["t_s"] - t[0]) - pts[i][k]) ** 2
+    return float(np.sqrt(miss))
+
+
+def clean_track(pts: list[dict], size_px: float, min_keep: int = 3) -> tuple[list[dict], dict]:
+    """Keep only the points that belong to the object's final free motion (orig px, real timestamps).
+
+    1. Release: a held or stuck prefix is not free motion. Keep from the last still point before the final run of
+       motion (that point is where the object was let go).
+    2. Ends: a first or last point the smooth path through the other points misses by more than 0.2 object sizes is
+       a tracker error (the object half inside the pipe it rolls out of, partly out of frame), not motion.
+    """
+    info: dict = {"n_in": len(pts)}
+    if len(pts) <= min_keep:
+        return pts, info | {"n_out": len(pts)}
+    still = max(4.0, 0.04 * size_px)  # px per 1/30 s
+    rate = [np.hypot(b["x"] - a["x"], b["y"] - a["y"]) / max(1e-3, (b["t_s"] - a["t_s"]) * 30) for a, b in zip(pts, pts[1:])]
+    last_still = max((k for k, v in enumerate(rate) if v <= still), default=-1)
+    moving_after = len(rate) - 1 - last_still
+    if last_still >= 0 and moving_after >= 2:
+        info["dropped_before_release"] = last_still + 1
+        pts = pts[last_still + 1:]
+    dropped = []
+    while len(pts) > min_keep:
+        ends = [0, 1, len(pts) - 1] if len(pts) > 4 else [0, len(pts) - 1]
+        miss, i = max((_loo_miss(pts, i), i) for i in ends)
+        if miss <= 0.2 * size_px:
+            break
+        dropped.append({"t_s": pts[i]["t_s"], "miss_px": round(miss, 1)})
+        pts = pts[:i] + pts[i + 1:]
+    if dropped:
+        info["dropped_outliers"] = dropped
+    return pts, info | {"n_out": len(pts)}
+
+
 def moving_segment(track: list[dict], min_step_px: float = 1.5) -> list[dict]:
     """Ok frames from the last stationary frame before motion onward (drops the long static 'held' prefix,
     keeping one anchor frame so the release position is known)."""

@@ -48,40 +48,80 @@ def _inpaint(img: np.ndarray, boxes: list[list[float]], grow: float = 0.35) -> n
     return out
 
 
-def snap_support(surfaces: list[dict], main: dict, motion: str, W: float | None = None) -> tuple[list[dict], dict | None]:
-    """For rolling/sliding objects the contact line is where the tracked object's bottom actually is.
+def _bottom_line(ob: dict) -> tuple[float, float, float, np.ndarray, np.ndarray]:
+    """Line y = a + b x through the tracked bottoms of an object; returns (a, b, rms residual, xs, bottoms)."""
+    r = ob.get("radius_px") or (ob.get("h_px") or 0) / 2
+    xs = np.array([p["x"] for p in ob["track"]])
+    ys = np.array([p["y"] for p in ob["track"]]) + r
+    b, a = np.polyfit(xs, ys, 1)
+    return float(a), float(b), float(np.sqrt(np.mean((a + b * xs - ys) ** 2))), xs, ys
+
+
+def snap_support(surfaces: list[dict], objects: list[dict], main: dict, motion: str,
+                 W: float | None = None) -> tuple[list[dict], dict | None]:
+    """For rolling/sliding objects the contact line is where the tracked objects' bottoms actually are.
 
     Hydrogen sometimes draws a table's back edge (higher in the image, in perspective) instead of the line the
-    object rolls on, which puts the object under its own support. Fit a line through the tracked bottoms and move
-    the nearest table/floor/ramp onto it, keeping that surface's left/right ends (so the object can still fall off).
+    object rolls on, which puts the object under its own support. Objects rolling at the same depth as the main
+    object (bottoms within 1.2 radii of each other's lines) share one line fitted through all their bottoms; the
+    nearest table/floor/ramp is moved onto it, keeping its left/right ends (so the object can still fall off).
+    Objects rolling at another depth (two balls passing, one nearer the camera) get their own line.
     """
     if motion not in ("roll", "slide") or len(main["track"]) < 3:
         return surfaces, None
-    r = main.get("radius_px") or (main.get("h_px") or 0) / 2
-    xs = np.array([p["x"] for p in main["track"]])
-    ys = np.array([p["y"] for p in main["track"]]) + r
-    b, a = np.polyfit(xs, ys, 1)  # y = a + b x
-    xm = float(xs.mean())
-    cands = [s for s in surfaces if s["kind"] in ("table", "floor", "ramp")] or surfaces
-    if not cands:
-        W = max(xs.max() * 1.5, 1.0)
-        surfaces = surfaces + [{"name": "support (from track)", "kind": "table", "p0": [0.0, a], "p1": [W, a + b * W]}]
-        return surfaces, {"created": True, "slope": round(float(b), 4)}
+
+    def radius(ob):
+        return ob.get("radius_px") or (ob.get("h_px") or 0) / 2
+
+    rolling = [main] + [ob for ob in objects if ob is not main and len(ob["track"]) >= 3
+                        and _bottom_line(ob)[2] <= 0.3 * radius(ob)]
+    groups: list[list[dict]] = []
+    for ob in rolling:
+        a, b, _, xs, ys = _bottom_line(ob)
+        for g in groups:
+            ga, gb, _, gx, gy = _bottom_line(g[0])
+            off = min(float(np.median(np.abs(ga + gb * xs - ys))), float(np.median(np.abs(a + b * gx - gy))))
+            if off <= 1.2 * radius(ob):
+                g.append(ob)
+                break
+        else:
+            groups.append([ob])
 
     def y_at(s, x):
         (x0, y0), (x1, y1) = s["p0"], s["p1"]
         return y0 + (y1 - y0) * (x - x0) / (x1 - x0) if x1 != x0 else y0
 
-    s = min(cands, key=lambda c: abs(y_at(c, xm) - (a + b * xm)))
-    before = y_at(s, xm)
-    x0 = min(s["p0"][0], s["p1"][0], float(xs.min()) - r)
-    x1 = max(s["p0"][0], s["p1"][0], float(xs.max()) + r)
-    if W and abs((a + b * xm) - before) > 2 * r:
-        # Hydrogen drew a different edge (e.g. the table's back edge in perspective); its ends are not the
-        # ends of the line the object rolls on, so let the support span the frame.
-        x0, x1 = 0.0, float(W)
-    s["p0"], s["p1"] = [round(float(x0), 1), round(float(a + b * x0), 1)], [round(float(x1), 1), round(float(a + b * x1), 1)]
-    return surfaces, {"surface": s["name"], "shift_px_at_track": round(float(a + b * xm - before), 1), "slope": round(float(b), 4)}
+    info: dict = {"depth_groups": [[ob["id"] for ob in g] for g in groups]}
+    for gi, g in enumerate(groups):
+        xs = np.concatenate([_bottom_line(ob)[3] for ob in g])
+        ys = np.concatenate([_bottom_line(ob)[4] for ob in g])
+        r = max(radius(ob) for ob in g)
+        b, a = np.polyfit(xs, ys, 1)
+        xm = float(xs.mean())
+        Wl = float(W) if W else max(float(xs.max()) * 1.5, 1.0)
+        if gi > 0:  # another depth: its own line across the frame
+            name = f"support under {g[0]['name']} (from track)"
+            surfaces = surfaces + [{"name": name, "kind": "table", "p0": [0.0, round(float(a), 1)],
+                                    "p1": [Wl, round(float(a + b * Wl), 1)]}]
+            info.setdefault("own_supports", []).append(name)
+            continue
+        cands = [s for s in surfaces if s["kind"] in ("table", "floor", "ramp")] or surfaces
+        if not cands:
+            surfaces = surfaces + [{"name": "support (from track)", "kind": "table", "p0": [0.0, round(float(a), 1)],
+                                    "p1": [Wl, round(float(a + b * Wl), 1)]}]
+            info |= {"created": True, "slope": round(float(b), 4)}
+            continue
+        s = min(cands, key=lambda c: abs(y_at(c, xm) - (a + b * xm)))
+        before = y_at(s, xm)
+        x0 = min(s["p0"][0], s["p1"][0], float(xs.min()) - r)
+        x1 = max(s["p0"][0], s["p1"][0], float(xs.max()) + r)
+        if W and abs((a + b * xm) - before) > 2 * r:
+            # Hydrogen drew a different edge (e.g. the table's back edge in perspective); its ends are not the
+            # ends of the line the object rolls on, so let the support span the frame.
+            x0, x1 = 0.0, float(W)
+        s["p0"], s["p1"] = [round(float(x0), 1), round(float(a + b * x0), 1)], [round(float(x1), 1), round(float(a + b * x1), 1)]
+        info |= {"surface": s["name"], "shift_px_at_track": round(float(a + b * xm - before), 1), "slope": round(float(b), 4)}
+    return surfaces, info
 
 
 def drop_source_statics(statics: list[dict], objects: list[dict]) -> tuple[list[dict], list[str]]:
@@ -192,7 +232,7 @@ def build_scene(cond_video: Path, work_dir: Path, fit_video: Path | None = None,
     moving = [o for o in scene_p.objects if o.moving]
     if not moving:
         raise RuntimeError("perception found no moving object")
-    objects, tracks_for_events, raw_tracks = [], [], {}
+    objects, tracks_for_events, raw_tracks, cleaning = [], [], {}, {}
     for i, o in enumerate(moving):
         tr = track.track_object(fit["proc"], o.bbox_frame0 if o.visible_frame0 else None, o.bbox_last_frame)
         seg = track.moving_segment(tr)
@@ -203,11 +243,12 @@ def build_scene(cond_video: Path, work_dir: Path, fit_video: Path | None = None,
         ref_box = o.bbox_last_frame if o.bbox_last_frame != [0, 0, 0, 0] else o.bbox_frame0
         bx0, by0, bx1, by1 = _norm_box_to_orig(ref_box, W, H)
         bw, bh = bx1 - bx0, by1 - by0
+        pts, cleaning[f"obj{i}"] = track.clean_track(pts, min(bw, bh) if o.shape == "circle" else max(bw, bh))
         objects.append({
             "id": f"obj{i}", "name": o.name, "shape": o.shape,
             "radius_px": round(min(bw, bh) / 2, 1) if o.shape == "circle" else None,
             "w_px": round(bw, 1) if o.shape == "box" else None, "h_px": round(bh, 1) if o.shape == "box" else None,
-            "est_real_size_cm": o.est_real_size_cm, "track": pts,
+            "est_real_size_cm": o.est_real_size_cm, "est_mass_g": o.est_mass_g, "track": pts,
             "visible_at_end": o.bbox_last_frame != [0, 0, 0, 0],
             "_box_last": [bx0, by0, bx1, by1],
         })
@@ -255,14 +296,21 @@ def build_scene(cond_video: Path, work_dir: Path, fit_video: Path | None = None,
         if o.moving:
             continue
         b = o.bbox_last_frame if o.bbox_last_frame != [0, 0, 0, 0] else o.bbox_frame0
-        statics.append({"name": o.name, "shape": "box", "bbox": [round(v, 1) for v in _norm_box_to_orig(b, W, H)]})
-    surfaces = [{"name": s.name, "kind": s.kind,
+        x0, y0, x1, y1 = _norm_box_to_orig(b, W, H)
+        # a sprite too: the simulation may knock a static object that stands in a moving object's path
+        sprite = work_dir / f"static{len(statics)}.png"
+        cv2.imwrite(str(sprite), _sprite(last_full, (x0 + x1) / 2, (y0 + y1) / 2, o.shape, x1 - x0, y1 - y0))
+        statics.append({"name": o.name, "shape": "box", "bbox": [round(v, 1) for v in (x0, y0, x1, y1)],
+                        "perceived_shape": o.shape, "est_real_size_cm": o.est_real_size_cm, "est_mass_g": o.est_mass_g,
+                        "sprite_png": str(sprite)})
+    surfaces = [{"name": s.name, "kind": s.kind, "material": s.material,
                  "p0": [round(s.line[1] / 1000 * W, 1), round(s.line[0] / 1000 * H, 1)],
                  "p1": [round(s.line[3] / 1000 * W, 1), round(s.line[2] / 1000 * H, 1)]} for s in scene_p.support_surfaces]
-    surfaces, snap = snap_support(surfaces, main, scene_p.motion_type, W)
+    surfaces, snap = snap_support(surfaces, objects, main, scene_p.motion_type, W)
     statics, dropped = drop_source_statics(statics, objects)
     timings["surface_snap"] = snap
     timings["statics_dropped"] = dropped
+    timings["track_cleaning"] = cleaning
 
     scene = {
         "clip_id": clip_id or Path(cond_video).stem, "work_dir": str(work_dir), "orig_size": [W, H],
