@@ -88,6 +88,11 @@ def _below(ob: dict[str, Any], surf: dict[str, Any]) -> bool:
     return bool(gaps) and sorted(gaps)[len(gaps) // 2] > -0.5 * r
 
 
+def _movers(objects: list[dict[str, Any]], out: "Layers", lay: int) -> str:
+    names = [o.get("name", o["id"]) for o in objects if out.layer_of.get(o["id"]) == lay]
+    return " and ".join(names) or "moving object"
+
+
 def assign_layers(scene: dict[str, Any]) -> Layers:
     surfaces = scene.get("surfaces", [])
     statics = scene.get("static_objects", [])
@@ -138,7 +143,7 @@ def assign_layers(scene: dict[str, Any]) -> Layers:
         out.containers.append(Container(si, x0, x1, top, floor, body))
         if body is not None:
             out.container_statics.add(body)
-        out.notes.append(f"container '{s['name']}': open top, walls at x={x0:.0f}..{x1:.0f}, floor y={floor:.0f}")
+        out.notes.append(f"The {s['name']} is open on top: things that fall in stay inside, hidden by its front.")
 
     # 3. resting objects: a static object standing on a layer's line can be knocked by that layer's objects
     #    (balls in a row, a rubber duck). It becomes a body at rest; mass from its size like the moving objects.
@@ -168,7 +173,7 @@ def assign_layers(scene: dict[str, Any]) -> Layers:
             "sprite_png": st.get("sprite_png"), "track": [],
         })
         out.layer_of[f"rest{ti}"] = lay
-        out.notes.append(f"'{st['name']}' rests in layer {lay}'s path: simulated as a body that can be knocked")
+        out.notes.append(f"The {st['name']} rests in the path of the {_movers(objects, out, lay)}: it can be knocked.")
     bodies = list(objects) + out.resting
     rest_statics = {r["static"] for r in out.resting}
 
@@ -207,9 +212,10 @@ def assign_layers(scene: dict[str, Any]) -> Layers:
                 for ob in objects:
                     if out.layer_of[ob["id"]] == lay:
                         out.occluders.setdefault(ob["id"], []).append([bx0, by0, bx1, by1])
-                out.notes.append(f"'{st['name']}' is in front of layer {lay} ({d / r:+.1f} radii): hides, does not block")
+                out.notes.append(f"The {st['name']} is nearer the camera than the {_movers(objects, out, lay)}: it hides it, "
+                                 f"it does not stop it.")
             else:
-                out.notes.append(f"'{st['name']}' is behind layer {lay} ({d / r:+.1f} radii): no contact")
+                out.notes.append(f"The {st['name']} is farther back than the {_movers(objects, out, lay)}: they cannot touch.")
         out.static_hits[ti] = blocks
 
     # 7. containers hide what falls into them (free objects) and objects of layers they stand on or in front of

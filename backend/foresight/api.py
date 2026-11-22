@@ -248,9 +248,15 @@ def _run(job: Job, src: dict, run_omni: bool, dynamics: str, run_genie: bool = F
         job.emit("render", {"url": job.url("foresight.mp4"), "frames": meta["probe"]["frames"], "fps": meta["probe"]["fps"],
                             "duration_s": round(meta["probe"]["duration"], 3)})
         result = {k: v for k, v in meta.items() if not k.startswith("_")}
-        result.update(job_id=job.id, status="done", urls={
+        export = _trajectory_export(scene, meta)
+        (job.dir / "trajectory.json").write_text(json.dumps(export, indent=1))
+        _trajectory_csv(export, job.dir / "trajectory.csv")
+        result.update(job_id=job.id, status="done", source=src["kind"], title=_title(src), created=job.created,
+                      understanding=_understanding(scene, meta), paths=_paths(scene, meta, main),
+                      frame_url=job.url("conditioning.jpg"), urls={
             "conditioning": job.url("conditioning.mp4"), "reality": job.url("reality.mp4") if has_reality else None,
-            "foresight": job.url("foresight.mp4"), "omni": None, "genie": None, "overlay": job.url("overlay.mp4")})
+            "foresight": job.url("foresight.mp4"), "omni": None, "genie": None, "overlay": job.url("overlay.mp4"),
+            "trajectory_json": job.url("trajectory.json"), "trajectory_csv": job.url("trajectory.csv")})
         for name in ("omni", "genie"):
             result["metrics"]["endpoint_error_cm"][name] = None
             result["metrics"]["endpoint_error_px"][name] = None
@@ -286,6 +292,116 @@ def _run(job: Job, src: dict, run_omni: bool, dynamics: str, run_genie: bool = F
 def _omni_traj(pts: list[dict], scene: dict) -> list[dict]:
     main = max(scene["objects"], key=lambda ob: len(ob["track"]))["id"]
     return [{"t_s": p["t_s"], "objects": {main: {"x": p["x"], "y": p["y"]}}} for p in pts]
+
+
+def _title(src: dict) -> str:
+    kind = src.get("kind", "")
+    return kind.split(":", 1)[1].replace("-", " ").capitalize() if kind.startswith("sample:") else "Your video"
+
+
+def _paths(scene: dict, meta: dict, main: str) -> dict:
+    """What the stage draws over the last seen frame: seen track, predicted path, real path (original pixels)."""
+    ob = next(o for o in scene["objects"] if o["id"] == main)
+    return {"orig_size": scene["orig_size"],
+            "seen": [[p["t_s"], p["x"], p["y"]] for p in ob["track"]],
+            "predicted": [[s["t_s"], s["objects"][main]["x"], s["objects"][main]["y"]] for s in meta["_traj_full"] if main in s["objects"]],
+            "real": [[p["t_s"], p["x"], p["y"]] for p in meta["_real_pts"]]}
+
+
+def _understanding(scene: dict, meta: dict) -> dict:
+    """What Foresight read and fitted, in plain units, for the stage's explanation panel."""
+    from physics.layers import assign_layers
+
+    layers = assign_layers(scene)
+    phys = meta.get("physics") or {}
+    params = phys.get("fit_params") or {}
+    objects = []
+    for o in scene["objects"]:
+        p = params.get(o["id"]) or {}
+        speed = (p.get("vx0", 0.0) ** 2 + p.get("vy0", 0.0) ** 2) ** 0.5 if p else None
+        objects.append({"id": o["id"], "name": o["name"], "shape": o["shape"], "size_cm": o.get("est_real_size_cm"),
+                        "mass_g": o.get("est_mass_g"), "role": "moving",
+                        "fit": {"speed_m_s": round(speed, 2) if speed is not None else None,
+                                "friction": p.get("friction"), "bounce": p.get("elasticity"),
+                                "damping_per_s": p.get("damping")} if p else None})
+    resting = {r["static"] for r in layers.resting}
+    for i, st in enumerate(scene.get("static_objects", [])):
+        objects.append({"id": f"static{i}", "name": st["name"], "shape": st.get("perceived_shape", "box"),
+                        "size_cm": st.get("est_real_size_cm"), "mass_g": st.get("est_mass_g"),
+                        "role": "can be knocked" if i in resting else "container" if i in layers.container_statics else "static",
+                        "fit": None})
+    m = meta.get("metrics", {})
+    return {"objects": objects,
+            "surfaces": [{"name": s["name"], "kind": s.get("kind"), "material": s.get("material", "hard")} for s in scene.get("surfaces", [])],
+            "depth_notes": layers.notes, "px_per_m": scene["px_per_m"], "scale_source": scene.get("px_per_m_source"),
+            "motion_model": phys.get("motion_model"), "checks": {"answers": phys.get("decision1_answers") or {},
+                                                                 "confidences": m.get("decision1_confidences") or {}},
+            "repairs_used": m.get("repairs_used"), "dynamics_used": m.get("dynamics_used"),
+            "fallback_reason": m.get("fallback_reason")}
+
+
+def _trajectory_export(scene: dict, meta: dict) -> dict:
+    """The predicted 5 s for every simulated body, in metres (x right, y up, origin at the image's bottom-left)
+    and in image pixels, plus the fitted parameters: what a robotics team takes into its own simulator."""
+    W, H = scene["orig_size"]
+    ppm = float(scene["px_per_m"])
+    bodies: dict[str, list] = {}
+    for st in meta["_traj_full"]:
+        for oid, o in st["objects"].items():
+            bodies.setdefault(oid, []).append({"t_s": round(st["t_s"], 4), "x_m": round(o["x"] / ppm, 5),
+                                               "y_m": round((H - o["y"]) / ppm, 5), "x_px": round(o["x"], 1),
+                                               "y_px": round(o["y"], 1), "angle_rad": round(o.get("angle", 0.0) or 0.0, 4),
+                                               "visible": bool(o.get("visible", True))})
+    names = {o["id"]: o["name"] for o in scene["objects"]}
+    return {"units": {"position": "m (x right, y up, origin at the image's bottom-left)", "time": "s from clip start"},
+            "px_per_m": ppm, "image_size_px": [W, H], "gravity_m_s2": scene.get("gravity_m_s2", 9.81),
+            "fps": scene["fps_out"], "dynamics": (meta.get("metrics") or {}).get("dynamics_used") or meta.get("dynamics"),
+            "fit_params": (meta.get("physics") or {}).get("fit_params"),
+            "bodies": {oid: {"name": names.get(oid, oid), "path": path} for oid, path in bodies.items()}}
+
+
+def _trajectory_csv(export: dict, path: Path) -> None:
+    with open(path, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["body", "name", "t_s", "x_m", "y_m", "x_px", "y_px", "angle_rad", "visible"])
+        for oid, b in export["bodies"].items():
+            for p in b["path"]:
+                w.writerow([oid, b["name"], p["t_s"], p["x_m"], p["y_m"], p["x_px"], p["y_px"], p["angle_rad"], int(p["visible"])])
+
+
+def _source_from_events(d: Path) -> str:
+    """Runs saved before results carried their source: the first ingest event names it (sample:<id> or upload)."""
+    try:
+        with open(d / "events.jsonl") as f:
+            for line in f:
+                e = json.loads(line)
+                if e["event"] == "stage" and e["data"].get("stage") == "ingest":
+                    return e["data"].get("message") or ""
+    except Exception:  # noqa: BLE001
+        pass
+    return ""
+
+
+def _recent(limit: int) -> list[dict]:
+    """Finished runs, newest first, including ones from earlier server runs (read from outputs/)."""
+    rows = []
+    for d in sorted(OUT.glob("j_*"), key=lambda p: p.stat().st_mtime, reverse=True):
+        rp = d / "result.json"
+        if not rp.exists():
+            continue
+        try:
+            r = json.loads(rp.read_text())
+        except Exception:  # noqa: BLE001
+            continue
+        ee = (r.get("metrics") or {}).get("endpoint_error_cm") or {}
+        rows.append({"job_id": d.name, "created": r.get("created") or datetime.fromtimestamp(rp.stat().st_mtime, timezone.utc).isoformat(),
+                     "title": r.get("title") or _title({"kind": r.get("source") or _source_from_events(d)}),
+                     "poster": f"/outputs/{d.name}/conditioning.jpg" if (d / "conditioning.jpg").exists() else None,
+                     "dynamics": (r.get("metrics") or {}).get("dynamics_used") or r.get("dynamics"),
+                     "endpoint_error_cm": {k: ee.get(k) for k in ("foresight", "omni", "genie")}})
+        if len(rows) >= limit:
+            break
+    return rows
 
 
 # ------------------------------------------------------------------------------------------------ routes
@@ -337,6 +453,11 @@ async def predict(video: UploadFile | None = File(None), sample_id: str | None =
     JOBS[job.id] = job
     threading.Thread(target=_run, args=(job, src, omni.lower() == "true", dynamics, genie.lower() == "true"), daemon=True).start()
     return {"job_id": job.id, "events_url": f"/api/jobs/{job.id}/events", "result_url": f"/api/jobs/{job.id}"}
+
+
+@app.get("/api/recent")
+def recent(limit: int = 8):
+    return _recent(max(1, min(limit, 50)))
 
 
 @app.get("/api/jobs")
@@ -413,6 +534,14 @@ def eval_results():
     p = ROOT / "eval" / "results.json"
     if not p.exists():
         raise HTTPException(404, "eval/results.json not produced yet")
+    return JSONResponse(json.loads(p.read_text()))
+
+
+@app.get("/api/eval/wide")
+def eval_wide():
+    p = ROOT / "eval" / "results_wide.json"
+    if not p.exists():
+        raise HTTPException(404, "eval/results_wide.json not produced yet")
     return JSONResponse(json.loads(p.read_text()))
 
 
