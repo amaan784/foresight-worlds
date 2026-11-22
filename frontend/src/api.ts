@@ -182,6 +182,29 @@ export async function getSamples(): Promise<Sample[]> {
   return r.ok ? r.json() : [];
 }
 
+export type SessionPrefs = { session: string; omni: boolean; genie: boolean; dynamics?: string | null };
+
+export async function saveSessionPrefs(
+  session: string,
+  prefs: { omni: boolean; genie: boolean; dynamics?: string },
+): Promise<void> {
+  if (!session) return;
+  await fetch(apiUrl(`/api/sessions/${encodeURIComponent(session)}`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(prefs),
+  }).catch(() => {});
+}
+
+export async function getSessionPrefs(session: string): Promise<SessionPrefs | null> {
+  if (!session) return null;
+  return fetch(apiUrl(`/api/sessions/${encodeURIComponent(session)}`), {
+    signal: typeof AbortSignal !== "undefined" && "timeout" in AbortSignal ? AbortSignal.timeout(3000) : undefined,
+  })
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
+}
+
 export async function listSessionJobs(session: string): Promise<{ job_id: string; created: string; status: string }[]> {
   return fetch(apiUrl(`/api/jobs?session=${encodeURIComponent(session)}`))
     .then((x) => (x.ok ? x.json() : []))

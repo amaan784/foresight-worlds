@@ -130,13 +130,16 @@ meta = predict_clip(
 
 Frontend dev server proxies `/api` and `/outputs` to `http://localhost:8000` (so the phone only needs the frontend's HTTPS origin).
 
-- `GET /api/info` → `{"lan_ip": "192.168.x.y", "models": {...config IDs...}, "omni_enabled": true}`
+- `GET /api/info` → `{"lan_ip": "192.168.x.y", "models": {...config IDs...}, "omni_enabled": false, "genie_enabled": false}`
+- `POST /api/sessions/{session}` / `GET /api/sessions/{session}` → stores/reads the stage's live `omni`, `genie` and `dynamics` choices for a phone QR session
 - `GET /api/samples` → `[{"id": "ball-rolls-off", "title": "Ball rolls off table", "thumb_url": "/outputs/samples/ball-rolls-off.jpg"}]` (Physics-IQ clips available locally)
 - `POST /api/predict` multipart form:
   - `video`: file (mp4 / webm / mov; phone recording ~8 s) — **or** `sample_id`: string
   - `session`: optional string (links a phone upload to the laptop view)
+  - `source`: optional `"capture"` (phone capture upload; honors live session toggles stored on the server)
   - `cond_seconds`: optional float, default 3.0. For an uploaded video, `[0, cond_seconds)` is conditioning and the next 5.0 s is the hidden reality.
-  - `omni`: optional `"true"|"false"`, default `"true"` (each Omni call costs ~$1 — keep it off while developing)
+  - `omni`: optional `"true"|"false"` (or `"1"|"0"`), defaults to session preference if present else `FORESIGHT_OMNI_ENABLED`
+  - `genie`: optional `"true"|"false"` (or `"1"|"0"`), defaults to session preference if present else `FORESIGHT_GENIE_ENABLED`
   - `dynamics`: optional `"physics"` (default; returns **503** until `backend/physics` exists) or `"const_velocity"` (physics-free baseline; the result says `"dynamics": "const_velocity"` — label it as such in the UI)
   - → `202 {"job_id": "j_ab12cd", "events_url": "/api/jobs/j_ab12cd/events", "result_url": "/api/jobs/j_ab12cd"}`
 - `GET /api/jobs?session=<s>` → `[{"job_id": "...", "created": "ISO8601", "status": "running"|"done"|"error"}]` newest first

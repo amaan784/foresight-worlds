@@ -23,6 +23,7 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 from . import config, genie, omni
 from .gemini import SpendCapHit, _status
@@ -38,8 +39,27 @@ app = FastAPI(title="Foresight")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.mount("/outputs", StaticFiles(directory=str(OUT)), name="outputs")
 
-# ------------------------------------------------------------------------------------------------ jobs
+# ------------------------------------------------------------------------------------------------ jobs & sessions
 JOBS: dict[str, "Job"] = {}
+SESSIONS: dict[str, dict] = {}
+SESSIONS_LOCK = threading.Lock()
+
+
+class SessionPrefs(BaseModel):
+    omni: bool = False
+    genie: bool = False
+    dynamics: str | None = None
+
+
+def _parse_form_bool(val: str | None) -> bool | None:
+    if val is None or not val.strip():
+        return None
+    s = val.strip().lower()
+    if s in ("1", "true", "yes", "on"):
+        return True
+    if s in ("0", "false", "no", "off"):
+        return False
+    return None
 
 
 class JobCancelled(Exception):
@@ -462,10 +482,42 @@ def samples():
     return _list_samples()
 
 
+@app.post("/api/sessions/{session}")
+def set_session(session: str, prefs: SessionPrefs):
+    if prefs.dynamics is not None and prefs.dynamics not in ("physics", "const_velocity"):
+        raise HTTPException(400, "dynamics must be physics or const_velocity")
+    entry = {
+        "session": session,
+        "omni": bool(prefs.omni),
+        "genie": bool(prefs.genie),
+        "dynamics": prefs.dynamics,
+        "updated": datetime.now(timezone.utc).isoformat(),
+    }
+    with SESSIONS_LOCK:
+        SESSIONS.pop(session, None)
+        SESSIONS[session] = entry
+        while len(SESSIONS) > 512:
+            SESSIONS.pop(next(iter(SESSIONS)))
+    return entry
+
+
+@app.get("/api/sessions/{session}")
+def get_session(session: str):
+    with SESSIONS_LOCK:
+        entry = SESSIONS.get(session)
+    if entry is None:
+        raise HTTPException(404, "unknown session")
+    return entry
+
+
 @app.post("/api/predict", status_code=202)
 async def predict(video: UploadFile | None = File(None), sample_id: str | None = Form(None), session: str | None = Form(None),
                   cond_seconds: float = Form(3.0), omni: str | None = Form(None), genie: str | None = Form(None),
-                  dynamics: str = Form("physics")):
+                  dynamics: str = Form("physics"), source: str | None = Form(None)):
+    with SESSIONS_LOCK:
+        sess = dict(SESSIONS[session]) if session and session in SESSIONS else None
+    if source == "capture" and sess and sess.get("dynamics") in ("physics", "const_velocity"):
+        dynamics = sess["dynamics"]
     if dynamics not in ("physics", "const_velocity"):
         raise HTTPException(400, "dynamics must be physics or const_velocity")
     if dynamics == "physics" and not _physics_available():
@@ -496,8 +548,20 @@ async def predict(video: UploadFile | None = File(None), sample_id: str | None =
     else:
         raise HTTPException(400, "send a video file or a sample_id")
     JOBS[job.id] = job
-    want_omni = config.OMNI_ENABLED if omni is None else (omni.lower() == "true")
-    want_genie = config.GENIE_ENABLED if genie is None else (genie.lower() == "true")
+    parsed_omni = _parse_form_bool(omni)
+    parsed_genie = _parse_form_bool(genie)
+    if sess is not None and (source == "capture" or parsed_omni is None):
+        want_omni = bool(sess["omni"])
+    elif parsed_omni is not None:
+        want_omni = parsed_omni
+    else:
+        want_omni = config.OMNI_ENABLED
+    if sess is not None and (source == "capture" or parsed_genie is None):
+        want_genie = bool(sess["genie"])
+    elif parsed_genie is not None:
+        want_genie = parsed_genie
+    else:
+        want_genie = config.GENIE_ENABLED
     threading.Thread(target=_run, args=(job, src, want_omni, dynamics, want_genie), daemon=True).start()
     return {"job_id": job.id, "events_url": f"/api/jobs/{job.id}/events", "result_url": f"/api/jobs/{job.id}"}
 

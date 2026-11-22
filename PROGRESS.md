@@ -19,9 +19,10 @@ Each agent edits ONLY its own section. Format: Done / Next / Blockers.
 - Stage: drop a video from the laptop, recent runs, path plot, "what Foresight understood", trajectory JSON/CSV, /results page.
 - README: "Post-hackathon changes" section; submitted version is branch hackathon-submission-branch-archive at b3b3f79.
 - C1 (public Gemini models): `config.py` configurable via `FORESIGHT_*` env vars defaulting to `gemini-3.8-flash` (`gemini-3.6-flash` 503 fallback), structured-output fit verification (`verify.py`, 0.7 gate; `FORESIGHT_VERIFY_MODE=decisions` keeps Decision 1), `genie.py` routed through `foresight.gemini.call`, Omni/Genie off by default and skipped cleanly on the stage when disabled or 403/404, 34/34 tests passing, offline 15-clip `c1_baseline` 74.52 and `c1_public` (`gemini-3.8-flash` readings) 76.15, live sample (`j_2ff3bfd0`) and upload (`j_d44dc973`) verified (eval/FAILURES.md row 28).
+- C2 (phone capture Omni/Genie toggles): QR `captureUrl` carries `&omni=0|1&genie=0|1`, `Stage.tsx` syncs live toggles via `POST /api/sessions/{session}`, `Capture.tsx` fetches `GET /api/sessions/{session}` before upload (falling back to QR query params and `/api/info`), and `POST /api/predict` honors session toggles on `source=capture`; 38/38 tests passing, offline `c2_check` 74.52, live phone-capture upload `j_74a90a6b` verified with 0 Omni and 0 Genie calls in `logs/` (eval/FAILURES.md row 29).
 
 ### Next (handed over to Antigravity on Nov 22, see HANDOVER.md)
-- Option C, hardening: phone spend bug (C2), synced
+- Option C, hardening: synced
   playback reset (C3), gravity scale guard (C4), per-object start times (C5), local multi-start instead of repairs (C6), CI (C7).
 - Then Option A: a physics auditor for video and world models, and an interactive what-if on the stage.
 - Physics-IQ Verified ground truth: needs the gated Hugging Face dataset accepted by the account owner.
@@ -54,7 +55,16 @@ Each agent edits ONLY its own section. Format: Done / Next / Blockers.
 - None.
 
 ## Frontend
-_(frontend agent)_
+
+### Done
+- Stage (`Stage.tsx`), phone capture (`Capture.tsx`), path plot and explanation cards (`Insights.tsx`), eval results page (`Results.tsx`).
+- C2: phone QR capture honors stage Omni/Genie toggles via both QR query params and live per-session server state (`/api/sessions/{session}`).
+
+### Next
+- C3: decouple `SyncedPanels` clock from short reality clips (`Stage.tsx`).
+
+### Blockers
+- None.
 
 ## Eval
 _(eval agent)_

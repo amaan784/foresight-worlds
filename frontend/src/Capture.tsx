@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { apiUrl, getInfo } from "./api";
+import { apiUrl, getInfo, getSessionPrefs } from "./api";
 
 const RECORD_S = 8;
 type Phase = "idle" | "countdown" | "recording" | "uploading" | "sent" | "error";
+
+function parseBoolParam(v: string | null): boolean | null {
+  if (v === null || v === "") return null;
+  const s = v.trim().toLowerCase();
+  if (s === "1" || s === "true" || s === "yes" || s === "on") return true;
+  if (s === "0" || s === "false" || s === "no" || s === "off") return false;
+  return null;
+}
 
 function pickMime(): string {
   for (const m of ["video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"]) {
@@ -12,7 +20,10 @@ function pickMime(): string {
 }
 
 export default function Capture() {
-  const session = new URLSearchParams(location.search).get("session") ?? "";
+  const params = new URLSearchParams(location.search);
+  const session = params.get("session") ?? "";
+  const urlOmni = parseBoolParam(params.get("omni"));
+  const urlGenie = parseBoolParam(params.get("genie"));
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -22,11 +33,29 @@ export default function Capture() {
   const [msg, setMsg] = useState<string | null>(null);
   const [portrait, setPortrait] = useState(false);
   const [physics, setPhysics] = useState(true);
+  const [askOmni, setAskOmni] = useState<boolean>(() => urlOmni ?? false);
+  const [askGenie, setAskGenie] = useState<boolean>(() => urlGenie ?? false);
   // State, not just the ref: the record button must re-render as enabled once the camera stream arrives.
   const [camReady, setCamReady] = useState(false);
 
   useEffect(() => {
-    getInfo().then((i) => setPhysics(i.physics_available)).catch(() => {});
+    getInfo()
+      .then((i) => {
+        setPhysics(i.physics_available);
+        if (urlOmni === null) setAskOmni(Boolean(i.omni_enabled));
+        if (urlGenie === null) setAskGenie(Boolean(i.genie_enabled));
+      })
+      .catch(() => {});
+    if (session) {
+      getSessionPrefs(session)
+        .then((p) => {
+          if (!p) return;
+          setAskOmni(p.omni);
+          setAskGenie(p.genie);
+          if (p.dynamics === "physics" || p.dynamics === "const_velocity") setPhysics(p.dynamics === "physics");
+        })
+        .catch(() => {});
+    }
     const onRot = () => setPortrait(window.innerHeight > window.innerWidth);
     onRot();
     window.addEventListener("resize", onRot);
@@ -35,7 +64,7 @@ export default function Capture() {
       .then((s) => { streamRef.current = s; if (videoRef.current) videoRef.current.srcObject = s; setCamReady(true); })
       .catch((e) => { setPhase("error"); setMsg(`Camera unavailable: ${e.message}. Open this page over https and allow camera access.`); });
     return () => { window.removeEventListener("resize", onRot); streamRef.current?.getTracks().forEach((t) => t.stop()); };
-  }, []);
+  }, [session, urlOmni, urlGenie]);
 
   async function record() {
     const stream = streamRef.current;
@@ -57,19 +86,35 @@ export default function Capture() {
     clearInterval(tick);
     await done;
     const type = rec.mimeType || mime || "video/webm";
-    upload(new Blob(chunks, { type }), type.includes("mp4") ? "capture.mp4" : "capture.webm");
+    await upload(new Blob(chunks, { type }), type.includes("mp4") ? "capture.mp4" : "capture.webm");
   }
 
-  function upload(blob: Blob, name: string) {
+  async function upload(blob: Blob, name: string) {
     setPhase("uploading");
     setProgress(0);
+    let omniChoice = askOmni;
+    let genieChoice = askGenie;
+    let dynamicsChoice = physics ? "physics" : "const_velocity";
+    if (session) {
+      const latest = await getSessionPrefs(session);
+      if (latest) {
+        omniChoice = latest.omni;
+        genieChoice = latest.genie;
+        setAskOmni(latest.omni);
+        setAskGenie(latest.genie);
+        if (latest.dynamics === "physics" || latest.dynamics === "const_velocity") {
+          dynamicsChoice = latest.dynamics;
+        }
+      }
+    }
     const f = new FormData();
     f.set("video", blob, name);
     f.set("session", session);
+    f.set("source", "capture");
     f.set("cond_seconds", "3");
-    f.set("omni", "true");
-    f.set("genie", "true");
-    f.set("dynamics", physics ? "physics" : "const_velocity");
+    f.set("omni", String(omniChoice));
+    f.set("genie", String(genieChoice));
+    f.set("dynamics", dynamicsChoice);
     const xhr = new XMLHttpRequest();
     xhr.open("POST", apiUrl("/api/predict"));
     xhr.upload.onprogress = (e) => e.lengthComputable && setProgress(e.loaded / e.total);

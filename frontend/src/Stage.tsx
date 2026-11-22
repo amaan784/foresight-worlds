@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { apiUrl, cancelJob, fmtCm, getInfo, getRecent, getSamples, listSessionJobs, startJob, useJob, type Info, type JobState, type Lane, type RecentRun, type Sample } from "./api";
+import { apiUrl, cancelJob, fmtCm, getInfo, getRecent, getSamples, listSessionJobs, saveSessionPrefs, startJob, useJob, type Info, type JobState, type Lane, type RecentRun, type Sample } from "./api";
 import { Downloads, PathPlot, Understood } from "./Insights";
 
 const newSession = () => Math.random().toString(36).slice(2, 10);
@@ -43,6 +43,11 @@ export default function Stage() {
   }, [jobId, session]);
 
   const dynamics = info?.physics_available ? "physics" : "const_velocity";
+
+  useEffect(() => {
+    if (jobId) return;
+    void saveSessionPrefs(session, { omni: askOmni, genie: askGenie, dynamics });
+  }, [jobId, session, askOmni, askGenie, dynamics]);
 
   async function runSample(s: Sample) {
     setBusy(s.id);
@@ -95,11 +100,12 @@ export default function Stage() {
   // Phones need https for the camera. The plain-HTTP stage (:5174) points them at the HTTPS dev server (:5173).
   const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
   const httpsPort = location.protocol === "https:" ? location.port || "443" : "5173";
+  const captureQuery = `session=${encodeURIComponent(session)}&omni=${askOmni ? "1" : "0"}&genie=${askGenie ? "1" : "0"}`;
   const captureUrl = isLocal
-    ? (info ? `https://${info.lan_ip}:${httpsPort}/capture?session=${session}` : "")
+    ? (info ? `https://${info.lan_ip}:${httpsPort}/capture?${captureQuery}` : "")
     : location.protocol === "https:"
-      ? `${location.origin}/capture?session=${session}`
-      : `https://${location.hostname}:5173/capture?session=${session}`;
+      ? `${location.origin}/capture?${captureQuery}`
+      : `https://${location.hostname}:5173/capture?${captureQuery}`;
 
   return (
     <div className="min-h-full flex flex-col">
