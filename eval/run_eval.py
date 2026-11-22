@@ -202,7 +202,27 @@ def main() -> None:
     ap.add_argument("--omni-pace", type=float, default=90.0, help="minimum seconds per Omni call (sequential mode)")
     ap.add_argument("--workers", type=int, default=1, help="concurrent clips for the omni system")
     ap.add_argument("--merge-only", action="store_true", help="fold eval/results/system_*.json into results.json, redraw table + chart")
+    ap.add_argument("--rescore", action="store_true", help="score the existing predictions of --systems again (no model calls)")
     a = ap.parse_args()
+    if a.rescore:
+        r = json.loads((EVAL / "results.json").read_text())
+        bench = pq.benchmark_dir(r["gt_source"])
+        for system in a.systems:
+            scored = score_folder(PREDS / system, bench, FPS, RESULTS)
+            per = {x["scenario"].removeprefix("trimmed-").removesuffix(".mp4"): round(x["final_arithmetic"] * 100, 2)
+                   for x in scored["per_scenario"]}
+            r["systems"][system].update(physics_iq_verified_pct=scored["physics_iq_verified_score_pct"],
+                                        physics_iq_original_pct=scored["physics_iq_original_score_pct"], per_scenario_verified_pct=per)
+            blk = RESULTS / f"system_{system}.json"
+            if blk.exists():
+                b = json.loads(blk.read_text())
+                b["systems"][system] = r["systems"][system]
+                blk.write_text(json.dumps(b, indent=2))
+            print(f"== {system}: verified {scored['physics_iq_verified_score_pct']}", flush=True)
+        (EVAL / "results.json").write_text(json.dumps(r, indent=2))
+        table(r, EVAL / "results_table.md")
+        chart(r, EVAL / "chart.png")
+        return
     if a.merge_only:
         r = json.loads((EVAL / "results.json").read_text())
         for f in sorted(RESULTS.glob("system_*.json")):

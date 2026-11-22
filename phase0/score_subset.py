@@ -60,7 +60,9 @@ def score_folder(pred_dir: Path, bench_dir: Path, fps: int, out_dir: Path) -> di
         if not ok:
             raise ValueError(f"{f.name}: duration {pr['duration']} fps {pr['fps']} (need 5.000s @ {fps})")
         gen_mask = mask_dir / f"{id1}_video-masks_{fps}FPS_{persp}_take-1_{scen}"
-        if not gen_mask.exists():
+        # Masks are cached by file name: regenerate whenever the prediction is newer than its mask (a rerun that
+        # writes a new video under the same name must not be scored with the old video's masks).
+        if not gen_mask.exists() or gen_mask.stat().st_mtime < f.stat().st_mtime:
             generate_mask(str(f), str(mask_dir / f.name), is_real=False)
         real = bench_dir / "split-videos" / "testing" / f"{fps}FPS"
         masks = bench_dir / "video-masks" / "real" / f"{fps}FPS"
