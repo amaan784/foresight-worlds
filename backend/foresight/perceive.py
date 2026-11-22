@@ -1,4 +1,4 @@
-"""Scene parsing with gemini-4-hydrogen: agentic video + first/last frames, native structured output."""
+"""Scene parsing with config.PERCEPTION: agentic video + first/last frames, native structured output."""
 from __future__ import annotations
 
 import base64
@@ -82,7 +82,7 @@ def perceive(video_path: Path, first: np.ndarray, last: np.ndarray, tag: str = "
     f = gemini.upload_video(video_path)
     t0 = time.time()
     resp = gemini.call(
-        gemini.client().interactions.create,
+        gemini.client_for(config.PERCEPTION).interactions.create,
         kind="interactions.create", model=config.PERCEPTION, tag=tag, fallback=True,
         input=[
             {"type": "video", "uri": f.uri, "mime_type": f.mime_type, "processing": "agentic"},

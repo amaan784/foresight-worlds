@@ -51,8 +51,11 @@ def beta_client():
 
 
 def client_for(model: str):
-    """v1beta client for preview models (config.V1BETA_MODELS), default client otherwise."""
-    return beta_client() if model in config.V1BETA_MODELS else client()
+    """v1beta client for preview / v1beta-only models, default client otherwise."""
+    m = model.lower()
+    if model in config.V1BETA_MODELS or any(tok in m for tok in ("preview", "omni", "genie", "decision")):
+        return beta_client()
+    return client()
 
 
 def _status(e: Exception) -> int | None:
@@ -172,6 +175,8 @@ def upload_video(path: str | Path, wait_s: float = 300) -> Any:
             raise TimeoutError(f"file {f.name} still processing after {wait_s}s")
         time.sleep(2)
         f = c.files.get(name=f.name)
+    if str(getattr(f, "state", "")).upper().endswith("FAILED"):
+        raise RuntimeError(f"file {f.name} failed processing on Gemini Files API")
     return f
 
 

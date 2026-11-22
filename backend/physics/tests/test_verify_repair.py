@@ -25,8 +25,11 @@ from physics.repair import (
 )
 from physics.tests.test_simulate_render import _make_render_scene
 from physics.verify import (
+    StructuredVerification,
     build_decision_request_payload,
+    build_structured_verify_payload,
     parse_decision_response,
+    parse_structured_verify_response,
     render_verification_overlays,
 )
 from physics.world import BodyParams, CoordTransform, PhysicsWorld
@@ -198,3 +201,63 @@ def test_repair_plot_schema_and_override_clamping(tmp_path: Path) -> None:
     assert init_g["obj0"]["elasticity"] == pytest.approx(0.98)
     assert init_g["obj0"]["damping"] == pytest.approx(0.0)
     assert priors["obj0"]["elasticity"] == pytest.approx(0.98)
+
+
+def test_structured_verify_payload_schema_and_gating(tmp_path: Path) -> None:
+    scene = _scene_with_keyframes(tmp_path)
+    fit_res = fit_scene(scene)
+    overlays = render_verification_overlays(scene, fit_res, attempt=0)
+
+    blocks = build_structured_verify_payload(scene, fit_res, overlays)
+    assert sum(1 for b in blocks if b["type"] == "image") == 4
+    assert any("outline_on_object" in b.get("text", "") and "other" in b.get("text", "") for b in blocks)
+
+    rf = TextResponseFormat(
+        type="text",
+        mime_type="application/json",
+        schema=StructuredVerification.model_json_schema(),
+    )
+    assert rf.mime_type == "application/json"
+    assert rf.schema_ is not None
+
+    # 1. Passing structured check (>= 0.7 on both, outline='yes', matching motion)
+    v_ok = parse_structured_verify_response(
+        '{"outline_on_object":"yes","outline_confidence":0.91,"motion":"roll","motion_confidence":0.87}',
+        "roll",
+    )
+    assert v_ok.passed is True
+    assert v_ok.answers == {"outline_on_object": "yes", "motion": "roll"}
+    assert v_ok.confidences == {"outline_on_object": 0.91, "motion": 0.87}
+    assert v_ok.noul_prob == pytest.approx(0.91)
+
+    # 2. Confidence below 0.7 gate fails
+    v_low = parse_structured_verify_response(
+        '{"outline_on_object":"yes","outline_confidence":0.65,"motion":"roll","motion_confidence":0.88}',
+        "roll",
+    )
+    assert v_low.passed is False
+    assert any("confidence" in r for r in v_low.failure_reasons)
+
+    # 3. High-confidence 'no' fails and flips noul_prob to 1 - conf
+    v_no = parse_structured_verify_response(
+        '{"outline_on_object":"no","outline_confidence":0.94,"motion":"roll","motion_confidence":0.90}',
+        "roll",
+    )
+    assert v_no.passed is False
+    assert v_no.answers["outline_on_object"] == "no"
+    assert v_no.noul_prob == pytest.approx(0.06)
+    assert v_ok.selection_score(5.0) > v_no.selection_score(5.0)
+
+    # 4. Motion mismatch fails; 'other' >= 0.7 passes when outline is 'yes'
+    v_mm = parse_structured_verify_response(
+        '{"outline_on_object":"yes","outline_confidence":0.89,"motion":"bounce","motion_confidence":0.84}',
+        "roll",
+    )
+    assert v_mm.passed is False
+    assert any("mismatch" in r for r in v_mm.failure_reasons)
+
+    v_other = parse_structured_verify_response(
+        '{"outline_on_object":"yes","outline_confidence":0.89,"motion":"other","motion_confidence":0.80}',
+        "roll",
+    )
+    assert v_other.passed is True

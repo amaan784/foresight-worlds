@@ -21,9 +21,9 @@ GENERIC_PROMPT = "A static locked-off camera films a tabletop physics scene in r
 STREAM_TIMEOUT_S = 90.0
 
 
-async def _stream(ref_jpeg_b64: str, prompt: str, n_frames: int) -> list[np.ndarray]:
-    c = gemini.client_for(config.GENIE)
-    inter = await c.aio.interactions.create(model=config.GENIE, background=True)
+async def _stream(model: str, ref_jpeg_b64: str, prompt: str, n_frames: int) -> list[np.ndarray]:
+    c = gemini.client_for(model)
+    inter = await c.aio.interactions.create(model=model, background=True)
     frames: list[np.ndarray] = []
     t0 = time.time()
     async with c.aio.interactions.connect(inter.id) as conn:
@@ -42,6 +42,17 @@ async def _stream(ref_jpeg_b64: str, prompt: str, n_frames: int) -> list[np.ndar
     return frames
 
 
+def _stream_to_mp4(*, model: str, world_prompt: str, reference_image: dict[str, str], out_path: str, fps: int,
+                   n_frames: int) -> dict:
+    frames = asyncio.run(_stream(model, reference_image["data"], world_prompt, n_frames))
+    if not frames:
+        raise RuntimeError("Genie streamed no video frames")
+    padded = max(0, n_frames - len(frames))
+    frames = (frames + [frames[-1]] * padded)[:n_frames]
+    write_mp4(Path(out_path), frames, fps)
+    return {"frames_received": n_frames - padded, "frames_padded": padded}
+
+
 def continue_from_frame(cond_video: Path, out_5s: Path, prompt: str = GENERIC_PROMPT, fps: int = config.BENCH_FPS,
                         tag: str = "") -> dict:
     """Stream 5 s from Genie 4 starting at the last frame of `cond_video`; write an MP4 at `fps`."""
@@ -50,20 +61,15 @@ def continue_from_frame(cond_video: Path, out_5s: Path, prompt: str = GENERIC_PR
     b64 = base64.b64encode(cv2.imencode(".jpg", ref, [cv2.IMWRITE_JPEG_QUALITY, 90])[1].tobytes()).decode()
     n = int(round(config.PRED_SECONDS * fps))
     t0 = time.time()
-    rec: dict = {"model": config.GENIE}
-    try:
-        frames = asyncio.run(_stream(b64, prompt, n))
-        if not frames:
-            raise RuntimeError("Genie streamed no video frames")
-        padded = max(0, n - len(frames))
-        frames = (frames + [frames[-1]] * padded)[:n]
-        write_mp4(Path(out_5s), frames, fps)
-        rec |= {"latency_s": round(time.time() - t0, 1), "frames_received": n - padded, "frames_padded": padded}
-        return rec
-    except Exception as e:  # noqa: BLE001
-        rec |= {"latency_s": round(time.time() - t0, 1), "error": f"{type(e).__name__}: {e}"[:400]}
-        raise
-    finally:
-        gemini._log({"kind": "interactions.connect", "model": config.GENIE, "tag": tag, "latency_s": rec["latency_s"],
-                     "request": {"world_prompt": prompt, "reference_image": "<last conditioning frame, 1280x720 jpeg>"},
-                     "response": rec})
+    resp = gemini.call(
+        _stream_to_mp4,
+        kind="interactions.connect",
+        model=config.GENIE,
+        tag=tag,
+        world_prompt=prompt,
+        reference_image={"data": b64, "mime_type": "image/jpeg"},
+        out_path=str(out_5s),
+        fps=fps,
+        n_frames=n,
+    )
+    return {"model": config.GENIE, "latency_s": round(time.time() - t0, 1), **resp}

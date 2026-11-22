@@ -1,8 +1,8 @@
-"""Physics fit repair via gemini-4-carbon (thinking_level='medium', native structured output).
+"""Physics fit repair via config.REPAIR (config.REPAIR_THINKING, native structured output).
 
-When Decision 1 verification fails (low confidence < 0.7, outline miss, or motion mismatch),
+When fit verification fails (low confidence < 0.7, outline miss, or motion mismatch),
 renders a 2-panel diagnostic trajectory plot and sends it alongside the annotated conditioning
-keyframes to `gemini-4-carbon`. Carbon proposes a motion model and per-object velocity/material
+keyframes to `config.REPAIR`. The model proposes a motion model and per-object velocity/material
 prior overrides for refitting (up to MAX_REPAIRS = 2).
 """
 from __future__ import annotations
@@ -245,7 +245,7 @@ def propose_repair(
     previous_attempts: list[dict[str, Any]] | None = None,
     on_event: OnEvent | None = None,
 ) -> RepairProposal:
-    """Ask gemini-4-carbon (config.REPAIR_THINKING, native structured output) for a repair proposal."""
+    """Ask config.REPAIR (config.REPAIR_THINKING, native structured output) for a repair proposal."""
     plot_path = plot_trajectory_diagnostics(scene, fit_result, attempt=attempt)
     overlay_paths = list(verification.overlay_paths)
     if not overlay_paths:
@@ -256,14 +256,16 @@ def propose_repair(
         scene, fit_result, verification, plot_path, overlay_paths, previous_attempts
     )
 
-    client = gemini.client_for(config.CARBON)
+    repair_model = config.REPAIR
+    client = gemini.client_for(repair_model)
     clip_id = str(scene.get("clip_id", "clip"))
 
     resp = gemini.call(
         client.interactions.create,
         kind="interactions.create",
-        model=config.CARBON,
+        model=repair_model,
         tag=f"repair:{clip_id}:a{attempt}",
+        fallback=True,
         input=blocks,
         generation_config={"thinking_level": config.REPAIR_THINKING},
         response_format={
@@ -273,11 +275,12 @@ def propose_repair(
         },
     )
 
+    used_model = getattr(resp, "model", None) or repair_model
     proposal = RepairProposal.model_validate_json(resp.output_text)
 
     if on_event is not None:
         on_event("repair", {
-            "model": config.CARBON,
+            "model": used_model,
             "attempt": attempt,
             "proposal": {
                 "motion_model": proposal.motion_model,

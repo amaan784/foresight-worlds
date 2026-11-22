@@ -1,13 +1,14 @@
-"""Verification stage using gemini-decision-1 on conditioning keyframes.
+"""Verification stage on conditioning keyframes (structured output default, or Decisions API).
 
 Draws the FITTED physics trajectory outline (circle or rotated box + conditioning path)
-onto 3-4 conditioning keyframes (NEVER the 5 s future prediction), then queries
-`gemini-decision-1` via `foresight.gemini.client_for(config.DECISION)` (v1beta) and
-`foresight.gemini.call(...)` with:
-  1. `outline_on_object` (noul): "Does the drawn outline sit on the real object?"
-  2. `motion` (choice): keys roll / slide / fall / bounce / other.
+onto 3-4 conditioning keyframes (NEVER the 5 s future prediction), then verifies:
+  1. `outline_on_object`: "Does the drawn outline sit on the real object?" ('yes' / 'no' + confidence)
+  2. `motion`: keys roll / slide / fall / bounce / other + confidence.
 
-Reads and checks `.confidence` (and noul truth) in code against CONFIDENCE_THRESHOLD (0.7).
+By default (`config.VERIFY_MODE == "structured"`), queries `config.VERIFY` (`gemini-3.8-flash`)
+via `interactions.create` with native structured output. When `config.VERIFY_MODE == "decisions"`,
+queries `config.DECISION` (`gemini-decision-1`) via `decisions.create` (v1beta).
+Checks confidences and answers in code against CONFIDENCE_THRESHOLD (0.7).
 """
 from __future__ import annotations
 
@@ -15,10 +16,11 @@ import base64
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 import cv2
 import numpy as np
+from pydantic import BaseModel, Field
 
 from foresight import config, gemini
 
@@ -292,6 +294,111 @@ def build_decision_request_payload(
     return input_blocks, questions
 
 
+class StructuredVerification(BaseModel):
+    """Structured verification response from a standard multimodal Gemini model."""
+
+    outline_on_object: Literal["yes", "no"] = Field(
+        description="Whether the drawn bright green outline sits directly on the real moving object across the keyframes."
+    )
+    outline_confidence: float = Field(
+        description="Confidence in [0.0, 1.0] for outline_on_object."
+    )
+    motion: Literal["roll", "slide", "fall", "bounce", "other"] = Field(
+        description="Which motion best describes how the real moving object moves across these keyframes."
+    )
+    motion_confidence: float = Field(
+        description="Confidence in [0.0, 1.0] for the selected motion category."
+    )
+
+
+def build_structured_verify_payload(
+    scene: dict[str, Any],
+    fit_result: FitResult,
+    overlays: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Build multimodal `input` blocks for structured-output verification on `interactions.create`."""
+    input_blocks, questions = build_decision_request_payload(scene, fit_result, overlays)
+    outline_q = questions["outline_on_object"]
+    motion_criteria_lines = "\n".join(f"  - {k}: {v}" for k, v in MOTION_CHOICE_CRITERIA.items())
+    rubric_text = (
+        "Answer two verification questions with calibrated confidences in [0.0, 1.0]:\n"
+        f"1. outline_on_object ('yes' or 'no'): {outline_q['instructions']}\n"
+        f"   - 'yes': {outline_q['criteria']['true_description']}\n"
+        f"   - 'no': {outline_q['criteria']['false_description']}\n"
+        f"2. motion (roll | slide | fall | bounce | other): {questions['motion']['instructions']}\n"
+        f"{motion_criteria_lines}\n"
+        "Report honest confidences in [0.0, 1.0] for each answer."
+    )
+    return [*input_blocks, {"type": "text", "text": rubric_text}]
+
+
+def _evaluate_verification_gates(
+    outline_label: str,
+    outline_conf: float,
+    noul_prob: float,
+    motion_choice: str,
+    motion_conf: float,
+    motion_model: str,
+    *,
+    confidence_threshold: float = CONFIDENCE_THRESHOLD,
+    motion_probs: dict[str, float] | None = None,
+    overlay_paths: list[str] | None = None,
+) -> VerificationResult:
+    reasons: list[str] = []
+    if outline_label != "yes":
+        reasons.append(f"outline_on_object={outline_label} (P(true)={noul_prob:.2f})")
+    if outline_conf < confidence_threshold:
+        reasons.append(f"outline_on_object confidence {outline_conf:.2f} < {confidence_threshold}")
+    if motion_conf < confidence_threshold:
+        reasons.append(f"motion confidence {motion_conf:.2f} < {confidence_threshold}")
+    if motion_choice not in ("other", motion_model) and motion_conf >= confidence_threshold:
+        reasons.append(
+            f"motion mismatch: verifier chose '{motion_choice}' ({motion_conf:.2f}) vs fitted '{motion_model}'"
+        )
+
+    return VerificationResult(
+        confidences={
+            "outline_on_object": round(outline_conf, 4),
+            "motion": round(motion_conf, 4),
+        },
+        answers={
+            "outline_on_object": outline_label,
+            "motion": motion_choice,
+        },
+        passed=len(reasons) == 0,
+        noul_prob=round(noul_prob, 4),
+        motion_probabilities=dict(motion_probs or {}),
+        overlay_paths=list(overlay_paths or []),
+        failure_reasons=reasons,
+    )
+
+
+def parse_structured_verify_response(
+    raw: str | StructuredVerification,
+    motion_model: str,
+    *,
+    confidence_threshold: float = CONFIDENCE_THRESHOLD,
+    overlay_paths: list[str] | None = None,
+) -> VerificationResult:
+    """Parse `StructuredVerification` JSON and evaluate the 0.7 confidence and answer gates."""
+    parsed = StructuredVerification.model_validate_json(raw) if isinstance(raw, str) else raw
+    outline_conf = float(np.clip(parsed.outline_confidence, 0.0, 1.0))
+    motion_conf = float(np.clip(parsed.motion_confidence, 0.0, 1.0))
+    outline_label = parsed.outline_on_object
+    noul_prob = outline_conf if outline_label == "yes" else (1.0 - outline_conf)
+    return _evaluate_verification_gates(
+        outline_label=outline_label,
+        outline_conf=outline_conf,
+        noul_prob=noul_prob,
+        motion_choice=parsed.motion,
+        motion_conf=motion_conf,
+        motion_model=motion_model,
+        confidence_threshold=confidence_threshold,
+        motion_probs={parsed.motion: round(motion_conf, 4)},
+        overlay_paths=overlay_paths,
+    )
+
+
 def parse_decision_response(
     resp: Any,
     motion_model: str,
@@ -319,33 +426,16 @@ def parse_decision_response(
         str(k): float(v) for k, v in (getattr(motion_ans_obj, "probabilities", None) or {}).items()
     }
 
-    reasons: list[str] = []
-    if outline_label != "yes":
-        reasons.append(f"outline_on_object={outline_label} (P(true)={noul_prob:.2f})")
-    if outline_conf < confidence_threshold:
-        reasons.append(f"outline_on_object confidence {outline_conf:.2f} < {confidence_threshold}")
-    if motion_conf < confidence_threshold:
-        reasons.append(f"motion confidence {motion_conf:.2f} < {confidence_threshold}")
-    if motion_choice not in ("other", motion_model) and motion_conf >= confidence_threshold:
-        reasons.append(
-            f"motion mismatch: Decision 1 chose '{motion_choice}' ({motion_conf:.2f}) vs fitted '{motion_model}'"
-        )
-
-    passed = len(reasons) == 0
-    return VerificationResult(
-        confidences={
-            "outline_on_object": round(outline_conf, 4),
-            "motion": round(motion_conf, 4),
-        },
-        answers={
-            "outline_on_object": outline_label,
-            "motion": motion_choice,
-        },
-        passed=passed,
-        noul_prob=round(noul_prob, 4),
-        motion_probabilities=motion_probs,
-        overlay_paths=list(overlay_paths or []),
-        failure_reasons=reasons,
+    return _evaluate_verification_gates(
+        outline_label=outline_label,
+        outline_conf=outline_conf,
+        noul_prob=noul_prob,
+        motion_choice=motion_choice,
+        motion_conf=motion_conf,
+        motion_model=motion_model,
+        confidence_threshold=confidence_threshold,
+        motion_probs=motion_probs,
+        overlay_paths=overlay_paths,
     )
 
 
@@ -355,35 +445,66 @@ def verify_fit(
     *,
     attempt: int = 0,
     confidence_threshold: float = CONFIDENCE_THRESHOLD,
+    mode: str | None = None,
     on_event: OnEvent | None = None,
 ) -> VerificationResult:
-    """Render fitted trajectory outlines on conditioning keyframes and verify via gemini-decision-1."""
+    """Render fitted trajectory outlines on conditioning keyframes and verify the fit."""
     overlays = render_verification_overlays(scene, fit_result, attempt=attempt)
     if not overlays:
-        raise ValueError("No readable keyframes available for Decision 1 verification")
+        raise ValueError("No readable keyframes available for fit verification")
 
-    input_blocks, questions = build_decision_request_payload(scene, fit_result, overlays)
-    client = gemini.client_for(config.DECISION)
+    eff_mode = (mode or config.VERIFY_MODE).strip().lower()
     clip_id = str(scene.get("clip_id", "clip"))
+    overlay_paths = [ov["path"] for ov in overlays]
 
-    resp = gemini.call(
-        client.decisions.create,
-        kind="decisions.create",
-        model=config.DECISION,
-        tag=f"verify:{clip_id}:a{attempt}",
-        input=input_blocks,
-        questions=questions,
-    )
-    result = parse_decision_response(
-        resp,
-        fit_result.motion_model,
-        confidence_threshold=confidence_threshold,
-        overlay_paths=[ov["path"] for ov in overlays],
-    )
+    if eff_mode == "decisions":
+        input_blocks, questions = build_decision_request_payload(scene, fit_result, overlays)
+        used_model = config.DECISION
+        client = gemini.client_for(used_model)
+        resp = gemini.call(
+            client.decisions.create,
+            kind="decisions.create",
+            model=used_model,
+            tag=f"verify:{clip_id}:a{attempt}",
+            input=input_blocks,
+            questions=questions,
+        )
+        result = parse_decision_response(
+            resp,
+            fit_result.motion_model,
+            confidence_threshold=confidence_threshold,
+            overlay_paths=overlay_paths,
+        )
+    else:
+        input_blocks = build_structured_verify_payload(scene, fit_result, overlays)
+        used_model = config.VERIFY
+        client = gemini.client_for(used_model)
+        resp = gemini.call(
+            client.interactions.create,
+            kind="interactions.create",
+            model=used_model,
+            tag=f"verify:{clip_id}:a{attempt}",
+            fallback=True,
+            input=input_blocks,
+            generation_config={"thinking_level": config.VERIFY_THINKING},
+            response_format={
+                "type": "text",
+                "mime_type": "application/json",
+                "schema": StructuredVerification.model_json_schema(),
+            },
+        )
+        used_model = getattr(resp, "model", None) or used_model
+        result = parse_structured_verify_response(
+            resp.output_text,
+            fit_result.motion_model,
+            confidence_threshold=confidence_threshold,
+            overlay_paths=overlay_paths,
+        )
 
     if on_event is not None:
         on_event("verify", {
-            "model": config.DECISION,
+            "model": used_model,
+            "mode": eff_mode,
             "attempt": attempt,
             "confidences": result.confidences,
             "answers": result.answers,

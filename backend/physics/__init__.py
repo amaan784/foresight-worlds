@@ -70,7 +70,7 @@ def predict(
         else:
             if has_kfs and not gemini.have_key():
                 print(
-                    "[physics] GEMINI_API_KEY not set; skipping Decision 1 verification/repair",
+                    "[physics] GEMINI_API_KEY not set; skipping fit verification/repair",
                     file=sys.stderr,
                 )
             should_verify = False
@@ -117,7 +117,7 @@ def predict(
                 proposal = fut.result(timeout=left)
             except FuturesTimeout:
                 if on_event is not None:
-                    on_event("repair_skipped", {"reason": f"Carbon repair still running after {left:.0f} s; keeping the best fit"})
+                    on_event("repair_skipped", {"reason": f"{config.REPAIR} repair still running after {left:.0f} s; keeping the best fit"})
                 break
             history.append({
                 "attempt": attempt,

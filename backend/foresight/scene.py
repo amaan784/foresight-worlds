@@ -212,7 +212,7 @@ def build_scene(cond_video: Path, work_dir: Path, fit_video: Path | None = None,
     timings["ingest"] = time.time() - t0
 
     # ---- perceive
-    emit("stage", {"stage": "perceive", "status": "start", "message": f"{config.HYDROGEN} reading the clip"})
+    emit("stage", {"stage": "perceive", "status": "start", "message": f"{config.PERCEPTION} reading the clip"})
     t0 = time.time()
     scene_p, pmeta = perceive.perceive(proc_video, first_full, last_full, tag=f"perceive:{clip_id or cond_video.name}",
                                        cache_file=(cache_dir / "perception.json") if cache_dir else None)

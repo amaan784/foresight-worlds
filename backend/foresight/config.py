@@ -1,37 +1,77 @@
 """Single source of truth for model IDs and pipeline constants.
 
-Model IDs verified against google-genai 3.6.1 (`_gaos/types/interactions/model.py`, agentoption.py).
+Every model ID and baseline toggle is configurable via environment variables,
+with defaults that run out of the box on a standard personal Gemini API key.
+Model IDs verified against the official Gemini API docs and google-genai 3.6.1.
 """
+import os as _os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 LOG_DIR = ROOT / "logs"
 
-# --- Gemini 4 family ---
-HYDROGEN = "gemini-4-hydrogen"  # scene parsing (perception); Managed Agent default
-CARBON = "gemini-4-carbon"  # repair: choose a different physics model / initial guesses
-NEON = "gemini-4-neon"  # 503 fallback for scene parsing
-DECISION = "gemini-decision-1"  # verification (noul / choice with "other"; check .confidence)
 
-# Scene reading: Hydrogen by default (fast); FORESIGHT_PERCEPTION_MODEL=gemini-4-carbon for the most capable model.
-import os as _os
-PERCEPTION = _os.environ.get("FORESIGHT_PERCEPTION_MODEL", HYDROGEN)
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = _os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
+# --- Public GA defaults + historical Gemini 4 identifiers ---
+FLASH_38 = "gemini-3.8-flash"
+FLASH_36 = "gemini-3.6-flash"
+ARGON = "gemini-4-argon"
+HYDROGEN = "gemini-4-hydrogen"  # Nov 21-22 eval scene parser
+NEON = "gemini-4-neon"  # Nov 21-22 503 fallback / variant
+
+# Scene reading: gemini-3.8-flash by default (GA, Free + Paid tier, agentic video + structured output).
+PERCEPTION = _os.environ.get("FORESIGHT_PERCEPTION_MODEL", FLASH_38)
 PERCEPTION_THINKING = _os.environ.get("FORESIGHT_PERCEPTION_THINKING", "low")
-# Repair: Carbon at "medium" took 44 s median and up to 411 s per call on Nov 21 (logs/genai_calls_20261121.jsonl).
+FALLBACK_MODEL = _os.environ.get("FORESIGHT_FALLBACK_MODEL", FLASH_36)
+
+# Verification: structured output on gemini-3.8-flash by default; set FORESIGHT_VERIFY_MODE=decisions for Decision 1.
+VERIFY = _os.environ.get("FORESIGHT_VERIFY_MODEL", FLASH_38)
+VERIFY_MODE = _os.environ.get("FORESIGHT_VERIFY_MODE", "structured").strip().lower()
+VERIFY_THINKING = _os.environ.get("FORESIGHT_VERIFY_THINKING", "low")
+DECISION = _os.environ.get("FORESIGHT_DECISION_MODEL", "gemini-decision-1")
+
+# Repair: gemini-3.8-flash at thinking_level="low" inside a 90 s budget (CARBON kept as backwards-compatible alias).
+REPAIR = _os.environ.get("FORESIGHT_REPAIR_MODEL", FLASH_38)
+CARBON = REPAIR
 REPAIR_THINKING = _os.environ.get("FORESIGHT_REPAIR_THINKING", "low")
 REPAIR_BUDGET_S = float(_os.environ.get("FORESIGHT_REPAIR_BUDGET_S", "90"))  # whole check-and-repair loop
 
-# --- Other models ---
-MANAGED_AGENT = "antigravity-preview-09-2026"  # runs batch eval fits in its sandbox
-OMNI = "gemini-omni-1.2-flash"  # video-continuation baseline
-ROBOTICS_ER = "gemini-robotics-er-2-preview"
-GENIE = "genie-4"  # world model: live session, reference image + prompt -> streamed video (second baseline)  # point tracking candidate (not a Gemini 4 model)
+# --- Optional / paid-tier baselines & agents ---
+OMNI = _os.environ.get("FORESIGHT_OMNI_MODEL", "gemini-omni-1.1-flash")
+OMNI_ENABLED = _env_bool("FORESIGHT_OMNI_ENABLED", False)
+GENIE = _os.environ.get("FORESIGHT_GENIE_MODEL", "genie-4")
+GENIE_ENABLED = _env_bool("FORESIGHT_GENIE_ENABLED", False)
+MANAGED_AGENT = _os.environ.get("FORESIGHT_MANAGED_AGENT", "antigravity-preview-09-2026")
+ROBOTICS_ER = _os.environ.get("FORESIGHT_ROBOTICS_ER_MODEL", "gemini-robotics-er-2-preview")
 
-# Models served only on the v1beta API (ER 2 returned 404 on v1 with "set the API version to v1beta").
-V1BETA_MODELS = {ROBOTICS_ER, OMNI, DECISION, MANAGED_AGENT, GENIE}
+# Models served only on the v1beta API.
+V1BETA_MODELS = {
+    ROBOTICS_ER,
+    OMNI,
+    "gemini-omni-1.1-flash",
+    "gemini-omni-1.2-flash",
+    DECISION,
+    MANAGED_AGENT,
+    GENIE,
+}
 
-# Scene-parsing fallback pairs on repeated 503 (Hydrogen <-> Neon).
-FALLBACK = {HYDROGEN: NEON, NEON: HYDROGEN}
+# Scene-parsing / verification fallback pairs on repeated 503.
+_RAW_FALLBACK = {
+    FLASH_38: FLASH_36,
+    FLASH_36: FLASH_38,
+    ARGON: FLASH_38,
+    HYDROGEN: NEON,
+    NEON: HYDROGEN,
+    FALLBACK_MODEL: PERCEPTION,
+    PERCEPTION: FALLBACK_MODEL,
+}
+FALLBACK = {k: v for k, v in _RAW_FALLBACK.items() if k and v and k != v}
 
 # --- Benchmark constants (Physics-IQ) ---
 BENCH_FPS = 24
