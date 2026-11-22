@@ -124,6 +124,15 @@ def track_in_video(video: Path, scene: dict, proc_w: int = 960) -> list[dict]:
     last = main["track"][-1]
     r = main.get("radius_px") or max(main.get("w_px") or 1, main.get("h_px") or 1) / 2
     box = (int((last["x"] - r) * sx), int((last["y"] - r) * sy), max(2, int(2 * r * sx)), max(2, int(2 * r * sy)))
+    # Things standing in front of the object (physics/layers.py) hide it: once it reaches one, CSRT latches onto
+    # the occluder's edge and would report the object as stopped there.
+    try:
+        from physics.layers import assign_layers
+
+        # two radii of margin: perception's box is loose, and the tracker drifts before the object is fully hidden
+        hiders = [[x0 - 2 * r, y0 - 2 * r, x1 + 2 * r, y1 + 2 * r] for x0, y0, x1, y1 in assign_layers(scene).occluders.get(main["id"], [])]
+    except Exception:  # noqa: BLE001  (physics module not available)
+        hiders = []
     # small search: the object moved a little between the last conditioning frame and reality frame 0
     run = track.csrt_run(v["proc"], 0, box, +1)
     out = []
@@ -134,7 +143,10 @@ def track_in_video(video: Path, scene: dict, proc_w: int = 960) -> list[dict]:
         if not rr["ok"]:
             break  # first lost frame ends the track: a later "re-find" is usually a background patch
         x, y, bw, bh = rr["box"]
-        out.append({"t_s": scene["t_cond_end_s"] + rr["frame"] / v["fps"], "x": (x + bw / 2) / sx, "y": (y + bh / 2) / sy})
+        cx, cy = (x + bw / 2) / sx, (y + bh / 2) / sy
+        if out and any(h[0] < cx < h[2] and h[1] < cy < h[3] for h in hiders):
+            break  # the object went behind something in front of it
+        out.append({"t_s": scene["t_cond_end_s"] + rr["frame"] / v["fps"], "x": cx, "y": cy})
     return out
 
 
