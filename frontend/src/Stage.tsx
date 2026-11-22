@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { apiUrl, cancelJob, fmtCm, getInfo, getRecent, getSamples, listSessionJobs, saveSessionPrefs, startJob, useJob, type Info, type JobState, type Lane, type RecentRun, type Sample } from "./api";
 import { Downloads, PathPlot, Understood } from "./Insights";
+import { advanceClock, DEFAULT_TIMELINE_S, syncAllVideos, syncVideo, timelineDuration } from "./sync";
 
 const newSession = () => Math.random().toString(36).slice(2, 10);
 
@@ -492,69 +493,97 @@ function SyncedPanels({ panels, better }: { panels: Panel[]; better: string | nu
   const [playing, setPlaying] = useState(true);
   const [slow, setSlow] = useState(false);
   const [t, setT] = useState(0);
+  const [dur, setDur] = useState(DEFAULT_TIMELINE_S);
+  const [held, setHeld] = useState<Record<string, number | null>>({});
+  const clockRef = useRef({ t: 0, lastMs: null as number | null });
   const urls = useMemo(() => panels.map((p) => p.url ?? "").join("|"), [panels]);
 
-  const vids = () => Object.values(refs.current).filter((v): v is HTMLVideoElement => !!v && !!v.src);
-  const master = () => vids()[0];
-
   useEffect(() => {
+    clockRef.current.lastMs = null;
+    const rate = slow ? 0.5 : 1;
     let raf = 0;
-    const loop = () => {
-      const m = master();
-      if (m) {
-        for (const v of vids()) if (v !== m && Math.abs(v.currentTime - m.currentTime) > 0.06) v.currentTime = m.currentTime;
-        setT(m.currentTime);
+    const loop = (nowMs: number) => {
+      const map = refs.current;
+      const targetDur = timelineDuration(Object.values(map).map((v) => (v && v.src ? v.duration : 0)));
+      const dtMs = clockRef.current.lastMs === null ? 0 : nowMs - clockRef.current.lastMs;
+      clockRef.current.lastMs = nowMs;
+      const step = advanceClock(clockRef.current.t, dtMs, playing, rate, targetDur);
+      clockRef.current.t = step.t;
+      const statuses = syncAllVideos(map, step.t, { playing, rate, wrapped: step.wrapped });
+      const nextHeld: Record<string, number | null> = {};
+      for (const [k, st] of Object.entries(statuses)) {
+        nextHeld[k] = st.heldAtEnd ? st.clipDuration : null;
       }
+      setDur(targetDur);
+      setT(step.t);
+      setHeld((prev) => {
+        const same =
+          Object.keys(prev).length === Object.keys(nextHeld).length &&
+          Object.entries(nextHeld).every(([k, v]) => prev[k] === v);
+        return same ? prev : nextHeld;
+      });
       raf = requestAnimationFrame(loop);
     };
+    syncAllVideos(refs.current, clockRef.current.t, { playing, rate });
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [urls]);
-
-  useEffect(() => {
-    for (const v of vids()) {
-      v.playbackRate = slow ? 0.5 : 1;
-      if (playing) v.play().catch(() => {}); else v.pause();
-    }
   }, [playing, slow, urls]);
 
-  const seek = (s: number) => { for (const v of vids()) v.currentTime = s; setT(s); };
+  const seek = (s: number) => {
+    clockRef.current = { t: s, lastMs: null };
+    syncAllVideos(refs.current, s, { playing, rate: slow ? 0.5 : 1, forceSeek: true });
+    setT(s);
+  };
 
   return (
     <div>
       <div className={`grid grid-cols-1 gap-6 md:grid-cols-2 ${panels.length > 3 ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
-        {panels.map((p) => (
-          <div key={p.key}>
-            <figure className={`monitor lane-${p.key}`}>
-              {p.url ? (
-                <video ref={(el) => { refs.current[p.key] = el; }} src={p.url} poster={p.url.replace(/\.mp4$/, ".jpg")} muted playsInline loop
-                       onLoadedData={(e) => { if (playing) e.currentTarget.play().catch(() => {}); }} />
+        {panels.map((p) => {
+          const heldDur = held[p.key];
+          const panelT = heldDur != null ? heldDur : t;
+          return (
+            <div key={p.key}>
+              <figure className={`monitor lane-${p.key}`}>
+                {p.url ? (
+                  <video
+                    ref={(el) => { refs.current[p.key] = el; }}
+                    src={p.url}
+                    poster={p.url.replace(/\.mp4$/, ".jpg")}
+                    muted
+                    playsInline
+                    onLoadedData={(e) => {
+                      syncVideo(e.currentTarget, clockRef.current.t, { playing, rate: slow ? 0.5 : 1, forceSeek: true });
+                    }}
+                  />
+                ) : (
+                  <div className="slate">{p.note || "No video"}</div>
+                )}
+                <figcaption className="tag"><span className="dot" />{p.title}</figcaption>
+                <span className="tc">
+                  0:{(3 + panelT).toFixed(2).padStart(5, "0")}{heldDur != null && heldDur < dur - 0.1 ? " · ended" : ""}
+                </span>
+              </figure>
+              <div className="mt-4 text-base text-muted">{p.sub}</div>
+              {p.key === "reality" ? (
+                <div className="display text-6xl font-extrabold">Reference</div>
               ) : (
-                <div className="slate">{p.note || "No video"}</div>
+                <>
+                  <div className={`display text-6xl font-extrabold ${p.key === better ? "text-good" : "text-ink"}`}>
+                    {fmtCm(p.err)}
+                  </div>
+                  <div className="text-base text-muted">{p.err === null ? (p.note || "no endpoint measured") : "from where it really ended up"}</div>
+                </>
               )}
-              <figcaption className="tag"><span className="dot" />{p.title}</figcaption>
-              <span className="tc">0:{(3 + t).toFixed(2).padStart(5, "0")}</span>
-            </figure>
-            <div className="mt-4 text-base text-muted">{p.sub}</div>
-            {p.key === "reality" ? (
-              <div className="display text-6xl font-extrabold">Reference</div>
-            ) : (
-              <>
-                <div className={`display text-6xl font-extrabold ${p.key === better ? "text-good" : "text-ink"}`}>
-                  {fmtCm(p.err)}
-                </div>
-                <div className="text-base text-muted">{p.err === null ? (p.note || "no endpoint measured") : "from where it really ended up"}</div>
-              </>
-            )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
       <div className="mt-6 flex flex-wrap items-center gap-4">
         <button onClick={() => setPlaying((x) => !x)} className="rounded-full bg-ink px-5 py-2 text-paper font-medium w-24">{playing ? "Pause" : "Play"}</button>
         <button onClick={() => setSlow((x) => !x)} aria-pressed={slow} className={`rounded-full border px-4 py-2 font-medium ${slow ? "border-cobalt text-cobalt" : "border-line"}`}>Half speed</button>
-        <input type="range" min={0} max={5} step={1 / 24} value={t} onChange={(e) => seek(Number(e.target.value))}
+        <input type="range" min={0} max={dur} step={1 / 24} value={Math.min(t, dur)} onChange={(e) => seek(Number(e.target.value))}
                className="flex-1 accent-[var(--color-cobalt)]" aria-label="Scrub all videos" />
-        <span className="font-mono text-base sm:w-36 text-right">0:{(3 + t).toFixed(2).padStart(5, "0")} of 0:08</span>
+        <span className="font-mono text-base sm:w-36 text-right">0:{(3 + t).toFixed(2).padStart(5, "0")} of 0:{String(Math.round(3 + dur)).padStart(2, "0")}</span>
       </div>
     </div>
   );
