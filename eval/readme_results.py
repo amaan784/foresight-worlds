@@ -40,35 +40,68 @@ def section(r: dict) -> str:
                 and runs["const_velocity"][sc].get("endpoint_error_cm") is not None]
         closer = [sc for sc in both if runs["foresight"][sc]["endpoint_error_cm"] < runs["const_velocity"][sc]["endpoint_error_cm"]]
         blown = [sc for sc in r["scenes"] if (runs["foresight"][sc].get("endpoint_error_cm") or 0) > 1000]
-        rr = runs["foresight"].get("ball-rolls-off", {}), runs["const_velocity"].get("ball-rolls-off", {})
-        lines += [
-            f"Foresight scores higher than both video models ("
-            + ", ".join(f"{NAMES[k].split(' (')[0]} {s[k]['physics_iq_verified_pct']:.1f}" for k in ("omni", "genie") if k in s)
-            + f"). It does **not** yet beat the constant-velocity baseline, which "
-            f"uses the same Gemini scene reading, tracking and renderer and only drops the physics. Where the physics fit "
-            f"works it is more accurate: Foresight's object ends closer to the real one on {len(closer)} of the {len(both)} "
-            f"clips with a measurable endpoint (on ball-rolls-off, {rr[0].get('endpoint_error_cm')} cm against "
-            f"{rr[1].get('endpoint_error_cm')} cm). But the fit blew up on {len(blown)} clips with collisions or falls "
-            f"({', '.join(blown)}), and those pull the pooled score down. Making contacts and falls robust is the next step.", ""]
+        fell = [sc for sc in r["scenes"] if runs["foresight"][sc].get("dynamics_used") == "const_velocity_fallback"]
+        fh, cv = s["foresight"], s["const_velocity"]
+        videos = [k for k in ("omni", "genie") if k in s]
+        beats_videos = all(fh["physics_iq_verified_pct"] > s[k]["physics_iq_verified_pct"] for k in videos)
+        text = (f"On the Physics-IQ score Foresight ({fh['physics_iq_verified_pct']:.1f}) "
+                + (f"is above both video models (" if beats_videos else "is compared with the video models (")
+                + ", ".join(f"{NAMES[k].split(' (')[0]} {s[k]['physics_iq_verified_pct']:.1f}" for k in videos) + ")"
+                + (f" and above the constant-velocity baseline ({cv['physics_iq_verified_pct']:.1f}). "
+                   if fh["physics_iq_verified_pct"] > cv["physics_iq_verified_pct"] else
+                   f", and still **below** the constant-velocity baseline ({cv['physics_iq_verified_pct']:.1f}), which uses the "
+                   f"same Gemini scene reading, tracking and renderer and only drops the physics. "))
+        text += (f"On where the object actually ends up, Foresight is closer to reality than constant velocity on "
+                 f"{len(closer)} of the {len(both)} clips with a measurable endpoint (median "
+                 f"{f1(fh.get('endpoint_error_cm_median'))} cm against {f1(cv.get('endpoint_error_cm_median'))} cm). ")
+        if fh["physics_iq_verified_pct"] <= cv["physics_iq_verified_pct"]:
+            text += ("The two measures disagree because the Physics-IQ score compares where pixels change: a constant-velocity "
+                     "object that leaves the frame early leaves a still picture, which matches a real scene that has come to "
+                     "rest, even when the object went the wrong way. ")
+        text += (f"The physics fit blew up (endpoint over 10 m off) on {len(blown)} clip{'s' if len(blown) != 1 else ''}"
+                 + (f" ({', '.join(blown)})" if blown else "")
+                 + f"; the energy check fell back to constant velocity on {len(fell)}"
+                 + (f" ({', '.join(fell)})." if fell else "."))
+        lines += [text, ""]
         if "foresight_carbon" in s:
-            fc, fh = s["foresight_carbon"], s["foresight"]
-            lines += [f"Reading the scene with Gemini 4 Carbon instead of Hydrogen gives about the same score "
-                      f"({fc['physics_iq_verified_pct']:.1f} against {fh['physics_iq_verified_pct']:.1f}) and a lower median "
-                      f"endpoint error ({f1(fc.get('endpoint_error_cm_median'))} cm against {f1(fh.get('endpoint_error_cm_median'))} cm); "
-                      f"the stage uses Hydrogen because it is faster.", ""]
+            fc = s["foresight_carbon"]
+            lines += [f"Reading the scene with Gemini 4 Carbon instead of Hydrogen: {fc['physics_iq_verified_pct']:.1f} against "
+                      f"{fh['physics_iq_verified_pct']:.1f}, median endpoint error {f1(fc.get('endpoint_error_cm_median'))} cm "
+                      f"against {f1(fh.get('endpoint_error_cm_median'))} cm; the stage uses Hydrogen because it is faster.", ""]
     if "foresight" not in s:
         lines += ["Foresight itself has not been scored in this run yet; the rows below are the baselines.", ""]
     lines += ['<p align="center"><img src="eval/chart.png" alt="Physics-IQ score per system" width="88%"></p>', "",
-              "| System | Physics-IQ score (Verified formula) | Original formula | Median endpoint error (cm) | Failed clips |",
-              "|---|---|---|---|---|"]
+              "| System | Physics-IQ score (Verified formula) | Original formula | Median endpoint error (cm) | Failed clips | Run |",
+              "|---|---|---|---|---|---|"]
     best = max(s[k]["physics_iq_verified_pct"] for k in have)
     for k in ranked:
         v = s[k]
         sc = f"{v['physics_iq_verified_pct']:.1f}"
         lines.append(f"| {NAMES[k]} | {'**' + sc + '**' if v['physics_iq_verified_pct'] == best else sc} | {v['physics_iq_original_pct']:.1f} | "
-                     f"{f1(v.get('endpoint_error_cm_median'))} | {v['n_failed']} of {r['n_clips']} |")
+                     f"{f1(v.get('endpoint_error_cm_median'))} | {v['n_failed']} of {r['n_clips']} | {v.get('run_at', '')[:10]} |")
     lines += ["", "Endpoint error is measured only where the system tracks an object (Foresight and constant velocity). "
-              "Failures, causes and fixes: [eval/FAILURES.md](eval/FAILURES.md).", END]
+              "The video models' rows come from their own clean run (the Run column): their output does not depend on "
+              "Foresight's code. Failures, causes and fixes: [eval/FAILURES.md](eval/FAILURES.md).", ""]
+    wide = ROOT / "eval" / "results_wide.json"
+    if wide.exists():
+        w = json.loads(wide.read_text())
+        ws = {k: v for k, v in w.get("systems", {}).items() if v.get("pooled_verified_pct") is not None}
+        if ws:
+            rk = sorted(ws, key=lambda k: -ws[k]["pooled_verified_pct"])
+            lines += ["### Wider eval: 20 scenes, all three cameras", "",
+                      f"`eval/run_wide.py` runs the same systems on {len(w['scenes'])} scenes x {len(w['views'])} camera views "
+                      f"({ws[rk[0]]['n_scene_views']} scene-views; five scenes added by a rule fixed before the run). "
+                      f"[eval/results_wide.json](eval/results_wide.json), [per-scene table](eval/results_wide_table.md). "
+                      f"Clean run: {'yes' if w.get('clean_run') else 'no'}; commit `{w.get('git_commit')}`, {w.get('generated_at')}.", "",
+                      "| System | Physics-IQ score (Verified formula, all views) | Left | Center | Right | Median endpoint error (cm) | Failed |",
+                      "|---|---|---|---|---|---|---|"]
+            for k in rk:
+                v = ws[k]
+                pv = v.get("per_view_pct", {})
+                lines.append(f"| {NAMES[k]} | {v['pooled_verified_pct']:.1f} | {f1(pv.get('left'))} | {f1(pv.get('center'))} | "
+                             f"{f1(pv.get('right'))} | {f1(v.get('endpoint_error_cm_median'))} | {v.get('n_failed', 0)} of {v['n_scene_views']} |")
+            lines.append("")
+    lines.append(END)
     return "\n".join(lines)
 
 
@@ -84,10 +117,12 @@ def failures_section(r: dict) -> str:
                 rows.append(f"| {system} | {scene} | crashed: {c.get('error', '')[:140]} | scored with the held last frame |")
     for scene, c in r.get("runs", {}).get("foresight", {}).items():
         ee, rep = c.get("endpoint_error_cm"), c.get("repairs_used") or 0
-        if ee is not None and ee > 1000:
-            rows.append(f"| foresight | {scene} | the fit blew up: endpoint {ee / 100:.1f} m off, {rep} repairs | not fixed today: contacts and falls in the fitter |")
+        if c.get("dynamics_used") == "const_velocity_fallback":
+            rows.append(f"| foresight | {scene} | the energy check rejected the simulation: {c.get('fallback_reason')} | constant velocity used and reported |")
+        elif ee is not None and ee > 1000:
+            rows.append(f"| foresight | {scene} | the fit blew up: endpoint {ee / 100:.1f} m off, {rep} repairs | open |")
         elif rep >= 2:
-            rows.append(f"| foresight | {scene} | Decision 1 doubted the fit twice; {rep} Carbon repairs, {c.get('latency_s')} s | not fixed today |")
+            rows.append(f"| foresight | {scene} | Decision 1 doubted the fit twice; {rep} Carbon repairs, {c.get('latency_s')} s | open |")
     body = ("No system failed on any clip." if not rows else
             "| System | Clip | What happened | Handling |\n|---|---|---|---|\n" + "\n".join(rows))
     return f"{F_START}\n{body}\n{F_END}"

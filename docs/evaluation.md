@@ -10,6 +10,14 @@ light, cloth or domino chains), from the **center** camera, which is the side vi
 conditioning video and 5 s of ground truth at 24 FPS, filmed twice (take 1 and take 2) so the benchmark knows how
 much real outcomes vary. The list is in `phase0/physiq_data.py`.
 
+**Wider eval** (`eval/run_wide.py`, added Nov 22): the same systems on all three cameras (left, center, right) and
+five more scenes, 20 scenes and 60 scene-views. The five were chosen by a rule fixed before any run: the remaining
+Solid Mechanics scenes where a rigid object is released, rolled or knocked and then moves freely (no cutting,
+tearing or breaking, no pendulums or cables, nothing motorized, nothing held by a tool through the prediction).
+Each camera is scored with the official code on its own; the pooled score is the mean over all scene-views, which
+is the Verified formula over three views. Results: [../eval/results_wide.json](../eval/results_wide.json),
+[../eval/results_wide_table.md](../eval/results_wide_table.md).
+
 ## Systems
 
 | System | What it does |
@@ -18,7 +26,7 @@ much real outcomes vary. The list is in `phase0/physiq_data.py`.
 | Constant velocity | the same perception, tracking and renderer, but the object keeps its last velocity: no gravity, no surfaces, no friction |
 | Gemini Omni 1.2 Flash | continues the 3 s clip as video, prompted with the benchmark's own scene description plus "Continue the scene." |
 | Genie 4 | world model, live session: starts from the last conditioning frame and the benchmark's scene description; the first 120 streamed frames are taken as the 5 s at 24 FPS (`eval/run_genie.py`) |
-| Foresight, Carbon reads the scene | the Foresight pipeline with Gemini 4 Carbon (thinking medium) instead of Hydrogen for scene reading, all else equal (`eval/run_variant.py`) |
+| Foresight, Carbon reads the scene | the Foresight pipeline with Gemini 4 Carbon instead of Hydrogen for scene reading, all else equal (`eval/run_variant.py`) |
 | Last frame held | the last conditioning frame for 5 s |
 
 A system that fails on a clip is scored with the held last frame for that clip, and the failure is listed in
@@ -48,3 +56,11 @@ original Physics-IQ files otherwise; `results.json` says which (`gt_source`).
 Development runs reuse Gemini outputs from `eval/cache/`. The reported numbers come from one run with `--clean`:
 fresh Gemini calls, perception computed once per clip and shared by Foresight and constant velocity so only the
 dynamics differ.
+
+## Developing without Gemini calls
+
+`eval/offline_fit.py` reruns only the dynamics (fit, simulate, render, score) on the scene readings cached by a
+clean run, so a physics change can be scored on all 15 clips in a few minutes at no cost (`--rebuild` re-runs
+tracking too). Those runs use the same 15 center-view clips as the reported eval, so they are not a held-out test.
+The left and right cameras and the five extra scenes of the wider eval were not used while developing; the README
+reports them separately.

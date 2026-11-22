@@ -2,7 +2,7 @@
 
 <p align="center">
   <b>For robotics teams: watch 3 seconds of real video, simulate the physics, and predict the next 5, where video models get physics wrong.</b><br>
-  <sub>Built during the Gemini 4 NYC Hackathon · November 21, 2026</sub>
+  <sub>Built during the Gemini 4 NYC Hackathon · November 21, 2026 · improved since</sub>
 </p>
 
 <p align="center">
@@ -46,8 +46,8 @@ npm --prefix frontend run dev
 
 Open `https://<your-lan-ip>:5173`. Pick a Physics-IQ clip (rolling ones are quick; falls can take a few minutes while Gemini repairs the fit), or scan the QR code with
 a phone, prop it up side-on and roll a ball through the frame. You see only the first 3 seconds while each step
-reports in, then reality, Foresight and Omni play side by side with how far each prediction ends up from the
-real object.
+reports in, then reality, Foresight, Omni and Genie 4 play side by side with how far each prediction ends up from
+the real object.
 
 <p align="center"><img src="docs/img/app.png" alt="The stage after a run: Reality, Foresight and Omni play in sync; Foresight ends 5.3 cm from the real ball, Omni 34.3 cm; Decision 1 confidences 0.90 and 0.97" width="100%"></p>
 
@@ -81,15 +81,23 @@ Endpoint error is measured only where the system tracks an object (Foresight and
 ## How it works
 
 1. **Read the scene.** Gemini 4 Hydrogen watches the clip (agentic video) and returns, as structured output, each
-   object as a circle or a box with its real size, the surfaces it moves on, and the kind of motion.
-2. **Track.** OpenCV CSRT follows the object frame by frame, with real timestamps from the 30 FPS clip.
+   object as a circle or a box with its real size and mass, the surfaces it moves on (hard or soft), and the kind
+   of motion.
+2. **Track.** OpenCV CSRT follows the object frame by frame, with real timestamps from the 30 FPS clip, and keeps
+   only free motion: the stretch where a grabber still holds the object and points from a half-hidden object are
+   dropped.
 3. **Measure.** Pixels per metre come from the object's real size; falls are cross-checked against gravity.
 4. **Fit physics.** A pymunk world is fitted to the tracked path with least squares: start position, velocity,
-   and the friction and bounce the clip can reveal.
+   and the friction and bounce the clip can reveal. The world reads depth from where things touch the table:
+   objects on the same line collide, a box lower in the image is in front and hides the ball instead of stopping
+   it, resting balls and toys can be knocked, containers are open on top, and tables stay level even when
+   perspective draws them sloped.
 5. **Check and repair.** Gemini Decision 1 looks at the fitted outline on real frames and says whether it sits on
    the object and what the motion is, with a confidence. Under 0.7, Gemini 4 Carbon proposes another motion model
-   and the fit runs again.
-6. **Render.** The world runs for exactly 5.000 s and the object is drawn onto the frame it was cleaned from.
+   and the fit runs again, within a 90 s budget.
+6. **Render.** The world runs for exactly 5.000 s and the objects are drawn onto the frame they were cleaned from,
+   hidden behind whatever stands in front of them. If a simulated object gains energy, which real contacts cannot
+   do, the run falls back to constant velocity and says so.
 
 <p align="center"><img src="docs/img/how-it-works.svg" alt="The pipeline in one line: 3 s of video, read the scene with Gemini 4 Hydrogen, track, measure, fit physics, check with Gemini Decision 1 and repair with Gemini 4 Carbon, render 5 s; Gemini Omni continues the same clip as the baseline; both are compared with reality" width="100%"></p>
 
@@ -106,10 +114,10 @@ Endpoint error is measured only where the system tracks an object (Foresight and
 | Gemini 4 Hydrogen (`gemini-4-hydrogen`) | Reads the clip: objects, sizes, surfaces, motion (agentic video, structured output, thinking level low). 12.5 s in [Phase 0](phase0/REPORT.md). |
 | Gemini 4 Neon (`gemini-4-neon`) | On standby: takes over scene reading if Hydrogen keeps returning 503. Not needed in any run today. |
 | Gemini Decision 1 (`gemini-decision-1`) | Checks the fit on real frames: does the outline sit on the object, which motion is it; confidences gate the repair. |
-| Gemini 4 Carbon (`gemini-4-carbon`) | Repairs a fit Decision 1 doubts: proposes another motion model and starting guesses (thinking level medium). |
+| Gemini 4 Carbon (`gemini-4-carbon`) | Repairs a fit Decision 1 doubts: proposes another motion model and starting guesses (thinking level low, inside a 90 s budget). |
 | Gemini Omni 1.2 Flash (`gemini-omni-1.2-flash`) | The baseline: continues the same 3 s as video. |
 | Gemini Robotics-ER 2 (`gemini-robotics-er-2-preview`) | Tested as a tracker in Phase 0 and not used: 39 px median error against 20 px for CSRT. |
-| Genie 4 (`genie-4`) | A second baseline: a world model that starts from the last frame and a prompt and streams live video. |
+| Genie 4 (`genie-4`) | A second baseline, in the eval and on the stage: a world model that starts from the last frame and a prompt and streams live video. |
 
 ## Docs
 
@@ -130,5 +138,6 @@ Evaluation clips and scoring code come from [Physics-IQ](https://github.com/goog
 Research). No dataset files are in this repository; the images above contain a few Physics-IQ frames, credited
 in their captions.
 
-Built during the Gemini 4 NYC Hackathon (November 21, 2026); all code was written during the event. MIT license,
-see [LICENSE](LICENSE).
+Built during the Gemini 4 NYC Hackathon (November 21, 2026); the version submitted there is commit `b3b3f79`.
+Since then: depth layers, cleaner tracks, soft surfaces, rolling resistance, Genie 4 on the stage and a wider
+eval; what changed and why is in [eval/FAILURES.md](eval/FAILURES.md). MIT license, see [LICENSE](LICENSE).

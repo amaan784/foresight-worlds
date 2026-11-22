@@ -33,6 +33,13 @@ PYTHONPATH=backend:phase0 python eval/run_eval.py --merge-only                  
 PYTHONPATH=backend:phase0 python eval/readme_results.py                       # rewrites the README results
 ```
 
+The wider eval (20 scenes, all three cameras) and the free development loop:
+
+```bash
+PYTHONPATH=backend:phase0 python eval/run_wide.py --systems foresight const_velocity static omni genie
+PYTHONPATH=backend:phase0 python eval/offline_fit.py --tag dev --rebuild   # cached Gemini readings, no calls
+```
+
 ## Phase 0
 
 `phase0/` holds the go/no-go checks run before building: [phase0/REPORT.md](../phase0/REPORT.md) has the
