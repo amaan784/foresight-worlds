@@ -248,7 +248,7 @@ def build_scene(cond_video: Path, work_dir: Path, fit_video: Path | None = None,
             "id": f"obj{i}", "name": o.name, "shape": o.shape,
             "radius_px": round(min(bw, bh) / 2, 1) if o.shape == "circle" else None,
             "w_px": round(bw, 1) if o.shape == "box" else None, "h_px": round(bh, 1) if o.shape == "box" else None,
-            "est_real_size_cm": o.est_real_size_cm, "est_mass_g": o.est_mass_g, "track": pts,
+            "est_real_size_cm": o.est_real_size_cm, "est_mass_g": o.est_mass_g, "material": o.material, "track": pts,
             "visible_at_end": o.bbox_last_frame != [0, 0, 0, 0],
             "_box_last": [bx0, by0, bx1, by1],
         })
@@ -302,6 +302,7 @@ def build_scene(cond_video: Path, work_dir: Path, fit_video: Path | None = None,
         cv2.imwrite(str(sprite), _sprite(last_full, (x0 + x1) / 2, (y0 + y1) / 2, o.shape, x1 - x0, y1 - y0))
         statics.append({"name": o.name, "shape": "box", "bbox": [round(v, 1) for v in (x0, y0, x1, y1)],
                         "perceived_shape": o.shape, "est_real_size_cm": o.est_real_size_cm, "est_mass_g": o.est_mass_g,
+                        "material": o.material,
                         "sprite_png": str(sprite)})
     surfaces = [{"name": s.name, "kind": s.kind, "material": s.material,
                  "p0": [round(s.line[1] / 1000 * W, 1), round(s.line[0] / 1000 * H, 1)],

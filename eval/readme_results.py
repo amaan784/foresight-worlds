@@ -13,8 +13,9 @@ START = "<!-- results: start (written by eval/readme_results.py from eval/result
 END = "<!-- results: end -->"
 NAMES = {"foresight": "Foresight (physics)", "omni": "Gemini Omni 1.2 Flash (video model)",
          "genie": "Genie 4 (world model)", "foresight_carbon": "Foresight with Gemini 4 Carbon reading the scene",
+         "foresight_neon": "Foresight with Gemini 4 Neon reading the scene",
          "const_velocity": "Constant velocity (no physics)", "static": "Last frame held"}
-ORDER = ["foresight", "foresight_carbon", "omni", "genie", "const_velocity", "static"]
+ORDER = ["foresight", "foresight_carbon", "foresight_neon", "omni", "genie", "const_velocity", "static"]
 
 
 def f1(v) -> str:
@@ -63,11 +64,15 @@ def section(r: dict) -> str:
                  + f"; the energy check fell back to constant velocity on {len(fell)}"
                  + (f" ({', '.join(fell)})." if fell else "."))
         lines += [text, ""]
-        if "foresight_carbon" in s:
-            fc = s["foresight_carbon"]
-            lines += [f"Reading the scene with Gemini 4 Carbon instead of Hydrogen: {fc['physics_iq_verified_pct']:.1f} against "
-                      f"{fh['physics_iq_verified_pct']:.1f}, median endpoint error {f1(fc.get('endpoint_error_cm_median'))} cm "
-                      f"against {f1(fh.get('endpoint_error_cm_median'))} cm; the stage uses Hydrogen because it is faster.", ""]
+        for key, model in (("foresight_carbon", "Gemini 4 Carbon"), ("foresight_neon", "Gemini 4 Neon")):
+            if key in s:
+                fc = s[key]
+                lines += [f"Reading the scene with {model} instead of Hydrogen: {fc['physics_iq_verified_pct']:.1f} against "
+                          f"{fh['physics_iq_verified_pct']:.1f}, median endpoint error {f1(fc.get('endpoint_error_cm_median'))} cm "
+                          f"against {f1(fh.get('endpoint_error_cm_median'))} cm.", ""]
+        if "foresight_carbon" in s or "foresight_neon" in s:
+            lines += ["The stage reads scenes with Hydrogen because it is the fastest; Neon takes over automatically if "
+                      "Hydrogen keeps failing.", ""]
     if "foresight" not in s:
         lines += ["Foresight itself has not been scored in this run yet; the rows below are the baselines.", ""]
     lines += ['<p align="center"><img src="eval/chart.png" alt="Physics-IQ score per system" width="88%"></p>', "",

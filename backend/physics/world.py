@@ -16,6 +16,7 @@ Coordinate convention:
 from __future__ import annotations
 
 import math
+import os as _os
 from dataclasses import dataclass
 from typing import Any
 
@@ -27,9 +28,12 @@ _BODY = 1  # collision type of every simulated body
 _LEVEL = 2  # collision type of tables and floors: level in 3D whatever their slope in the image
 _SOFT = 3  # soft surfaces (cushions, bedding): level too, and they absorb motion
 SOFT_DAMPING = 8.0  # s^-1 while touching a soft surface: a landed object stops within a fraction of a second
-# Rolling resistance coefficient for balls (braking = 0.04 g): a typical value for a felt ball on wood, set from
-# physics and not tuned on the eval clips. Not fitted: 0.1-0.4 s of conditioning cannot separate it from damping.
+# Rolling resistance coefficient for balls (braking = c g) on a hard table, by what the ball is made of: textbook
+# orders of magnitude, set from physics and not tuned on the eval clips. Not fitted: 0.1-0.4 s of conditioning
+# cannot separate it from damping. ROLLING_RESISTANCE (a felt tennis ball) is used when the material is unknown.
 ROLLING_RESISTANCE = 0.04
+ROLLING_RESISTANCE_BY_MATERIAL = {"felt": 0.04, "foam": 0.05, "rubber": 0.015, "hard plastic": 0.005, "wood": 0.005,
+                                  "glass": 0.002, "metal": 0.002, "other": 0.02}
 
 
 def _mean_coefficients(arb: pymunk.Arbiter, space: pymunk.Space, data: Any) -> None:
@@ -389,10 +393,13 @@ class PhysicsWorld:
         self.bodies[oid] = body
         self.shapes[oid] = shape
         self.damping_rates[oid] = max(0.0, float(params.damping))
+        material = obj.get("material")
         self.object_meta[oid] = {
             "shape": shape_kind,
             "radius_m": radius_m,
             "extent_px": _obj_half_extent_px(obj),
+            "rolling_resistance": ROLLING_RESISTANCE_BY_MATERIAL.get(material, ROLLING_RESISTANCE)
+            if material and _os.environ.get("FORESIGHT_RR_BY_MATERIAL", "1") == "1" else ROLLING_RESISTANCE,
         }
 
     def _apply_contact_damping(self, dt: float) -> None:
@@ -436,7 +443,7 @@ class PhysicsWorld:
                     body.velocity = (body.velocity.x - gtx * dt, body.velocity.y - gty * dt)
             if soft:
                 gamma = max(gamma, SOFT_DAMPING)
-            rr = ROLLING_RESISTANCE if self.object_meta[oid]["shape"] == "circle" else 0.0
+            rr = self.object_meta[oid]["rolling_resistance"] if self.object_meta[oid]["shape"] == "circle" else 0.0
             if gamma <= 0.0 and rr <= 0.0:
                 continue
 

@@ -22,6 +22,7 @@ from foresight import config, gemini
 from .fit import fit_scene
 
 PKG_DIR = Path(__file__).resolve().parent
+REMOTE_MODULES = ["layers.py", "world.py", "fit.py"]  # fit imports world and layers; world imports layers
 
 
 class RemoteBodyParams(BaseModel):
@@ -60,6 +61,7 @@ def strip_scene_for_agent(scene: dict[str, Any]) -> dict[str, Any]:
             "w_px": obj.get("w_px"),
             "h_px": obj.get("h_px"),
             "est_real_size_cm": obj.get("est_real_size_cm", 6.7),
+            "est_mass_g": obj.get("est_mass_g"),
             "track": obj.get("track", []),
             "visible_at_end": obj.get("visible_at_end", True),
         })
@@ -74,23 +76,22 @@ def strip_scene_for_agent(scene: dict[str, Any]) -> dict[str, Any]:
         "gravity_m_s2": scene.get("gravity_m_s2", 9.81),
         "motion_type_hint": scene.get("motion_type_hint", "roll"),
         "objects": slim_objects,
-        "static_objects": scene.get("static_objects", []),
+        "static_objects": [{k: v for k, v in st.items() if k != "sprite_png"} for st in scene.get("static_objects", [])],
         "surfaces": scene.get("surfaces", []),
     }
 
 
 def build_setup_prompt() -> str:
     """Build the one-time environment bootstrap prompt installing deps and physics code."""
-    world_src = (PKG_DIR / "world.py").read_text()
-    fit_src = (PKG_DIR / "fit.py").read_text()
+    files = {name: (PKG_DIR / name).read_text() for name in REMOTE_MODULES}
+    listing = ", ".join(f"`/workspace/physics/{n}`" for n in files)
+    blocks = "\n\n".join(f"--- /workspace/physics/{n} ---\n```python\n{src}\n```" for n, src in files.items())
     return (
         "Set up this persistent Python workspace for Foresight physics fitting:\n"
         "1. Install packages once: `pip install -q pymunk scipy opencv-python-headless numpy`.\n"
-        "2. Create `/workspace/physics/__init__.py` (empty file), `/workspace/physics/world.py`, "
-        "and `/workspace/physics/fit.py` with the exact source code below.\n"
+        f"2. Create `/workspace/physics/__init__.py` (empty file) and {listing} with the exact source code below.\n"
         "3. Verify `PYTHONPATH=/workspace python -c 'import pymunk, scipy, cv2; from physics.fit import fit_scene; print(\"READY\")'`.\n\n"
-        f"--- /workspace/physics/world.py ---\n```python\n{world_src}\n```\n\n"
-        f"--- /workspace/physics/fit.py ---\n```python\n{fit_src}\n```\n"
+        f"{blocks}\n"
     )
 
 

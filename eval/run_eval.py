@@ -37,7 +37,7 @@ PREDS, RESULTS, CACHE = EVAL / "preds", EVAL / "results", EVAL / "cache"
 SCENES = pq.RIGID_SINGLE + pq.RIGID_MULTI
 VIEW, FPS = "center", 24
 SYSTEMS = ["foresight", "omni", "const_velocity", "static"]
-REPORTED = ["foresight", "foresight_carbon", "omni", "genie", "const_velocity", "static"]
+REPORTED = ["foresight", "foresight_carbon", "foresight_neon", "omni", "genie", "const_velocity", "static"]
 
 
 def gt_source(pref: str) -> str:
@@ -129,11 +129,12 @@ def chart(results: dict, path: Path) -> None:
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    colors = {"foresight": "#2350d8", "foresight_carbon": "#5b7ff0", "const_velocity": "#7d8597", "omni": "#b86e00",
+    colors = {"foresight": "#2350d8", "foresight_carbon": "#5b7ff0", "foresight_neon": "#8fa6f5", "const_velocity": "#7d8597", "omni": "#b86e00",
               "genie": "#d9a441", "static": "#c4c6cc"}
     labels = {"foresight": "Foresight\n(physics)", "const_velocity": "Constant velocity\n(no physics)",
               "omni": "Gemini Omni 1.2\n(video model)", "static": "Last frame\nheld",
-              "foresight_carbon": "Foresight\n(Carbon reads)", "genie": "Genie 4\n(world model)"}
+              "foresight_carbon": "Foresight\n(Carbon reads)", "foresight_neon": "Foresight\n(Neon reads)",
+              "genie": "Genie 4\n(world model)"}
     systems = [s for s in REPORTED if s in results["systems"]]
     vals = [results["systems"][s]["physics_iq_verified_pct"] for s in systems]
     fig, ax = plt.subplots(figsize=(11.5, 5.2), dpi=160)

@@ -40,7 +40,9 @@ def main() -> None:
         r = json.loads(path.read_text())
         cache = sorted(p for p in E.CACHE.glob("run_*") if (p / "work" / "foresight").is_dir())[-1]
         keys = [(sc, sc, "center") for sc in r["scenes"]]
-        workdir = lambda system, key: cache / "work" / system / key  # noqa: E731
+        # scene-reading variants (eval/run_variant.py) keep their own work folders
+        workdir = lambda system, key: (E.CACHE / f"variant_{system}" / "work" / key if system.startswith("foresight_")  # noqa: E731
+                                       else cache / "work" / system / key)
     else:
         path = E.EVAL / "results_wide.json"
         r = json.loads(path.read_text())
@@ -48,7 +50,8 @@ def main() -> None:
         keys = [(f"{sc}|{v}", sc, v) for sc in r["scenes"] for v in r["views"]]
         workdir = lambda system, key: cache / "work" / system / key.replace("|", "_")  # noqa: E731
     print("cache", cache)
-    for system in SYSTEMS:
+    systems = SYSTEMS + ([k for k in r["systems"] if k.startswith("foresight_")] if which == "main" else [])
+    for system in systems:
         runs = r["runs"].get(system, {})
         changed = 0
         for key, sc, view in keys:
@@ -68,7 +71,7 @@ def main() -> None:
     path.write_text(json.dumps(r, indent=2))
     blk = E.RESULTS
     if which == "main":
-        for system in SYSTEMS:
+        for system in systems:
             f = blk / f"system_{system}.json"
             if f.exists():
                 b = json.loads(f.read_text())

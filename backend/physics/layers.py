@@ -170,7 +170,7 @@ def assign_layers(scene: dict[str, Any]) -> Layers:
             "id": f"rest{ti}", "static": ti, "name": st.get("name", "static"), "shape": "circle" if circle else "box",
             "radius_px": 0.5 * min(w, h) if circle else None, "w_px": None if circle else w, "h_px": None if circle else h,
             "est_real_size_cm": size_cm, "x": xc, "y": y_on(surfaces[lay], xc) - half, "bbox_center": [xc, 0.5 * (by0 + by1)],
-            "sprite_png": st.get("sprite_png"), "track": [],
+            "sprite_png": st.get("sprite_png"), "material": st.get("material"), "track": [],
         })
         out.layer_of[f"rest{ti}"] = lay
         out.notes.append(f"The {st['name']} rests in the path of the {_movers(objects, out, lay)}: it can be knocked.")

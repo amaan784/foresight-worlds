@@ -24,6 +24,8 @@ class SceneObject(BaseModel):
     bbox_last_frame: List[int] = Field(description="[ymin, xmin, ymax, xmax] normalized 0-1000 in the LAST frame; [0,0,0,0] if not visible")
     est_mass_g: Optional[float] = Field(default=None, description="estimated real mass in grams from everyday knowledge "
                                         "(e.g. coffee mug ~300, brick ~2000)")
+    material: Literal["felt", "rubber", "hard plastic", "foam", "wood", "metal", "glass", "other"] = Field(
+        default="other", description="what the object's outer surface is made of")
 
 
 class SupportSurface(BaseModel):
@@ -46,7 +48,8 @@ The video is a short side-view clip from a static camera. Image A is its first f
 List the rigid objects that move (or are about to move) and any large static objects they could hit.
 Approximate each object as a circle or a box and estimate its real size in cm from everyday knowledge
 (e.g. tennis ball ~6.7 cm). Give the support surfaces as line segments along their top edges.
-Estimate each object's mass in grams, and say whether each support surface is hard or soft.
+Estimate each object's mass in grams and say what it is made of, and say whether each support surface is hard or
+soft.
 Classify the main object's motion. Bounding boxes and lines use [y, x] order normalized to 0-1000."""
 
 

@@ -3,15 +3,16 @@ import { useEffect, useState } from "react";
 import { fmtCm, getEval } from "./api";
 
 const NAMES: Record<string, string> = {
-  foresight: "Foresight", foresight_carbon: "Foresight, Carbon reads the scene", const_velocity: "Constant velocity",
+  foresight: "Foresight", foresight_carbon: "Foresight, Carbon reads the scene", foresight_neon: "Foresight, Neon reads the scene",
+  const_velocity: "Constant velocity",
   omni: "Gemini Omni 1.2 Flash", genie: "Genie 4", static: "Last frame held",
 };
 const ROLE: Record<string, string> = {
-  foresight: "physics", foresight_carbon: "physics", const_velocity: "straight line, no physics",
+  foresight: "physics", foresight_carbon: "physics", foresight_neon: "physics", const_velocity: "straight line, no physics",
   omni: "video model", genie: "world model", static: "nothing moves",
 };
 const COLOR: Record<string, string> = {
-  foresight: "var(--color-cobalt)", foresight_carbon: "#5b7ff0", const_velocity: "#7d8597",
+  foresight: "var(--color-cobalt)", foresight_carbon: "#5b7ff0", foresight_neon: "#8fa6f5", const_velocity: "#7d8597",
   omni: "var(--color-amber)", genie: "var(--color-plum)", static: "#c4c6cc",
 };
 
