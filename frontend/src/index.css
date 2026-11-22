@@ -9,6 +9,7 @@
   --color-film: #000000;
   --color-cobalt: #2350d8;   /* Foresight: the physics path */
   --color-amber: #b86e00;    /* Omni: the video model */
+  --color-plum: #7b3fa8;     /* Genie 4: the world model */
   --color-good: #1f7a4d;
   --color-bad: #b3261e;
   --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
@@ -46,6 +47,7 @@ video { display: block; background: #000; }
 .lane-reality { --lane: transparent; --dot: #f2f2ef; }
 .lane-foresight { --lane: var(--color-cobalt); }
 .lane-omni { --lane: var(--color-amber); }
+.lane-genie { --lane: var(--color-plum); }
 .slate { display: grid; place-items: center; text-align: center; padding: 0 24px; color: #c9cac5;
   font: 500 15px/1.5 var(--font-sans);
   background-image: repeating-linear-gradient(135deg, #17191e 0 12px, #111216 12px 24px); }

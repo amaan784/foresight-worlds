@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { apiUrl, cancelJob, fmtCm, getInfo, getSamples, listSessionJobs, startJob, useJob, type Info, type JobState, type Sample } from "./api";
+import { apiUrl, cancelJob, fmtCm, getInfo, getSamples, listSessionJobs, startJob, useJob, type Info, type JobState, type Lane, type Sample } from "./api";
 
 const newSession = () => Math.random().toString(36).slice(2, 10);
 
@@ -11,6 +11,7 @@ export default function Stage() {
   const [session, setSession] = useState(newSession);
   const [jobId, setJobId] = useState<string | null>(() => new URLSearchParams(location.search).get("job"));
   const [askOmni, setAskOmni] = useState(true);
+  const [askGenie, setAskGenie] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [startErr, setStartErr] = useState<string | null>(null);
   const job = useJob(jobId);
@@ -41,6 +42,7 @@ export default function Stage() {
     f.set("sample_id", s.id);
     f.set("session", session);
     f.set("omni", String(askOmni));
+    f.set("genie", String(askGenie));
     f.set("dynamics", dynamics);
     try {
       setJobId((await startJob(f)).job_id);
@@ -88,7 +90,7 @@ export default function Stage() {
       <main className="flex-1 px-4 sm:px-10 pb-10">
         {!job && (
           <Idle info={info} infoErr={infoErr} samples={samples} captureUrl={captureUrl} askOmni={askOmni}
-                setAskOmni={setAskOmni} busy={busy} onSample={runSample} startErr={startErr} />
+                setAskOmni={setAskOmni} askGenie={askGenie} setAskGenie={setAskGenie} busy={busy} onSample={runSample} startErr={startErr} />
         )}
         {job && !job.result && <Running job={job} onReset={reset} />}
         {job && job.result && <Reveal job={job} onReset={reset} />}
@@ -118,7 +120,7 @@ function Elapsed({ job }: { job: JobState }) {
 /* ----------------------------------------------------------------------------------------- idle */
 function Idle(p: {
   info: Info | null; infoErr: string | null; samples: Sample[]; captureUrl: string; askOmni: boolean;
-  setAskOmni: (v: boolean) => void; busy: string | null; onSample: (s: Sample) => void; startErr: string | null;
+  setAskOmni: (v: boolean) => void; askGenie: boolean; setAskGenie: (v: boolean) => void; busy: string | null; onSample: (s: Sample) => void; startErr: string | null;
 }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-x-16 gap-y-10 max-w-[1400px]">
@@ -149,6 +151,11 @@ function Idle(p: {
           <input type="checkbox" className="mt-1.5 size-4 accent-[var(--color-amber)]" checked={p.askOmni}
                  onChange={(e) => p.setAskOmni(e.target.checked)} />
           <span>Also ask Omni to continue the clip <span className="text-muted">(about 40 s, about $1)</span></span>
+        </label>
+        <label className="mt-3 flex items-start gap-3 text-base">
+          <input type="checkbox" className="mt-1.5 size-4 accent-[var(--color-plum)]" checked={p.askGenie}
+                 onChange={(e) => p.setAskGenie(e.target.checked)} />
+          <span>And Genie 4 to play the scene on from its last frame <span className="text-muted">(about 15 s)</span></span>
         </label>
       </aside>
 
@@ -263,29 +270,33 @@ function Running({ job, onReset }: { job: JobState; onReset: () => void }) {
           <StepRow n={4} title="Fit physics to what it saw" state={stageState(job, physicsStage)}>
             {fit && <>{fit.motion_model}, {fit.fit_error_px.toFixed(1)} px from the tracked path over {fit.n_points} points (attempt {fit.attempt + 1})</>}
             {!fit && job.stages.simulate && <>{job.stages.simulate.message}</>}
+            {job.fallback && <p className="mt-2 text-bad">Physics check failed ({job.fallback.reason}); this run shows {job.fallback.to} instead.</p>}
           </StepRow>
           <StepRow n={5} title="Gemini Decision 1 checks the fit" state={job.verifies.length ? "done" : stageState(job, "verify")}>
             {ver && <Bars conf={ver.confidences} />}
             {job.repairs.map((r) => (
               <p key={r.attempt} className="mt-2">Gemini 4 Carbon proposed {r.proposal.motion_model}: {r.proposal.reason}</p>
             ))}
+            {job.repairSkipped && <p className="mt-2 text-muted">Stopped repairing: {job.repairSkipped.reason}.</p>}
           </StepRow>
           <StepRow n={6} title="Render the next 5 seconds" state={job.render ? "done" : stageState(job, "render")}>
             {job.render && <>{job.render.frames} frames, {job.render.duration_s.toFixed(2)} s</>}
           </StepRow>
         </ol>
-        <OmniLane job={job} />
+        <div className="space-y-6 self-start">
+          <BaselineLane title="Meanwhile, Omni" sub="Gemini Omni 1.2 Flash continues the same 3 seconds as video." lane={job.omni} />
+          <BaselineLane title="And Genie 4" sub="The Genie 4 world model plays the scene on from its last frame." lane={job.genie} />
+        </div>
       </div>
     </div>
   );
 }
 
-function OmniLane({ job }: { job: JobState }) {
-  const o = job.omni;
+function BaselineLane({ title, sub, lane: o }: { title: string; sub: string; lane?: Lane }) {
   return (
-    <section className="self-start rounded-2xl border border-line bg-card p-6">
-      <h3 className="text-2xl font-bold">Meanwhile, Omni</h3>
-      <p className="mt-1 text-base text-muted">Gemini Omni 1.2 Flash continues the same 3 seconds as video.</p>
+    <section className="rounded-2xl border border-line bg-card p-6">
+      <h3 className="text-2xl font-bold">{title}</h3>
+      <p className="mt-1 text-base text-muted">{sub}</p>
       <p className="mt-4 text-lg">
         {!o && "Waiting to start"}
         {o?.status === "start" && <span className="text-amber font-medium">Generating <span className="live-dot inline-block size-2 rounded-full bg-amber align-middle" /></span>}
@@ -301,18 +312,26 @@ function OmniLane({ job }: { job: JobState }) {
 function Reveal({ job, onReset }: { job: JobState; onReset: () => void }) {
   const r = job.result!;
   const omniUrl = r.urls.omni ?? (job.omni?.status === "done" ? job.omni.url : null);
+  const genieUrl = r.urls.genie ?? (job.genie?.status === "done" ? job.genie.url : null);
   const eeF = r.metrics.endpoint_error_cm.foresight;
   const eeO = r.metrics.endpoint_error_cm.omni ?? job.omni?.endpoint_error_cm ?? null;
+  const eeG = r.metrics.endpoint_error_cm.genie ?? job.genie?.endpoint_error_cm ?? null;
   const [showPath, setShowPath] = useState(false);
-  const foresightTitle = r.dynamics === "physics" ? "Foresight (physics)" : "Constant velocity (no physics)";
-  const better = eeF !== null && eeO !== null ? (eeF <= eeO ? "f" : "o") : null;
+  const fellBack = r.metrics.dynamics_used === "const_velocity_fallback";
+  const foresightTitle = r.dynamics !== "physics" ? "Constant velocity (no physics)" : fellBack ? "Foresight (fell back to constant velocity)" : "Foresight (physics)";
+  // The panel closest to where the object really ended up, among those with a measured endpoint.
+  const scored = ([["foresight", eeF], ["omni", eeO], ["genie", eeG]] as const).filter(([, e]) => e !== null) as [string, number][];
+  const better = scored.length >= 2 ? scored.reduce((a, b) => (b[1] < a[1] ? b : a))[0] : null;
+  const laneNote = (l?: Lane) => (l?.status === "start" ? "still generating…" : l?.status === "skipped" ? "not requested" : l?.status === "error" ? "failed" : "");
 
   const panels = [
     { key: "reality", title: "Reality", sub: "what actually happened", url: apiUrl(r.urls.reality), color: "text-ink", err: null as number | null, note: r.urls.reality ? "" : "no hidden clip for this run" },
     { key: "foresight", title: foresightTitle, sub: "simulated from 3 s of video", url: apiUrl(showPath && r.urls.overlay ? r.urls.overlay : r.urls.foresight), color: "text-cobalt", err: eeF, note: "" },
     { key: "omni", title: "Omni (video model)", sub: "generated from the same 3 s", url: apiUrl(omniUrl),
       color: "text-amber", err: eeO,
-      note: job.omni?.status === "start" ? "still generating…" : job.omni?.status === "skipped" ? "not requested" : job.omni?.status === "error" ? "failed" : "" },
+      note: laneNote(job.omni) },
+    ...(job.genie && job.genie.status !== "skipped" ? [{ key: "genie", title: "Genie 4 (world model)", sub: "played on from the last frame",
+      url: apiUrl(genieUrl), color: "text-plum", err: eeG, note: laneNote(job.genie) }] : []),
   ];
 
   return (
@@ -349,7 +368,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 type Panel = { key: string; title: string; sub: string; url: string | null; color: string; err: number | null; note: string };
 
-function SyncedPanels({ panels, better }: { panels: Panel[]; better: "f" | "o" | null }) {
+function SyncedPanels({ panels, better }: { panels: Panel[]; better: string | null }) {
   const refs = useRef<Record<string, HTMLVideoElement | null>>({});
   const [playing, setPlaying] = useState(true);
   const [slow, setSlow] = useState(false);
@@ -384,7 +403,7 @@ function SyncedPanels({ panels, better }: { panels: Panel[]; better: "f" | "o" |
 
   return (
     <div>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className={`grid grid-cols-1 gap-6 md:grid-cols-2 ${panels.length > 3 ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
         {panels.map((p) => (
           <div key={p.key}>
             <figure className={`monitor lane-${p.key}`}>
@@ -402,7 +421,7 @@ function SyncedPanels({ panels, better }: { panels: Panel[]; better: "f" | "o" |
               <div className="display text-6xl font-extrabold">Reference</div>
             ) : (
               <>
-                <div className={`display text-6xl font-extrabold ${(p.key === "foresight" && better === "f") || (p.key === "omni" && better === "o") ? "text-good" : "text-ink"}`}>
+                <div className={`display text-6xl font-extrabold ${p.key === better ? "text-good" : "text-ink"}`}>
                   {fmtCm(p.err)}
                 </div>
                 <div className="text-base text-muted">{p.err === null ? (p.note || "no endpoint measured") : "from where it really ended up"}</div>
@@ -415,7 +434,7 @@ function SyncedPanels({ panels, better }: { panels: Panel[]; better: "f" | "o" |
         <button onClick={() => setPlaying((x) => !x)} className="rounded-full bg-ink px-5 py-2 text-paper font-medium w-24">{playing ? "Pause" : "Play"}</button>
         <button onClick={() => setSlow((x) => !x)} aria-pressed={slow} className={`rounded-full border px-4 py-2 font-medium ${slow ? "border-cobalt text-cobalt" : "border-line"}`}>Half speed</button>
         <input type="range" min={0} max={5} step={1 / 24} value={t} onChange={(e) => seek(Number(e.target.value))}
-               className="flex-1 accent-[var(--color-cobalt)]" aria-label="Scrub all three videos" />
+               className="flex-1 accent-[var(--color-cobalt)]" aria-label="Scrub all videos" />
         <span className="font-mono text-base sm:w-36 text-right">0:{(3 + t).toFixed(2).padStart(5, "0")} of 0:08</span>
       </div>
     </div>

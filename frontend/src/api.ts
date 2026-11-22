@@ -16,6 +16,7 @@ export type Info = {
   lan_ip: string;
   physics_available: boolean;
   omni_enabled: boolean;
+  genie_enabled?: boolean;
   models: Record<string, string>;
 };
 export type Sample = { id: string; title: string; thumb_url: string };
@@ -32,20 +33,25 @@ export type Result = {
   job_id: string;
   status: string;
   dynamics: "physics" | "const_velocity";
-  urls: { conditioning: string; reality: string | null; foresight: string; omni: string | null; overlay: string | null };
+  urls: { conditioning: string; reality: string | null; foresight: string; omni: string | null; genie?: string | null; overlay: string | null };
   metrics: {
     latency_s_total: number;
     latency_s_by_stage: Record<string, number>;
     fit_error_px: number | null;
     decision1_confidences: Record<string, number> | null;
     repairs_used: number | null;
-    endpoint_error_cm: { foresight: number | null; omni?: number | null };
-    endpoint_error_px: { foresight: number | null; omni?: number | null };
+    endpoint_error_cm: { foresight: number | null; omni?: number | null; genie?: number | null };
+    endpoint_error_px: { foresight: number | null; omni?: number | null; genie?: number | null };
+    dynamics_used?: string;
+    fallback_reason?: string | null;
   };
   scene: { objects: { name: string; shape: string; est_real_size_cm: number }[]; motion_type: string; px_per_m: number };
   physics?: { motion_model?: string } | null;
   omni?: { status: string; latency_s: number | null; error: string | null };
+  genie?: { status: string; latency_s: number | null; error: string | null };
 };
+
+export type Lane = { status: string; url: string | null; latency_s: number | null; error: string | null; endpoint_error_cm?: number | null; t?: number };
 
 export type JobState = {
   id: string;
@@ -58,8 +64,11 @@ export type JobState = {
   verifies: { attempt: number; confidences: Record<string, number>; answers?: Record<string, string>; passed: boolean }[];
   repairs: { attempt: number; proposal: { motion_model?: string; reason?: string } }[];
   render?: { url: string | null; frames: number; duration_s: number };
-  omni?: { status: string; url: string | null; latency_s: number | null; error: string | null; endpoint_error_cm?: number | null; t?: number };
+  omni?: Lane;
   omniStartT?: number;
+  genie?: Lane;
+  fallback?: { to: string; reason: string };
+  repairSkipped?: { reason: string };
   result?: Result;
   error?: { stage: string; message: string };
   ended: boolean;
@@ -86,6 +95,9 @@ function reduce(s: JobState, a: Action): JobState {
     case "repair": return { ...next, repairs: [...s.repairs, d] };
     case "render": return d.url ? { ...next, render: d } : next;
     case "omni": return { ...next, omni: d, omniStartT: d.status === "start" ? d.t : s.omniStartT };
+    case "genie": return { ...next, genie: d };
+    case "fallback": return { ...next, fallback: d };
+    case "repair_skipped": return { ...next, repairSkipped: d };
     case "result": return { ...next, result: d };
     case "error": return { ...next, error: d, ended: true };
     case "end": return { ...next, ended: true };
@@ -93,7 +105,8 @@ function reduce(s: JobState, a: Action): JobState {
   }
 }
 
-const EVENTS = ["stage", "ingest", "perception", "tracking", "scale", "fit", "verify", "repair", "render", "omni", "result", "end"];
+const EVENTS = ["stage", "ingest", "perception", "tracking", "scale", "fit", "verify", "repair", "repair_skipped", "fallback",
+  "render", "omni", "genie", "result", "end"];
 
 /** Subscribe to a job's SSE stream. The server replays every past event on (re)connect, so state resets on open. */
 export function useJob(jobId: string | null): JobState | null {
@@ -112,7 +125,7 @@ export function useJob(jobId: string | null): JobState | null {
       es.addEventListener(name, (e) => {
         const data = JSON.parse((e as MessageEvent).data);
         dispatch({ type: "event", name, data });
-        if (name === "omni" && data.status !== "start") setTimeout(refresh, 300);
+        if ((name === "omni" || name === "genie") && data.status !== "start") setTimeout(refresh, 300);
         if (name === "end") { es.close(); refresh(); }
       });
     }

@@ -68,6 +68,7 @@ export default function Capture() {
     f.set("session", session);
     f.set("cond_seconds", "3");
     f.set("omni", "true");
+    f.set("genie", "true");
     f.set("dynamics", physics ? "physics" : "const_velocity");
     const xhr = new XMLHttpRequest();
     xhr.open("POST", apiUrl("/api/predict"));
