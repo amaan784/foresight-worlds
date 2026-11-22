@@ -123,6 +123,7 @@ Endpoint error is measured only where the system tracks an object (Foresight and
 
 | | |
 |---|---|
+| **The simple guide** | [docs/foresight-simple-guide.docx](docs/foresight-simple-guide.docx): what Foresight is and how it works, in plain words, with a diagram (Word; numbers as of Nov 21) |
 | **Architecture** | [docs/architecture.md](docs/architecture.md) |
 | **Evaluation** | [docs/evaluation.md](docs/evaluation.md), [per-clip results](eval/results_table.md), [failures and fixes](eval/FAILURES.md) |
 | **Phase 0 checks** | [phase0/REPORT.md](phase0/REPORT.md): scoring a subset, Hydrogen perception, CSRT against Robotics-ER 2, Omni continuation |
