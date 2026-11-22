@@ -9,6 +9,7 @@
   <a href="https://youtu.be/uZtcHMUKOVQ"><b>Watch the demo (1 min)</b></a> ·
   <a href="#why-it-matters">Why it matters</a> ·
   <a href="#try-it-in-30-seconds"><b>Try it in 30 seconds</b></a> ·
+  <a href="#post-hackathon-changes">Post-hackathon changes</a> ·
   <a href="#results">Results</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="docs/developer-guide.md">Developer guide</a>
@@ -53,29 +54,78 @@ the real object.
 
 <sub>The stage after a live run, 0.25 s into the hidden 5 seconds: the real ball and Foresight's ball are in the same place; Omni's ball has vanished.</sub>
 
+## Post-hackathon changes
+
+The version submitted to the Gemini 4 NYC Hackathon (November 21, 2026) is kept unchanged on the branch
+[`hackathon-submission-branch-archive`](https://github.com/amaan784/foresight-worlds/tree/hackathon-submission-branch-archive),
+at commit [`b3b3f79`](https://github.com/amaan784/foresight-worlds/commit/b3b3f791e5ac77e9fbe3c148e65c692e7c5f2da1) (`b3b3f791e5ac77e9fbe3c148e65c692e7c5f2da1`). Everything in this section
+was added after the event, starting November 22, and the work is ongoing on `main`. What failed and why each change was made: [eval/FAILURES.md](eval/FAILURES.md).
+
+**Physics that holds up on contacts and falls**
+- Depth from where things touch the table: a box in front of the ball hides it instead of stopping it, balls rolling
+  at two distances from the camera pass each other, and only objects at the same depth collide.
+- Resting objects (balls in a row, a rubber duck) are bodies that can be knocked; containers are open on top.
+- Tables stay level even when perspective draws them sloped, surfaces are solid, and balls brake with rolling
+  resistance instead of creeping on for seconds.
+- Gemini 4 Hydrogen now also reports whether each surface is hard or soft, and each object's mass.
+- Cleaner tracks: the moment a grabber lets go, and points from a half-hidden object, are handled before fitting.
+- An energy check: if a simulated object speeds up in a way real contacts cannot cause, the run falls back to
+  constant velocity and says so.
+- Faster repairs: Gemini 4 Carbon runs at thinking level low inside a 90 s budget.
+
+**The stage**
+- Genie 4 plays next to Omni as a fourth panel.
+- Drop a video from the laptop when the phone cannot reach it (venue Wi-Fi often blocks it).
+- Each reveal draws the predicted path against the real one, explains what Foresight understood in plain words,
+  and offers the predicted trajectory as JSON or CSV in metres, for use in another simulator.
+- Recent runs can be reopened, and a results page shows the eval in the app.
+
+**The evaluation**
+- A fresh clean run of the 15 clips, and a wider eval: 20 scenes on all three cameras, with five scenes added by a
+  rule fixed before the run (`eval/run_wide.py`).
+- A free development loop on cached Gemini readings (`eval/offline_fit.py`), and two measurement fixes: the scorer
+  reused masks of older videos, and the real track followed the edge of whatever hid the object.
+
+**Docs:** [the simple guide](docs/foresight-simple-guide.docx) (Word).
+
 <!-- results: start (written by eval/readme_results.py from eval/results.json; edits here are lost) -->
 ## Results
 
-Every number below comes from `eval/run_eval.py`: [eval/results.json](eval/results.json), [the per-clip table](eval/results_table.md), [the method](docs/evaluation.md). 15 rigid-body clips, center camera, 24 FPS, scored against the original Physics-IQ ground truth (Verified files were not available) with the official Physics-IQ code. Clean run: yes; commit `f84ff62`, 2026-11-21T20:40:02+00:00.
+Every number below comes from `eval/run_eval.py`: [eval/results.json](eval/results.json), [the per-clip table](eval/results_table.md), [the method](docs/evaluation.md). 15 rigid-body clips, center camera, 24 FPS, scored against the original Physics-IQ ground truth (Verified files were not available) with the official Physics-IQ code. Clean run: yes; commit `5e5ba33`, 2026-11-22T07:50:00+00:00.
 
-**In short:** Physics-IQ score (Verified formula, %, higher is better): Constant velocity (no physics) 75.2, Foresight (physics) 59.0, Foresight with Gemini 4 Carbon reading the scene 58.8, Genie 4 (world model) 42.2, Last frame held 35.0, Gemini Omni 1.2 Flash (video model) 27.5.
+**In short:** Physics-IQ score (Verified formula, %, higher is better): Constant velocity (no physics) 77.1, Foresight with Gemini 4 Carbon reading the scene 76.8, Foresight (physics) 74.4, Genie 4 (world model) 42.2, Last frame held 35.0, Gemini Omni 1.2 Flash (video model) 27.5.
 
-Foresight scores higher than both video models (Gemini Omni 1.2 Flash 27.5, Genie 4 42.2). It does **not** yet beat the constant-velocity baseline, which uses the same Gemini scene reading, tracking and renderer and only drops the physics. Where the physics fit works it is more accurate: Foresight's object ends closer to the real one on 8 of the 14 clips with a measurable endpoint (on ball-rolls-off, 5.7 cm against 9.9 cm). But the fit blew up on 4 clips with collisions or falls (roll-in-box, ball-and-block-fall, balls-collide, two-balls-pass), and those pull the pooled score down. Making contacts and falls robust is the next step.
+On the Physics-IQ score Foresight (74.4) is above both video models (Gemini Omni 1.2 Flash 27.5, Genie 4 42.2), and still **below** the constant-velocity baseline (77.1), which uses the same Gemini scene reading, tracking and renderer and only drops the physics. On where the object actually ends up, Foresight is closer to reality than constant velocity on 12 of the 14 clips with a measurable endpoint (median 9.9 cm against 192.5 cm). The two measures disagree because the Physics-IQ score compares where pixels change: a constant-velocity object that leaves the frame early leaves a still picture, which matches a real scene that has come to rest, even when the object went the wrong way. The physics fit blew up (endpoint over 10 m off) on 0 clips; the energy check fell back to constant velocity on 0.
 
-Reading the scene with Gemini 4 Carbon instead of Hydrogen gives about the same score (58.8 against 59.0) and a lower median endpoint error (17.8 cm against 42.5 cm); the stage uses Hydrogen because it is faster.
+Reading the scene with Gemini 4 Carbon instead of Hydrogen: 76.8 against 74.4, median endpoint error 21.3 cm against 9.9 cm; the stage uses Hydrogen because it is faster.
 
 <p align="center"><img src="eval/chart.png" alt="Physics-IQ score per system" width="88%"></p>
 
-| System | Physics-IQ score (Verified formula) | Original formula | Median endpoint error (cm) | Failed clips |
-|---|---|---|---|---|
-| Constant velocity (no physics) | **75.2** | 76.2 | 438.1 | 0 of 15 |
-| Foresight (physics) | 59.0 | 55.2 | 42.5 | 0 of 15 |
-| Foresight with Gemini 4 Carbon reading the scene | 58.8 | 56.2 | 17.8 | 0 of 15 |
-| Genie 4 (world model) | 42.2 | 42.3 | n/a | 0 of 15 |
-| Last frame held | 35.0 | 32.4 | n/a | 0 of 15 |
-| Gemini Omni 1.2 Flash (video model) | 27.5 | 21.6 | n/a | 0 of 15 |
+| System | Physics-IQ score (Verified formula) | Original formula | Median endpoint error (cm) | Failed clips | Run |
+|---|---|---|---|---|---|
+| Constant velocity (no physics) | **77.1** | 78.6 | 192.5 | 0 of 15 | 2026-11-22 |
+| Foresight with Gemini 4 Carbon reading the scene | 76.8 | 81.3 | 21.3 | 0 of 15 | 2026-11-22 |
+| Foresight (physics) | 74.4 | 77.2 | 9.9 | 0 of 15 | 2026-11-22 |
+| Genie 4 (world model) | 42.2 | 42.3 | n/a | 0 of 15 | 2026-11-21 |
+| Last frame held | 35.0 | 32.4 | n/a | 0 of 15 | 2026-11-22 |
+| Gemini Omni 1.2 Flash (video model) | 27.5 | 21.6 | n/a | 0 of 15 | 2026-11-21 |
 
-Endpoint error is measured only where the system tracks an object (Foresight and constant velocity). Failures, causes and fixes: [eval/FAILURES.md](eval/FAILURES.md).
+Endpoint error is measured only where the system tracks an object (Foresight and constant velocity). The video models' rows come from their own clean run (the Run column): their output does not depend on Foresight's code. Failures, causes and fixes: [eval/FAILURES.md](eval/FAILURES.md).
+
+### Wider eval: 20 scenes, all three cameras
+
+`eval/run_wide.py` runs the same systems on 20 scenes x 3 camera views (60 scene-views; five scenes added by a rule fixed before the run). [eval/results_wide.json](eval/results_wide.json), [per-scene table](eval/results_wide_table.md). Clean run: yes; commit `a296308`, 2026-11-22T08:43:08+00:00.
+
+| System | Physics-IQ score (Verified formula, all views) | Left | Center | Right | Median endpoint error (cm) | Failed |
+|---|---|---|---|---|---|---|
+| Constant velocity (no physics) | 66.6 | 64.8 | 68.6 | 66.5 | 154.8 | 0 of 60 |
+| Foresight (physics) | 64.7 | 63.4 | 65.1 | 65.7 | 18.2 | 0 of 60 |
+| Genie 4 (world model) | 46.5 | 43.7 | 45.7 | 50.2 | n/a | 0 of 60 |
+| Last frame held | 36.5 | 36.5 | 35.4 | 37.5 | n/a | 0 of 60 |
+| Gemini Omni 1.2 Flash (video model) | 30.1 | 29.1 | 29.1 | 32.1 | n/a | 0 of 60 |
+
+Across the 60 scene-views Foresight scores below constant velocity on the Physics-IQ score (64.7 against 66.6) and ends closer to the real object on 36 of the 51 scene-views with a measurable endpoint. Most of these scene-views (the left and right cameras and the five added scenes) were not used while developing.
+
 <!-- results: end -->
 
 ## How it works
@@ -139,6 +189,6 @@ Evaluation clips and scoring code come from [Physics-IQ](https://github.com/goog
 Research). No dataset files are in this repository; the images above contain a few Physics-IQ frames, credited
 in their captions.
 
-Built during the Gemini 4 NYC Hackathon (November 21, 2026); the version submitted there is commit `b3b3f79`.
-Since then: depth layers, cleaner tracks, soft surfaces, rolling resistance, Genie 4 on the stage and a wider
-eval; what changed and why is in [eval/FAILURES.md](eval/FAILURES.md). MIT license, see [LICENSE](LICENSE).
+Built during the Gemini 4 NYC Hackathon (November 21, 2026); the submitted version is on the branch
+`hackathon-submission-branch-archive` at commit `b3b3f79` (see [Post-hackathon changes](#post-hackathon-changes)). MIT license, see
+[LICENSE](LICENSE).

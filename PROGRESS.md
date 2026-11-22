@@ -4,17 +4,28 @@ Each agent edits ONLY its own section. Format: Done / Next / Blockers.
 
 ## Backend (Claude Code)
 
-### Done (final)
+### Done (hackathon)
 - Phase 0 (phase0/REPORT.md); backend/foresight pipeline + API; frontend stage and phone capture; eval harness; README, docs, images.
 - Clean eval, 15 Physics-IQ clips, center view, original GT (eval/results.json): constant velocity 75.22, Foresight 58.97, Foresight with Carbon reading 58.8, Genie 4 42.23, last frame 34.96, Omni 1.2 27.51.
 
-### Next (after the hackathon)
-- Make the physics fit robust on contacts and falls (4 clips blew up; eval/FAILURES.md).
-- Genie 4 as a fourth panel on the stage (in the eval only today).
-- Physics-IQ Verified ground truth once the HF terms are accepted.
+### Done after the hackathon (Nov 22)
+- Hackathon state kept on local branch `hackathon-submission-branch-archive` (commit b3b3f79).
+- Physics: track cleaning, one support line per depth, depth layers (block / hide / behind), bodies at rest that can be knocked, open containers, solid and level tables, soft surfaces, rolling resistance, energy-check fallback to constant velocity, Carbon repair at thinking low inside a 90 s budget (eval/FAILURES.md rows 10-24).
+- Hydrogen now reports surface material (hard/soft) and object mass.
+- Genie 4 on the stage: API lane next to Omni, toggle, fourth reveal panel.
+- eval/offline_fit.py (free development loop), eval/run_wide.py (20 scenes x 3 cameras), scorer mask-cache bug fixed.
+- Clean eval, 15 clips, center view (eval/results.json, Nov 22): constant velocity 77.06, Foresight with Carbon reading 76.8, Foresight 74.37, Genie 4 42.23 (Nov 21), last frame 34.96, Omni 27.51 (Nov 21). Median endpoint error (re-measured with the occlusion-aware real track): Foresight 9.9 cm, constant velocity 192.5 cm; Foresight closer on 12 of 14 clips.
+- Wider eval, 20 scenes x 3 cameras (eval/results_wide.json): constant velocity 66.63, Foresight 64.73, Genie 4 46.52, last frame 36.48, Omni 30.11; median endpoint Foresight 18.2 cm, constant velocity 154.8 cm; Foresight closer on 36 of 51 scene-views. No failures, no fallbacks.
+- Stage: drop a video from the laptop, recent runs, path plot, "what Foresight understood", trajectory JSON/CSV, /results page.
+- README: "Post-hackathon changes" section; submitted version is branch hackathon-submission-branch-archive at b3b3f79.
+
+### Next
+- Push main and the archive branch when the user says so (the README links the branch).
+- Physics-IQ Verified ground truth: needs the gated Hugging Face dataset accepted by the account owner.
+- Glancing collisions in depth (balls-collide, ball-hits-duck) are out of reach for a 2D world.
 
 ### Blockers
-- none for submission
+- none
 
 ## Physics
 

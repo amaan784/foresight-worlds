@@ -100,6 +100,17 @@ def section(r: dict) -> str:
                 pv = v.get("per_view_pct", {})
                 lines.append(f"| {NAMES[k]} | {v['pooled_verified_pct']:.1f} | {f1(pv.get('left'))} | {f1(pv.get('center'))} | "
                              f"{f1(pv.get('right'))} | {f1(v.get('endpoint_error_cm_median'))} | {v.get('n_failed', 0)} of {v['n_scene_views']} |")
+            runs_w = w.get("runs", {})
+            if "foresight" in runs_w and "const_velocity" in runs_w:
+                F, C = runs_w["foresight"], runs_w["const_velocity"]
+                both = [k for k in F if F[k].get("endpoint_error_cm") is not None and (C.get(k) or {}).get("endpoint_error_cm") is not None]
+                closer = sum(F[k]["endpoint_error_cm"] < C[k]["endpoint_error_cm"] for k in both)
+                fw, cw = ws.get("foresight", {}), ws.get("const_velocity", {})
+                lines += ["", f"Across the {fw.get('n_scene_views')} scene-views Foresight scores "
+                          f"{'above' if fw.get('pooled_verified_pct', 0) > cw.get('pooled_verified_pct', 0) else 'below'} constant velocity "
+                          f"on the Physics-IQ score ({f1(fw.get('pooled_verified_pct'))} against {f1(cw.get('pooled_verified_pct'))}) and ends "
+                          f"closer to the real object on {closer} of the {len(both)} scene-views with a measurable endpoint. Most of these "
+                          f"scene-views (the left and right cameras and the five added scenes) were not used while developing."]
             lines.append("")
     lines.append(END)
     return "\n".join(lines)

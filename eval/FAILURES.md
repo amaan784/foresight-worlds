@@ -42,18 +42,13 @@ in the wider eval (`eval/run_wide.py`) were not used while developing.
 | 23 | tried and reverted: keeping Hydrogen's slope for short tracks | a few points cannot measure a slope, but Hydrogen's line is often a table edge, not the rolling path | reverted; it hurt ball-ramp |
 | 24 | the Nov 22 clean run first scored Foresight 59.9 while the same videos scored about 74 offline | the scorer caches each prediction's motion masks by file name and only made a mask when none existed, so the new videos were scored with masks of the Nov 21 videos (the Nov 21 numbers were not affected: each system's masks were made in that run, and the held last frame is the same video both days) | a mask is regenerated whenever its video is newer (`phase0/score_subset.py`); `eval/run_eval.py --rescore` scored the Nov 22 videos again, with no model calls |
 
+| 25 | a live roll-behind-box run showed Foresight 1.11 m off and Genie 2.5 cm | the real ball went behind the container and the reality tracker latched onto the container's edge for the rest of the 5 s, so "where it really ended up" was a still patch any static prediction matched | the real track also ends when the object reaches something standing in front of it (with two radii of margin: perception's box is loose); `eval/remeasure_endpoints.py` recomputed the eval's endpoint errors from the saved paths, no model calls |
+
 A simulated object that gains energy (moves faster than its start speed plus free fall allows) now makes the run
 fall back to constant velocity, and the run says so (`dynamics_used`, `fallback_reason`).
 
 ## Clean eval run
 
 <!-- failures: start (written by eval/readme_results.py; edits here are lost) -->
-| System | Clip | What happened | Handling |
-|---|---|---|---|
-| foresight | roll-in-box | the fit blew up: endpoint 161.6 m off, 2 repairs | not fixed today: contacts and falls in the fitter |
-| foresight | ball-in-basket | Decision 1 doubted the fit twice; 2 Carbon repairs, 430.62 s | not fixed today |
-| foresight | duck-falls-in-box | Decision 1 doubted the fit twice; 2 Carbon repairs, 301.14 s | not fixed today |
-| foresight | ball-and-block-fall | the fit blew up: endpoint 46.2 m off, 2 repairs | not fixed today: contacts and falls in the fitter |
-| foresight | balls-collide | the fit blew up: endpoint 47.7 m off, 0 repairs | not fixed today: contacts and falls in the fitter |
-| foresight | two-balls-pass | the fit blew up: endpoint 20.8 m off, 2 repairs | not fixed today: contacts and falls in the fitter |
+No system failed on any clip.
 <!-- failures: end -->
