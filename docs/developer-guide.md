@@ -5,8 +5,7 @@
 ```bash
 brew install python@3.12 ffmpeg node
 uv venv .venv -p 3.12 && source .venv/bin/activate
-uv pip install "google-genai>=3.2.0" opencv-contrib-python numpy scipy pymunk python-dotenv \
-  "huggingface_hub[cli]" pandas matplotlib fastapi uvicorn python-multipart pyyaml tqdm joblib
+uv pip install -e ".[dev]"
 cp .env.example .env            # GEMINI_API_KEY, and HF_TOKEN for Physics-IQ Verified
 git clone --depth 1 https://github.com/google-deepmind/physics-IQ-benchmark third_party/physics-IQ-benchmark
 cd frontend && npm install && cd ..
@@ -14,6 +13,14 @@ cd frontend && npm install && cd ..
 
 Physics-IQ Verified is gated: accept its terms on Hugging Face once. Without it, use `--source gcs` (the
 original Physics-IQ files).
+
+## Run tests (offline, no API key needed)
+
+```bash
+pytest -q
+npm --prefix frontend test
+npm --prefix frontend run build
+```
 
 ## Run the demo
 

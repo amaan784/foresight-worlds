@@ -20,16 +20,31 @@ def test_config_public_defaults_and_fallbacks() -> None:
     assert config.FALLBACK["gemini-4-hydrogen"] == "gemini-4-neon"
 
 
-def test_client_for_routes_v1_vs_v1beta() -> None:
-    assert gemini.client_for("gemini-3.8-flash") is gemini.client()
-    assert gemini.client_for("gemini-3.6-flash") is gemini.client()
-    assert gemini.client_for("gemini-4-argon") is gemini.client()
-    assert gemini.client_for("gemini-omni-1.1-flash") is gemini.beta_client()
-    assert gemini.client_for("gemini-omni-1.2-flash") is gemini.beta_client()
-    assert gemini.client_for("genie-4") is gemini.beta_client()
-    assert gemini.client_for("gemini-decision-1") is gemini.beta_client()
-    assert gemini.client_for("gemini-3.1-pro-preview") is gemini.beta_client()
-    assert gemini.client_for("antigravity-preview-09-2026") is gemini.beta_client()
+def test_client_for_routes_v1_vs_v1beta(monkeypatch) -> None:
+    from google import genai
+
+    class _StubClient:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+    monkeypatch.setattr(genai, "Client", _StubClient)
+    monkeypatch.setattr(gemini, "_client", None)
+    monkeypatch.setattr(gemini, "_beta_client", None)
+
+    v1 = gemini.client()
+    v1beta = gemini.beta_client()
+    assert v1 is not v1beta
+    assert v1.kwargs == {}
+    assert v1beta.kwargs == {"http_options": {"api_version": "v1beta"}}
+    assert gemini.client_for("gemini-3.8-flash") is v1
+    assert gemini.client_for("gemini-3.6-flash") is v1
+    assert gemini.client_for("gemini-4-argon") is v1
+    assert gemini.client_for("gemini-omni-1.1-flash") is v1beta
+    assert gemini.client_for("gemini-omni-1.2-flash") is v1beta
+    assert gemini.client_for("genie-4") is v1beta
+    assert gemini.client_for("gemini-decision-1") is v1beta
+    assert gemini.client_for("gemini-3.1-pro-preview") is v1beta
+    assert gemini.client_for("antigravity-preview-09-2026") is v1beta
 
 
 def test_api_info_reflects_config_toggles_and_models() -> None:

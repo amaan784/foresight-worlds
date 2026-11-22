@@ -22,9 +22,10 @@ Each agent edits ONLY its own section. Format: Done / Next / Blockers.
 - C2 (phone capture Omni/Genie toggles): QR `captureUrl` carries `&omni=0|1&genie=0|1`, `Stage.tsx` syncs live toggles via `POST /api/sessions/{session}`, `Capture.tsx` fetches `GET /api/sessions/{session}` before upload (falling back to QR query params and `/api/info`), and `POST /api/predict` honors session toggles on `source=capture`; 38/38 tests passing, offline `c2_check` 74.52, live phone-capture upload `j_74a90a6b` verified with 0 Omni and 0 Genie calls in `logs/` (eval/FAILURES.md row 29).
 - C3 (short-clip synced playback): `SyncedPanels` (`Stage.tsx` + `frontend/src/sync.ts`) runs on a shared 5.0 s monotonic timeline instead of `vids()[0]` + `<video loop>`, holding shorter `reality`/`overlay` clips on their final frame (`· ended`) while 5.0 s predictions play through to 5.0 s; 4/4 frontend sync tests + 39/39 backend/physics tests passing, offline `c3_check` 74.52, live 4.0 s upload `j_c60b6c13` verified in headless Chrome (eval/FAILURES.md row 30).
 - C4 (gravity scale guard + late-release cut): `track.clean_track` trims held prefixes even when released 1 frame before `t=3.0` s (`moving_after == 1`), `scene.build_scene` prunes source-occluded points (`drop_source_statics`) before scale and support snapping, and `scale.choose_scale` gates gravity scale on clean free-fall residuals (`R^2 >= 0.98`, downward drop, no bounce) and `[0.5x, 2.0x]` agreement with size scale, recording `px_per_m_reason`; 44/44 backend/physics tests passing, 0 of 60 rebuilt wide scenes outside 2x of size scale (`ball-and-block-fall_right` `9.25 -> 4447.76` px/m, endpoint `1839.8 -> 3.4` cm; `marble-run-x_center` `124.67 -> 2160.0` px/m), offline 15-clip `--rebuild` improved `76.50 -> 77.64` (cached Hydrogen) and `76.15 -> 76.89` (cached `gemini-3.8-flash`) (eval/FAILURES.md row 31).
+- C7 (packaging & secret-free CI): added PEP 621 `pyproject.toml` (`setuptools.build_meta`, `[tool.pytest.ini_options]`), `.github/workflows/ci.yml` (`GEMINI_API_KEY=""`, `GOOGLE_API_KEY=""`, backend `pytest` + frontend `npm test`, `tsc --noEmit`, `oxlint`, `vite build`), `conftest.py` zero-secret/live-call guard, `eval/results_wide.json` in `Dockerfile`, and updated `docs/developer-guide.md`; 58/58 zero-`PYTHONPATH` zero-secret `pytest` tests + 4/4 frontend tests + `vite build` pass, offline `c7_rebuild` 77.64 (eval/FAILURES.md row 34).
 
 ### Next (handed over to Antigravity on Nov 22, see HANDOVER.md)
-- Option C, hardening: per-object start times (C5), local multi-start instead of repairs (C6), CI (C7).
+- Option C hardening (C1–C7) complete. Next: Option A — a physics auditor (`foresight audit`) for video and world models, and an interactive what-if on the stage.
 - Then Option A: a physics auditor for video and world models, and an interactive what-if on the stage.
 - Physics-IQ Verified ground truth: needs the gated Hugging Face dataset accepted by the account owner.
 - Glancing collisions in depth (balls-collide, ball-hits-duck) are out of reach for a 2D world.
@@ -47,12 +48,12 @@ Each agent edits ONLY its own section. Format: Done / Next / Blockers.
   - `gemini-decision-1` (`verify.py`, v1beta, 1.7 s): good rolling fit passed (`outline_on_object='yes'` 0.8275, `motion='roll'` 0.9599); corrupted bouncing fit failed (`outline_on_object='no'` P=0.07, `motion='fall'` 0.4004 < 0.7).
   - `gemini-4-carbon` (`repair.py`, `thinking_level='medium'`, structured output): diagnosed `'bounce'` from 2-panel plot + keyframes, estimated `vy0=-1.1 m/s` and `elasticity=0.82`; refit dropped RMSE `185.0 px -> 0.003 px` and passed re-verification (`outline='yes'` 0.8276, `motion='bounce'` 0.8957).
   - `antigravity-preview-09-2026` (`agent_runner.py`, v1beta): provisioned sandbox once (79 s), reused `environment_id` on `scene_ball-rolls-off/scene.json` (27 s), reproduced exact local fit (`fit_error_px=7.884`, `vx0=1.2649`, `damping=0.4242`); added fenced-JSON parser for Managed Agent markdown output.
-- All 51 backend/physics unit & SDK-schema validation tests pass (`backend/physics/tests/`).
+- All 58 backend/physics unit & SDK-schema validation tests pass (`backend/physics/tests/`).
 - C5 (per-object start times): `BodyParams.t_start_s` + scheduled `PhysicsWorld` body activation (`world.py`), per-object `t_obj_start` initial-guess and active-body rollout fitting (`fit.py`), pre-activation overlay/plot filtering (`verify.py`, `repair.py`), and 4 staggered multi-object unit tests; offline 15-clip `--rebuild` `77.64 -> 77.64` (`two-balls-pass` `99.0 -> 99.1`, `balls-collide` `86.1 -> 86.1`, `ball-train` `77.9 -> 77.9`), `perception_public` `76.89 -> 76.90` (`two-balls-pass` `98.9 -> 99.1`, `balls-collide` `100.0`, `ball-train` `58.4`), legacy cached `74.52 -> 74.48` (eval/FAILURES.md row 32).
 - C6 (local multi-start repair): `config.REPAIR_MODE` defaults to `"local"` (`FORESIGHT_REPAIR_MODE=llm` keeps LLM `propose_repair`), `local_multistart_repair` (`repair.py` + `physics.predict`) refits across motion models (`roll`, `slide`, `fall`, `bounce`) and apex-rebound / chord / ballistic seeds in **0.015 s min / 0.379 s median / 3.346 s max** across the 15 4K Physics-IQ clips (0 LLM repair calls), `verify.py` smooths `selection_score` with `-0.025 * fit_error_px`, `/api/info` + `Stage.tsx` surface `"local-multistart"` / `"Local multi-start"`, and `README.md` + `docs/architecture.md` document the flow; 51/51 backend/physics tests + 4/4 frontend tests + `vite build` pass, offline 15-clip `c6_rebuild` 77.64 and `c6_public` 76.90 (eval/FAILURES.md row 33).
 
 ### Next
-- Packaging & CI (`pyproject.toml` + GitHub Actions, C7), then Option A physics auditor and interactive what-if stage controls.
+- Option A physics auditor and interactive what-if stage controls.
 
 ### Blockers
 - None.
@@ -63,9 +64,10 @@ Each agent edits ONLY its own section. Format: Done / Next / Blockers.
 - Stage (`Stage.tsx`), phone capture (`Capture.tsx`), path plot and explanation cards (`Insights.tsx`), eval results page (`Results.tsx`).
 - C2: phone QR capture honors stage Omni/Genie toggles via both QR query params and live per-session server state (`/api/sessions/{session}`).
 - C3: `SyncedPanels` (`Stage.tsx`, `sync.ts`, `sync.test.ts`) drives all panels from a shared 5.0 s timeline and holds shorter clips on their final frame instead of resetting predictions early.
+- C7: GitHub Actions frontend CI job (`.github/workflows/ci.yml`: `npm ci`, `npm test`, `tsc --noEmit`, `oxlint`, `vite build`) + root `pyproject.toml`.
 
 ### Next
-- Option A interactive what-if controls on the stage once C4–C7 complete.
+- Option A interactive what-if controls on the stage.
 
 ### Blockers
 - None.

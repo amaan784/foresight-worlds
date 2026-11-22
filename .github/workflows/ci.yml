@@ -1,0 +1,80 @@
+name: CI
+
+"on":
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GEMINI_API_KEY: ""
+  GOOGLE_API_KEY: ""
+
+jobs:
+  backend:
+    name: Backend & Physics Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: pyproject.toml
+
+      - name: Install system libraries (ffmpeg)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg libglib2.0-0 libgomp1
+
+      - name: Install package and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Verify editable package imports without PYTHONPATH
+        run: python -c "import foresight, physics"
+
+      - name: Run offline unit tests (no Gemini calls or secrets)
+        run: pytest -q
+
+  frontend:
+    name: Frontend Tests, Typecheck & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm --prefix frontend ci
+
+      - name: Run frontend unit tests
+        run: npm --prefix frontend test
+
+      - name: Typecheck app and node configs
+        run: |
+          npx --prefix frontend tsc -p frontend/tsconfig.app.json --noEmit
+          npx --prefix frontend tsc -p frontend/tsconfig.node.json --noEmit
+
+      - name: Lint frontend sources
+        run: npx --prefix frontend oxlint -c frontend/.oxlintrc.json frontend/src
+
+      - name: Build production frontend bundle
+        run: npm --prefix frontend run build

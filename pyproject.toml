@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "foresight-worlds"
+version = "0.2.0"
+description = "For robotics teams: watch 3 seconds of real video, simulate the physics, and predict the next 5."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+dependencies = [
+  "fastapi>=0.115",
+  "google-genai>=3.6.1",
+  "huggingface_hub[cli]>=0.26",
+  "joblib>=1.4",
+  "matplotlib>=3.9",
+  "numpy>=2.0",
+  "opencv-contrib-python-headless>=4.10",
+  "pandas>=2.2",
+  "pillow>=11.0",
+  "pydantic>=2.10",
+  "pymunk>=7.0",
+  "python-dotenv>=1.0",
+  "python-multipart>=0.0.12",
+  "pyyaml>=6.0",
+  "scipy>=1.14",
+  "tqdm>=4.66",
+  "uvicorn[standard]>=0.32",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.27",
+  "pytest>=8.0",
+]
+
+[project.urls]
+Repository = "https://github.com/amaan784/foresight-worlds"
+
+[tool.setuptools.packages.find]
+where = ["backend"]
+include = ["foresight*", "physics*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["backend", "phase0"]
+testpaths = ["backend/physics/tests"]
