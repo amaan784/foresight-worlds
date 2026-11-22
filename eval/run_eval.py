@@ -101,6 +101,7 @@ def run_system(system: str, scene: str, bench: Path, out: Path, cache_root: Path
         return {"latency_s": round(time.time() - t0, 2), "endpoint_error_cm": m["endpoint_error_cm"]["foresight"],
                 "fit_error_px": m.get("fit_error_px"), "decision1_confidences": m.get("decision1_confidences"),
                 "repairs_used": m.get("repairs_used"), "renderer": meta["renderer"],
+                "dynamics_used": m.get("dynamics_used"), "fallback_reason": m.get("fallback_reason"),
                 "motion_model": (meta.get("physics") or {}).get("motion_model")}
     if system == "omni":
         from foresight import omni

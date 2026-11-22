@@ -17,6 +17,9 @@ DECISION = "gemini-decision-1"  # verification (noul / choice with "other"; chec
 import os as _os
 PERCEPTION = _os.environ.get("FORESIGHT_PERCEPTION_MODEL", HYDROGEN)
 PERCEPTION_THINKING = _os.environ.get("FORESIGHT_PERCEPTION_THINKING", "low")
+# Repair: Carbon at "medium" took 44 s median and up to 411 s per call on Nov 21 (logs/genai_calls_20261121.jsonl).
+REPAIR_THINKING = _os.environ.get("FORESIGHT_REPAIR_THINKING", "low")
+REPAIR_BUDGET_S = float(_os.environ.get("FORESIGHT_REPAIR_BUDGET_S", "90"))  # whole check-and-repair loop
 
 # --- Other models ---
 MANAGED_AGENT = "antigravity-preview-09-2026"  # runs batch eval fits in its sandbox

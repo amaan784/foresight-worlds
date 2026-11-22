@@ -250,6 +250,7 @@ def predict_clip(cond_video: Path, out_video: Path, out_fps: int = config.BENCH_
             "latency_s_total": round(time.time() - t_start, 2), "latency_s_by_stage": lat,
             "fit_error_px": phys.get("fit_error_px"), "decision1_confidences": phys.get("decision1_confidences"),
             "repairs_used": phys.get("repairs_used"),
+            "dynamics_used": phys.get("dynamics_used", dynamics), "fallback_reason": phys.get("fallback_reason"),
             "endpoint_error_cm": {"foresight": ee["foresight"]["cm"] if ee["foresight"] else None},
             "endpoint_error_px": {"foresight": ee["foresight"]["px"] if ee["foresight"] else None},
         },

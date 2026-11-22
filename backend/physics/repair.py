@@ -245,7 +245,7 @@ def propose_repair(
     previous_attempts: list[dict[str, Any]] | None = None,
     on_event: OnEvent | None = None,
 ) -> RepairProposal:
-    """Ask gemini-4-carbon (thinking_level='medium', native structured output) for a repair proposal."""
+    """Ask gemini-4-carbon (config.REPAIR_THINKING, native structured output) for a repair proposal."""
     plot_path = plot_trajectory_diagnostics(scene, fit_result, attempt=attempt)
     overlay_paths = list(verification.overlay_paths)
     if not overlay_paths:
@@ -265,7 +265,7 @@ def propose_repair(
         model=config.CARBON,
         tag=f"repair:{clip_id}:a{attempt}",
         input=blocks,
-        generation_config={"thinking_level": "medium"},
+        generation_config={"thinking_level": config.REPAIR_THINKING},
         response_format={
             "type": "text",
             "mime_type": "application/json",
