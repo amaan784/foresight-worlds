@@ -74,4 +74,13 @@ Each agent edits ONLY its own section. Format: Done / Next / Blockers.
 - None.
 
 ## Eval
-_(eval agent)_
+### Done
+- Clean 15-clip center-view eval (`eval/results.json`, `eval/results_table.md`, `eval/chart.png`), 60-scene-view wider eval (`eval/results_wide.json`, `eval/results_wide_table.md`), Carbon & Neon variants (`eval/run_variant.py`), Genie 4 streaming baseline (`eval/run_genie.py`), offline fitter loop (`eval/offline_fit.py`), occlusion-aware endpoint remeasurement (`eval/remeasure_endpoints.py`), and automated README/failure writer (`eval/readme_results.py`).
+- A2 (batch physics audit over all saved eval predictions): added `eval/run_audit.py` (`ProcessPoolExecutor`, `0` Gemini calls) auditing all `105` main-eval videos (`eval/preds/`, 7 systems x 15 clips on C4-clean `c7_rebuild` scenes) and all `300` wide-eval videos (`eval/preds_wide/`, 5 systems x 60 scene-views on C4-clean `c4_wide_scenes`), producing `eval/audit_results.json`, `eval/audit_wide.json`, `eval/audit_table.md`, `GET /api/eval/audit` & `GET /api/eval/audit/wide` (`backend/foresight/api.py`, `Dockerfile`), `README.md` `## Physics auditor`, and `backend/physics/tests/test_a2_eval_audit.py` (`66/66` offline `pytest` tests passing, `a2_check` `77.64`; `eval/FAILURES.md` row 36).
+  - Resolves both metric inversions: on 15-clip, Foresight (`79.78%` audit score, `93.3%` pass, `6.3` cm penalized endpoint, `5.0` cm horizon median; Carbon `82.65%`, Neon `82.51%`) beats constant velocity (`65.44%` audit score, `60.0%` pass, `13.1` cm penalized endpoint, `10.3` cm horizon median despite `77.06%` Physics-IQ) and Omni (`49.08%`, `2/15` pass, `8` vanished, `11` duplicated, `39.2` cm penalized endpoint); on 60-clip wide, Foresight ranks #1 (`76.42%` audit score, `83.3%` pass, `5.5` cm penalized endpoint, `5.3` cm horizon median) ahead of Genie 4 (`72.59%`, `10.6` cm, `7` vanished, `11` duplicated, `1` energy violation), static (`72.46%`, `17.9` cm), constant velocity (`66.87%`, `12.5` cm), and Omni (`51.17%`, `23.3%` pass, `36/60` vanished, `33/60` duplicated, `37.2` cm penalized endpoint).
+
+### Next
+- Support Option A3 (interactive what-if re-simulation on the stage) and Physics-IQ Verified GT (`--gt hf`) once HF dataset access is enabled.
+
+### Blockers
+- None.

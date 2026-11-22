@@ -657,6 +657,22 @@ def eval_wide():
     return JSONResponse(json.loads(p.read_text()))
 
 
+@app.get("/api/eval/audit")
+def eval_audit():
+    p = ROOT / "eval" / "audit_results.json"
+    if not p.exists():
+        raise HTTPException(404, "eval/audit_results.json not produced yet")
+    return JSONResponse(json.loads(p.read_text()))
+
+
+@app.get("/api/eval/audit/wide")
+def eval_audit_wide():
+    p = ROOT / "eval" / "audit_wide.json"
+    if not p.exists():
+        raise HTTPException(404, "eval/audit_wide.json not produced yet")
+    return JSONResponse(json.loads(p.read_text()))
+
+
 @app.get("/api/eval/chart.png")
 def eval_chart():
     p = ROOT / "eval" / "chart.png"

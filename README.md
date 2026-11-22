@@ -11,6 +11,7 @@
   <a href="#try-it-in-30-seconds"><b>Try it in 30 seconds</b></a> ·
   <a href="#post-hackathon-changes">Post-hackathon changes</a> ·
   <a href="#results">Results</a> ·
+  <a href="#physics-auditor">Physics auditor</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="docs/developer-guide.md">Developer guide</a>
 </p>
@@ -147,6 +148,28 @@ Across the 60 scene-views Foresight scores below constant velocity on the Physic
 
 <!-- results: end -->
 
+<!-- audit: start (written by eval/run_audit.py from eval/audit_results.json and eval/audit_wide.json; edits here are lost) -->
+## Physics auditor
+
+Pixel masks reward an empty background after a straight-line sprite leaves the frame early, and stopped-track endpoint error stops measuring when a video model blurs or drops the object. `foresight audit` ([CLI and Python API](backend/foresight/audit.py)) audits any 5 s continuation video on three physical checks — occlusion-aware **object permanence** (hidden behind an object in front vs. unexplained mid-frame vanish, duplicate respawning, size stability), **fixed-horizon position error** at `+0.5, 1.0, 2.0, 3.0, 5.0 s` (counting vanishes and early border exits as errors), and **free-fall mechanical energy bounds**.
+
+```bash
+foresight audit conditioning_3s.mp4 model_5s.mp4 --reality reality_5s.mp4 --out audit_report/
+```
+
+Auditing all 105 saved predictions from the 15-clip eval ([eval/audit_results.json](eval/audit_results.json)) and all 300 predictions from the 60-scene-view wide eval ([eval/audit_wide.json](eval/audit_wide.json), [full table](eval/audit_table.md)) resolves both metric inversions:
+
+- **15-clip eval (`eval/preds/`)**: Constant velocity leads Physics-IQ (`77.1%` vs. Foresight `74.4%`), yet passes physicality on only `9/15` clips (`60.0%`) with `13.1 cm` median penalized endpoint error (`10.3 cm` horizon median, audit score `65.4%`), while **Foresight passes `14/15` (`93.3%`) at `6.3 cm` penalized endpoint median (`5.0 cm` horizon median, audit score `79.8%`; Carbon `82.7%`, Neon `82.5%`)**. Gemini Omni 1.2 Flash passes `2/15` (`8` vanished, `11` duplicated, `39.2 cm` penalized endpoint).
+- **60-scene-view wide eval (`eval/preds_wide/`)**: Stopped-track endpoint error put Genie 4 (`12.6 cm`) and Gemini Omni 1.2 Flash (`14.7 cm`) below Foresight (`18.2 cm`) because vanished tracks ended early. With vanish and early-exit penalties on C4-clean scenes, **Foresight ranks first on audit score (`76.4%`), penalized endpoint median (`5.5 cm`), and horizon median (`5.3 cm`, `50/60` passed)** — ahead of Genie 4 (`72.6%`, `10.6 cm`, `7` vanished, `11` duplicated, `1` energy violation), Constant velocity (`66.9%`, `12.5 cm`), Last frame held (`72.5%`, `17.9 cm`), and Gemini Omni 1.2 Flash (`51.2%`, `37.2 cm`, `36/60` vanished, `33/60` duplicated).
+
+| Suite | Foresight | Genie 4 | Constant velocity | Last frame held | Gemini Omni 1.2 Flash |
+|---|---|---|---|---|---|
+| **15-clip audit score / Physics-IQ (%)** | **79.8** / 74.4 | 70.4 / 42.2 | 65.4 / **77.1** | 65.8 / 35.0 | 49.1 / 27.5 |
+| **15-clip penalized / stopped ep. (cm)** | **6.3** / 9.9 | 11.3 / 11.4 | 13.1 / 192.5 | 26.9 / 27.8 | 39.2 / 26.9 |
+| **60-clip audit score / Physics-IQ (%)** | **76.4** / 64.7 | 72.6 / 46.5 | 66.9 / **66.6** | 72.5 / 36.5 | 51.2 / 30.1 |
+| **60-clip penalized / stopped ep. (cm)** | **5.5** / 18.2 | 10.6 / 12.6 | 12.5 / 154.8 | 17.9 / 22.7 | 37.2 / 14.7 |
+<!-- audit: end -->
+
 ## How it works
 
 1. **Read the scene.** Gemini 3.8 Flash (`gemini-3.8-flash`; `gemini-4-hydrogen` in the Nov 21–22 evals) watches the
@@ -206,7 +229,7 @@ Gemini 4, Decision 1, Omni 1.2 and Genie 4 runs recorded on those dates.
 |---|---|
 | **The simple guide** | [docs/foresight-simple-guide.docx](docs/foresight-simple-guide.docx): what Foresight is and how it works, in plain words, with a diagram (Word; numbers as of Nov 21) |
 | **Architecture** | [docs/architecture.md](docs/architecture.md) |
-| **Evaluation** | [docs/evaluation.md](docs/evaluation.md), [per-clip results](eval/results_table.md), [failures and fixes](eval/FAILURES.md) |
+| **Evaluation** | [docs/evaluation.md](docs/evaluation.md), [per-clip results](eval/results_table.md), [physics audit](eval/audit_table.md), [failures and fixes](eval/FAILURES.md) |
 | **Phase 0 checks** | [phase0/REPORT.md](phase0/REPORT.md): scoring a subset, Hydrogen perception, CSRT against Robotics-ER 2, Omni continuation |
 | **Developer guide** | [docs/developer-guide.md](docs/developer-guide.md): setup, demo, eval |
 | **Limitations** | [docs/limitations.md](docs/limitations.md): what Foresight does not do yet, in plain words |

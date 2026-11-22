@@ -37,7 +37,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY backend ./backend
 COPY phase0/vidio.py ./phase0/vidio.py
-COPY eval/results.json eval/results_wide.json eval/chart.png ./eval/
+COPY eval/results.json eval/results_wide.json eval/audit_results.json eval/audit_wide.json eval/chart.png ./eval/
 
 RUN mkdir -p /app/outputs /app/logs /tmp/foresight_mplconfig
 
