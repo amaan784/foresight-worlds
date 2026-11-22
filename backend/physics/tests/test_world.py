@@ -5,7 +5,7 @@ import math
 
 import pytest
 
-from physics.world import BodyParams, CoordTransform, PhysicsWorld
+from physics.world import ROLLING_RESISTANCE, BodyParams, CoordTransform, PhysicsWorld
 
 
 def _base_scene(
@@ -83,7 +83,8 @@ def test_ball_rolls_off_finite_table() -> None:
 
 
 def test_rolling_damping_decays_exponentially() -> None:
-    """Per-body damping slows a rolling ball on a long table without affecting free fall."""
+    """Per-body damping plus constant rolling resistance slow a rolling ball on a long table:
+    dv/dt = -gamma v - rr g  =>  v(t) = (v0 + rr g / gamma) exp(-gamma t) - rr g / gamma."""
     scene = _base_scene(
         surfaces=[{"name": "table", "kind": "table", "p0": [0.0, 800.0], "p1": [5000.0, 800.0]}]
     )
@@ -95,7 +96,8 @@ def test_rolling_damping_decays_exponentially() -> None:
     w = PhysicsWorld(scene, {"obj0": params}, t_start_s=0.0, motion_model="roll")
     w.step_to(1.0)
     st = w.get_state_m()["obj0"]
-    expected_v = v0 * math.exp(-gamma * 1.0)
+    k = ROLLING_RESISTANCE * 9.81 / gamma
+    expected_v = (v0 + k) * math.exp(-gamma * 1.0) - k
     assert st["vx"] == pytest.approx(expected_v, rel=0.03)
 
 

@@ -21,6 +21,22 @@ from typing import Any
 
 import pymunk
 
+from .layers import assign_layers
+
+_BODY = 1  # collision type of every simulated body
+_LEVEL = 2  # collision type of tables and floors: level in 3D whatever their slope in the image
+_SOFT = 3  # soft surfaces (cushions, bedding): level too, and they absorb motion
+SOFT_DAMPING = 8.0  # s^-1 while touching a soft surface: a landed object stops within a fraction of a second
+# Rolling resistance coefficient for balls (braking = 0.04 g): a typical value for a felt ball on wood, set from
+# physics and not tuned on the eval clips. Not fitted: 0.1-0.4 s of conditioning cannot separate it from damping.
+ROLLING_RESISTANCE = 0.04
+
+
+def _mean_coefficients(arb: pymunk.Arbiter, space: pymunk.Space, data: Any) -> None:
+    a, b = arb.shapes
+    arb.restitution = math.sqrt(max(0.0, a.elasticity) * max(0.0, b.elasticity))
+    arb.friction = math.sqrt(max(0.0, a.friction) * max(0.0, b.friction))
+
 DEFAULT_SUBSTEP_DT = 1.0 / 480.0
 DEFAULT_SOLVER_ITERATIONS = 20
 
@@ -199,31 +215,93 @@ class PhysicsWorld:
         self.damping_rates: dict[str, float] = {}
         self.object_meta: dict[str, dict[str, Any]] = {}
         self.skipped_static: list[str] = []
+        self.layers = assign_layers(scene)
+        ids = [o["id"] for o in scene.get("objects", [])] + [r["id"] for r in self.layers.resting]
+        self._bit = {oid: 1 << i for i, oid in enumerate(ids[:30])}
+        # Body-body contacts: Chipmunk multiplies the two coefficients (0.65 x 0.65 = 0.42 for two balls, which
+        # makes them stick together); use the geometric mean so two equal balls keep their own coefficient.
+        self.space.on_collision(_BODY, _BODY, pre_solve=_mean_coefficients)
 
         self._build_surfaces()
         self._build_static_objects()
         self._build_dynamic_bodies(body_params)
 
+    # Collision filters from layers.py: every moving object has its own category bit; a static shape lists the
+    # objects it collides with, a moving object lists the moving objects it collides with.
+    def _filter_hits(self, oids: set) -> pymunk.ShapeFilter:
+        bits = 0
+        for oid in oids:
+            bits |= self._bit.get(oid, 0)
+        return pymunk.ShapeFilter(categories=bits, mask=bits)
+
+    def _filter_body(self, oid: str) -> pymunk.ShapeFilter:
+        mask = self._bit.get(oid, 0)
+        for pair in self.layers.pair_hits:
+            if oid in pair:
+                for other in pair - {oid}:
+                    mask |= self._bit.get(other, 0)
+        return pymunk.ShapeFilter(categories=self._bit.get(oid, 0), mask=mask)
+
+    def _surface_thickness_m(self) -> float:
+        radii = [self.coord.len_px_to_m(_obj_half_extent_px(o)) for o in self.scene.get("objects", [])]
+        return max(0.05, 3.0 * max(radii, default=0.03))
+
     def _build_surfaces(self) -> None:
-        for surf in self.scene.get("surfaces", []):
-            p0 = self.coord.px_to_m(surf["p0"][0], surf["p0"][1])
-            p1 = self.coord.px_to_m(surf["p1"][0], surf["p1"][1])
+        """Surfaces are solid below their top line (a zero-width segment lets a body that starts slightly inside it
+        be pushed out downwards and fall forever). A table or floor that reaches the frame edge continues off-screen.
+        Containers are built as two walls with an open top."""
+        W = self.coord.width_px
+        depth = self._surface_thickness_m()
+        for si, surf in enumerate(self.scene.get("surfaces", [])):
+            if surf.get("kind") == "container":
+                continue
+            (x0, y0), (x1, y1) = sorted([tuple(surf["p0"]), tuple(surf["p1"])])
+            if surf.get("kind") in ("table", "floor", "other") and abs(x1 - x0) > 1e-6:
+                slope = (y1 - y0) / (x1 - x0)
+                if x0 <= 0.02 * W:
+                    y0, x0 = y0 - slope * (x0 + W), -W
+                if x1 >= 0.98 * W:
+                    y1, x1 = y1 + slope * (2 * W - x1), 2 * W
+            p0 = self.coord.px_to_m(x0, y0)
+            p1 = self.coord.px_to_m(x1, y1)
             if math.hypot(p1[0] - p0[0], p1[1] - p0[1]) < 1e-6:
                 continue
-            seg = pymunk.Segment(self.space.static_body, p0, p1, 0.0)
-            seg.friction = 1.0
-            seg.elasticity = 1.0
-            self.space.add(seg)
+            if abs(p1[0] - p0[0]) > 1e-6:
+                shape: pymunk.Shape = pymunk.Poly(self.space.static_body,
+                                                  [p0, p1, (p1[0], p1[1] - depth), (p0[0], p0[1] - depth)])
+            else:  # vertical line (wall): a thin segment
+                shape = pymunk.Segment(self.space.static_body, p0, p1, 0.0)
+            shape.friction = 1.0
+            shape.elasticity = 1.0
+            shape.filter = self._filter_hits(self.layers.surface_hits.get(si, set()))
+            if surf.get("material") == "soft":  # objects sink in: no bounce, stop quickly (see contact damping)
+                shape.elasticity = 0.0
+                shape.collision_type = _SOFT
+            elif surf.get("kind") in ("table", "floor"):
+                shape.collision_type = _LEVEL
+            self.space.add(shape)
+        for c in self.layers.containers:
+            for x in (c.x0, c.x1):
+                wall = pymunk.Segment(self.space.static_body, self.coord.px_to_m(x, c.top),
+                                      self.coord.px_to_m(x, c.floor), self.coord.len_px_to_m(4.0))
+                wall.friction = 1.0
+                wall.elasticity = 1.0
+                self.space.add(wall)
 
     def _build_static_objects(self) -> None:
         dyn_objects = self.scene.get("objects", [])
-        for sobj in self.scene.get("static_objects", []):
+        for ti, sobj in enumerate(self.scene.get("static_objects", [])):
             bbox = sobj.get("bbox")
             if not bbox or len(bbox) != 4:
                 continue
+            if ti in self.layers.container_statics:
+                continue  # an open box: built as container walls in _build_surfaces
+            if any(r["static"] == ti for r in self.layers.resting):
+                continue  # a body at rest (built in _build_dynamic_bodies)
             if _static_box_overlaps_track(bbox, dyn_objects):
                 self.skipped_static.append(str(sobj.get("name", "static")))
                 continue
+            blocks = self.layers.static_hits.get(ti, set())
             x0, y0, x1, y1 = [float(v) for v in bbox]
             p_bl = self.coord.px_to_m(min(x0, x1), max(y0, y1))
             p_tr = self.coord.px_to_m(max(x0, x1), min(y0, y1))
@@ -240,6 +318,7 @@ class PhysicsWorld:
             poly = pymunk.Poly(self.space.static_body, verts)
             poly.friction = 1.0
             poly.elasticity = 1.0
+            poly.filter = self._filter_hits(blocks)
             self.space.add(poly)
 
     def _build_dynamic_bodies(
@@ -249,6 +328,7 @@ class PhysicsWorld:
         objects = self.scene.get("objects", [])
         sizes = [float(o.get("est_real_size_cm") or 6.7) for o in objects]
         ref_size = sizes[0] if sizes else 6.7
+        self._ref_mass_g = float(objects[0].get("est_mass_g") or 0.0) if objects else 0.0
 
         for obj in objects:
             oid = obj["id"]
@@ -256,57 +336,78 @@ class PhysicsWorld:
                 continue
             raw_p = body_params[oid]
             params = raw_p if isinstance(raw_p, BodyParams) else BodyParams.from_dict(raw_p)
-            shape_kind = obj.get("shape", "circle")
+            self._add_body(oid, obj, params, ref_size, spin_from_velocity=True)
 
-            size_cm = max(0.5, float(obj.get("est_real_size_cm") or ref_size))
-            mass = max(0.05, (size_cm / max(0.5, ref_size)) ** 3)
+        # Static objects standing in a moving object's path (layers.py step 3): bodies at rest that can be knocked.
+        for rest in self.layers.resting:
+            x0, y0 = self.coord.px_to_m(rest["x"], rest["y"])
+            priors = default_priors("roll" if rest["shape"] == "circle" else "slide", rest["shape"])
+            self._add_body(rest["id"], rest, BodyParams(x0=x0, y0=y0, vx0=0.0, vy0=0.0, **priors), ref_size,
+                           spin_from_velocity=False)
 
-            if shape_kind == "box":
-                w_px = float(obj.get("w_px") or 20.0)
-                h_px = float(obj.get("h_px") or 20.0)
-                w_m = max(1e-4, self.coord.len_px_to_m(w_px))
-                h_m = max(1e-4, self.coord.len_px_to_m(h_px))
-                moment = pymunk.moment_for_box(mass, (w_m, h_m))
-                body = pymunk.Body(mass, moment)
-                shape: pymunk.Shape = pymunk.Poly.create_box(body, (w_m, h_m))
-                radius_m = 0.5 * min(w_m, h_m)
-            else:
-                r_px = float(obj.get("radius_px") or 10.0)
-                radius_m = max(1e-4, self.coord.len_px_to_m(r_px))
-                moment = pymunk.moment_for_circle(mass, 0.0, radius_m)
-                body = pymunk.Body(mass, moment)
-                shape = pymunk.Circle(body, radius_m)
+    def _add_body(self, oid: str, obj: dict[str, Any], params: BodyParams, ref_size: float,
+                  spin_from_velocity: bool) -> None:
+        shape_kind = obj.get("shape", "circle")
+        size_cm = max(0.5, float(obj.get("est_real_size_cm") or ref_size))
+        mass = max(0.05, (size_cm / max(0.5, ref_size)) ** 3)  # same density as the first object
+        if self._ref_mass_g > 0 and float(obj.get("est_mass_g") or 0.0) > 0:  # perception's mass estimate
+            mass = max(0.01, float(obj["est_mass_g"]) / self._ref_mass_g)
 
-            body.position = (params.x0, params.y0)
-            body.velocity = (params.vx0, params.vy0)
-            body.angle = params.angle0
-            if params.omega0 is not None:
-                body.angular_velocity = params.omega0
-            elif shape_kind == "circle" and self.motion_model in ("roll", "other"):
-                body.angular_velocity = -params.vx0 / radius_m
-            else:
-                body.angular_velocity = 0.0
+        if shape_kind == "box":
+            w_px = float(obj.get("w_px") or 20.0)
+            h_px = float(obj.get("h_px") or 20.0)
+            w_m = max(1e-4, self.coord.len_px_to_m(w_px))
+            h_m = max(1e-4, self.coord.len_px_to_m(h_px))
+            moment = pymunk.moment_for_box(mass, (w_m, h_m))
+            body = pymunk.Body(mass, moment)
+            shape: pymunk.Shape = pymunk.Poly.create_box(body, (w_m, h_m))
+            radius_m = 0.5 * min(w_m, h_m)
+        else:
+            r_px = float(obj.get("radius_px") or 10.0)
+            radius_m = max(1e-4, self.coord.len_px_to_m(r_px))
+            moment = pymunk.moment_for_circle(mass, 0.0, radius_m)
+            body = pymunk.Body(mass, moment)
+            shape = pymunk.Circle(body, radius_m)
 
-            shape.friction = max(0.0, float(params.friction))
-            shape.elasticity = max(0.0, min(1.0, float(params.elasticity)))
+        body.position = (params.x0, params.y0)
+        body.velocity = (params.vx0, params.vy0)
+        body.angle = params.angle0
+        if params.omega0 is not None:
+            body.angular_velocity = params.omega0
+        elif spin_from_velocity and shape_kind == "circle" and self.motion_model in ("roll", "other"):
+            body.angular_velocity = -params.vx0 / radius_m
+        else:
+            body.angular_velocity = 0.0
 
-            self.space.add(body, shape)
-            self.bodies[oid] = body
-            self.shapes[oid] = shape
-            self.damping_rates[oid] = max(0.0, float(params.damping))
-            self.object_meta[oid] = {
-                "shape": shape_kind,
-                "radius_m": radius_m,
-                "extent_px": _obj_half_extent_px(obj),
-            }
+        shape.friction = max(0.0, float(params.friction))
+        shape.elasticity = max(0.0, min(1.0, float(params.elasticity)))
+        shape.filter = self._filter_body(oid)
+        shape.collision_type = _BODY
+
+        self.space.add(body, shape)
+        self.bodies[oid] = body
+        self.shapes[oid] = shape
+        self.damping_rates[oid] = max(0.0, float(params.damping))
+        self.object_meta[oid] = {
+            "shape": shape_kind,
+            "radius_m": radius_m,
+            "extent_px": _obj_half_extent_px(obj),
+        }
 
     def _apply_contact_damping(self, dt: float) -> None:
-        """Apply tangential velocity + spin damping while a body is on a support surface."""
+        """While a body is on a support surface: rolling/sliding damping, and level tables stay level.
+
+        A table or floor that runs away from the camera is drawn as a sloped line in the image (perspective), but
+        it is level: gravity has no component along it. While a body touches such a surface, the part of gravity
+        along the line is cancelled, so a ball rolling "up" the drawn line does not slow and roll back. Ramps keep
+        their real slope.
+        """
+        g = self.space.gravity
         for oid, body in self.bodies.items():
             gamma = self.damping_rates[oid]
-            if gamma <= 0.0:
-                continue
             normals: list[tuple[float, float]] = []
+            level: list[tuple[float, float]] = []
+            soft: list[bool] = []
 
             def _collect(arb: pymunk.Arbiter) -> None:
                 n = arb.contact_point_set.normal
@@ -315,9 +416,27 @@ class PhysicsWorld:
                     # Orient normal consistently upward before averaging
                     sign = 1.0 if n.y >= 0 else -1.0
                     normals.append((n.x * sign, n.y * sign))
+                    if any(sh.collision_type in (_LEVEL, _SOFT) for sh in arb.shapes):
+                        level.append((n.x * sign, n.y * sign))
+                    if any(sh.collision_type == _SOFT for sh in arb.shapes):
+                        soft.append(True)
 
             body.each_arbiter(_collect)
             if not normals:
+                continue
+
+            if level:
+                lx, ly = sum(n[0] for n in level), sum(n[1] for n in level)
+                ll = math.hypot(lx, ly)
+                if ll > 1e-8:
+                    lx, ly = lx / ll, ly / ll
+                    gn = g.x * lx + g.y * ly
+                    gtx, gty = g.x - gn * lx, g.y - gn * ly  # gravity along the level surface
+                    body.velocity = (body.velocity.x - gtx * dt, body.velocity.y - gty * dt)
+            if soft:
+                gamma = max(gamma, SOFT_DAMPING)
+            rr = ROLLING_RESISTANCE if self.object_meta[oid]["shape"] == "circle" else 0.0
+            if gamma <= 0.0 and rr <= 0.0:
                 continue
 
             nx = sum(n[0] for n in normals)
@@ -334,8 +453,12 @@ class PhysicsWorld:
             vtx, vty = vx - vnx, vy - vny
 
             decay = math.exp(-gamma * dt)
-            body.velocity = (vnx + vtx * decay, vny + vty * decay)
-            body.angular_velocity = body.angular_velocity * decay
+            # Rolling resistance: a constant braking (rr * g) on top of the exponential damping, so a slow ball
+            # stops instead of creeping on for seconds.
+            vt = math.hypot(vtx, vty) * decay
+            keep = max(0.0, vt - rr * abs(g.y) * dt) / vt if vt > 1e-9 else 0.0
+            body.velocity = (vnx + vtx * decay * keep, vny + vty * decay * keep)
+            body.angular_velocity = body.angular_velocity * decay * keep
 
     def step(self, dt: float) -> None:
         """Advance the simulation by `dt` seconds using fixed-size substeps."""
