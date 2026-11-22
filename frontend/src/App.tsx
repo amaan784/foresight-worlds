@@ -1,6 +1,10 @@
 import Capture from "./Capture";
+import Results from "./Results";
 import Stage from "./Stage";
 
 export default function App() {
-  return location.pathname.startsWith("/capture") ? <Capture /> : <Stage />;
+  const path = location.pathname;
+  if (path.startsWith("/capture")) return <Capture />;
+  if (path.startsWith("/results")) return <Results />;
+  return <Stage />;
 }
