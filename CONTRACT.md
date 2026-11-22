@@ -145,7 +145,9 @@ Frontend dev server proxies `/api` and `/outputs` to `http://localhost:8000` (so
 - `GET /api/jobs?session=<s>` → `[{"job_id": "...", "created": "ISO8601", "status": "running"|"done"|"error"}]` newest first
 - `GET /api/jobs/{job_id}` → the `result` payload once done, else `{"job_id", "status", "events_so_far": [...]}`
 - `GET /api/jobs/{job_id}/events` → `text/event-stream` (EventSource-compatible). Replays past events on connect, then streams. Each message: `event: <name>` + `data: <json>`. `result` is sent as soon as Foresight is done (Omni may still be running); the `omni` lane finishes later; the stream ends with an `end` event (or after `error`). Call `es.close()` on `end`/`error` (otherwise EventSource auto-reconnects and replays). After `omni` done, re-fetch `GET /api/jobs/{id}` for `urls.omni` and `metrics.endpoint_error_cm.omni`.
-- `GET /api/eval` → contents of `eval/results.json` (404 until produced); `GET /api/eval/chart.png`.
+- `GET /api/jobs/{job_id}/whatif` → baseline `t = t_cond_end_s` state (`start_px`, `vx0`, `vy0`, `speed_m_s`, `friction`, `bounce`, `objects`, `orig_size`, `px_per_m`) for both in-memory and saved disk runs (`0` Gemini calls).
+- `POST /api/jobs/{job_id}/whatif` → JSON `{object_id?, start_px?: [x_px, y_px], vx0?, vy0?, friction?, bounce?}` → 5.0 s counterfactual trajectory (`predicted`, `main_predicted`, `endpoint_error_cm`, `implausible_reason`, `latency_ms`) stepped locally from `t_cond_end_s` (`x` right, `y` up in metres).
+- `GET /api/eval` → `eval/results.json`; `GET /api/eval/wide` → `eval/results_wide.json`; `GET /api/eval/audit` → `eval/audit_results.json`; `GET /api/eval/audit/wide` → `eval/audit_wide.json`; `GET /api/eval/chart.png`.
 - Static files: `/outputs/<job_id>/{conditioning.mp4, reality.mp4, foresight.mp4, omni.mp4, overlay.mp4, result.json, events.jsonl}` — H.264 yuv420p, browser-playable.
 
 SSE events (every payload also has `"t": seconds since job start`):

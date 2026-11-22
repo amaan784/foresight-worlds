@@ -472,7 +472,7 @@ function Reveal({ job, models, onReset }: { job: JobState; models?: Record<strin
       <Downloads r={r} />
       {(r.paths?.predicted.length || r.understanding) && (
         <div className="grid grid-cols-1 gap-10 border-t border-line pt-8 xl:grid-cols-[1.25fr_1fr]">
-          {r.paths && r.paths.predicted.length > 0 && <PathPlot paths={r.paths} frameUrl={r.frame_url ?? null} endpointCm={eeF} />}
+          {r.paths && r.paths.predicted.length > 0 && <PathPlot jobId={r.job_id} paths={r.paths} frameUrl={r.frame_url ?? null} endpointCm={eeF} />}
           {r.understanding && <Understood u={r.understanding} />}
         </div>
       )}

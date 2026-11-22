@@ -1,5 +1,8 @@
 // Client for the Foresight API (CONTRACT.md §4). Everything shown in the UI comes from these calls.
 import { useEffect, useReducer, useRef } from "react";
+import type { WhatIfObjBaseline, WhatIfRequest } from "./whatif";
+
+export type { WhatIfObjBaseline, WhatIfRequest };
 
 export const API_BASE = ((import.meta.env.VITE_API_BASE as string | undefined) ?? "").replace(/\/+$/, "");
 
@@ -233,4 +236,55 @@ export async function getRecent(limit = 8): Promise<RecentRun[]> {
 
 export async function getEval(which: "main" | "wide"): Promise<any | null> {
   return fetch(apiUrl(which === "main" ? "/api/eval" : "/api/eval/wide")).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+}
+
+export async function getAuditEval(which: "main" | "wide"): Promise<any | null> {
+  return fetch(apiUrl(which === "main" ? "/api/eval/audit" : "/api/eval/audit/wide"))
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
+}
+
+export type WhatIfBaseline = WhatIfObjBaseline & {
+  job_id: string;
+  orig_size: [number, number];
+  px_per_m: number;
+  t_cond_end_s: number;
+  motion_model: string;
+  dynamics_used: string;
+  endpoint_error_cm: number | null;
+  objects: WhatIfObjBaseline[];
+};
+
+export type WhatIfResponse = WhatIfObjBaseline & {
+  job_id: string;
+  predicted: number[][];
+  main_predicted: number[][];
+  motion_model: string;
+  endpoint_error_cm: number | null;
+  endpoint_error_px: number | null;
+  implausible_reason: string | null;
+  latency_ms: number;
+};
+
+export async function getWhatIf(jobId: string): Promise<WhatIfBaseline | null> {
+  if (!jobId) return null;
+  return fetch(apiUrl(`/api/jobs/${encodeURIComponent(jobId)}/whatif`))
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
+}
+
+export async function postWhatIf(
+  jobId: string,
+  req: WhatIfRequest,
+  signal?: AbortSignal,
+): Promise<WhatIfResponse | null> {
+  if (!jobId) return null;
+  return fetch(apiUrl(`/api/jobs/${encodeURIComponent(jobId)}/whatif`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+    signal,
+  })
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
 }

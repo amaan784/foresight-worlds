@@ -1,6 +1,6 @@
-// How well it predicts: the eval, read straight from eval/results.json and eval/results_wide.json via the API.
+// How well it predicts: the eval and physics auditor, read straight from eval/*.json via the API.
 import { useEffect, useState } from "react";
-import { fmtCm, getEval } from "./api";
+import { fmtCm, getAuditEval, getEval } from "./api";
 
 const NAMES: Record<string, string> = {
   foresight: "Foresight", foresight_carbon: "Foresight, Carbon reads the scene", foresight_neon: "Foresight, Neon reads the scene",
@@ -37,16 +37,63 @@ function Bars({ rows, max = 100 }: { rows: Row[]; max?: number }) {
   );
 }
 
+function AuditTable({ systems }: { systems: Record<string, any> }) {
+  const entries = Object.entries(systems).sort(([, a], [, b]) => b.audit_score_pct - a.audit_score_pct);
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-base">
+        <thead>
+          <tr className="text-left text-muted">
+            <th className="py-2 pr-4 font-medium">System</th>
+            <th className="py-2 px-2 text-right font-medium">Audit score</th>
+            <th className="py-2 px-2 text-right font-medium">Physics-IQ</th>
+            <th className="py-2 px-2 text-right font-medium">Passed</th>
+            <th className="py-2 px-2 text-right font-medium">Penalized ep.</th>
+            <th className="py-2 px-2 text-right font-medium">Stopped ep.</th>
+            <th className="py-2 px-2 text-right font-medium">Vanished</th>
+            <th className="py-2 pl-2 text-right font-medium">Duplicated</th>
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map(([k, s]) => (
+            <tr key={k} className="border-t border-line">
+              <td className="py-2 pr-4 font-medium">{NAMES[k] ?? k}</td>
+              <td className="py-2 px-2 text-right font-mono font-bold text-ink">{s.audit_score_pct.toFixed(1)}</td>
+              <td className="py-2 px-2 text-right font-mono text-muted">{s.physics_iq_verified_pct?.toFixed(1) ?? "—"}</td>
+              <td className="py-2 px-2 text-right font-mono">{s.n_passed}/{s.n_clips} ({s.pass_rate_pct.toFixed(0)}%)</td>
+              <td className="py-2 px-2 text-right font-mono font-semibold">{fmtCm(s.penalized_endpoint_cm_median)}</td>
+              <td className="py-2 px-2 text-right font-mono text-muted">{fmtCm(s.reported_endpoint_cm_median)}</td>
+              <td className={`py-2 px-2 text-right font-mono ${s.vanished_count > 0 ? "text-bad font-semibold" : "text-muted"}`}>{s.vanished_count}</td>
+              <td className={`py-2 pl-2 text-right font-mono ${s.duplicated_count > 0 ? "text-bad font-semibold" : "text-muted"}`}>{s.duplicated_count}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function Results() {
   const [main, setMain] = useState<any | null | undefined>(undefined);
   const [wide, setWide] = useState<any | null | undefined>(undefined);
-  useEffect(() => { getEval("main").then(setMain); getEval("wide").then(setWide); }, []);
+  const [auditMain, setAuditMain] = useState<any | null | undefined>(undefined);
+  const [auditWide, setAuditWide] = useState<any | null | undefined>(undefined);
+
+  useEffect(() => {
+    getEval("main").then(setMain);
+    getEval("wide").then(setWide);
+    getAuditEval("main").then(setAuditMain);
+    getAuditEval("wide").then(setAuditWide);
+  }, []);
 
   const mainRows: Row[] = main ? Object.entries<any>(main.systems)
     .map(([k, v]) => ({ key: k, score: v.physics_iq_verified_pct, endpoint: v.endpoint_error_cm_median ?? null }))
     .sort((a, b) => b.score - a.score) : [];
   const wideRows: Row[] = wide ? Object.entries<any>(wide.systems).filter(([, v]) => v.pooled_verified_pct != null)
     .map(([k, v]) => ({ key: k, score: v.pooled_verified_pct, endpoint: v.endpoint_error_cm_median ?? null }))
+    .sort((a, b) => b.score - a.score) : [];
+  const auditRows: Row[] = auditMain ? Object.entries<any>(auditMain.systems)
+    .map(([k, v]) => ({ key: k, score: v.audit_score_pct, endpoint: v.penalized_endpoint_cm_median ?? null }))
     .sort((a, b) => b.score - a.score) : [];
   const ends = mainRows.filter((r) => r.endpoint !== null);
   const systems = mainRows.map((r) => r.key);
@@ -60,10 +107,10 @@ export default function Results() {
       <main className="px-4 sm:px-10 pb-16 max-w-[1200px] space-y-14">
         <section className="pt-4">
           <h1 className="text-[clamp(2.5rem,6vw,5rem)] font-extrabold">How well it predicts</h1>
-          <p className="mt-5 max-w-[42rem] text-xl text-muted">
-            Each system sees the first 3 seconds of a real Physics-IQ clip and produces the next 5. Two measures: the
-            benchmark's own score, which compares where pixels change, and endpoint error, how far the object ends from
-            where it really did.
+          <p className="mt-5 max-w-[46rem] text-xl text-muted">
+            Each system sees the first 3 seconds of a real Physics-IQ clip and produces the next 5. Three measures: the
+            benchmark's pixel-change score, stopped-track endpoint error, and the physics auditor (object permanence,
+            penalized position error, and energy bounds).
           </p>
         </section>
 
@@ -119,6 +166,35 @@ export default function Results() {
             <p className="text-sm text-muted">
               From eval/results.json, generated {String(main.generated_at).slice(0, 10)}, commit {main.git_commit}, clean run {main.clean_run ? "yes" : "no"}.
               Rows can come from different clean runs; the video models' rows do not depend on Foresight's code.
+            </p>
+          </section>
+        )}
+
+        {auditMain && (
+          <section data-testid="physics-auditor-section" className="space-y-8" aria-labelledby="physics-auditor">
+            <div>
+              <h2 id="physics-auditor" className="text-3xl font-bold">Physics auditor</h2>
+              <p className="mt-1 max-w-[46rem] text-base text-muted">
+                Pixel masks reward an empty background after a straight-line sprite leaves the frame early, and stopped-track
+                endpoint error stops measuring when a video model drops the object. <code className="font-mono text-sm">foresight audit</code> checks
+                occlusion-aware object permanence (vanishes and duplicate respawns), penalized fixed-horizon position error, and
+                free-fall energy bounds across all {auditMain.n_videos_audited} main-eval and {auditWide?.n_videos_audited ?? 300} wide-eval predictions.
+              </p>
+            </div>
+            <Bars rows={auditRows} />
+            <div className="space-y-3">
+              <h3 className="text-xl font-semibold">15 clips, side camera ({auditMain.n_videos_audited} videos audited)</h3>
+              <AuditTable systems={auditMain.systems} />
+            </div>
+            {auditWide && (
+              <div className="space-y-3">
+                <h3 className="text-xl font-semibold">20 scenes, all three cameras ({auditWide.n_videos_audited} videos audited)</h3>
+                <AuditTable systems={auditWide.systems} />
+              </div>
+            )}
+            <p className="text-sm text-muted">
+              From eval/audit_results.json{auditWide ? " and eval/audit_wide.json" : ""}, generated {String(auditMain.generated_at).slice(0, 10)},
+              commit {auditMain.git_commit}, {auditMain.gemini_calls} Gemini calls.
             </p>
           </section>
         )}

@@ -49,7 +49,9 @@ npm --prefix frontend run dev
 Open `https://<your-lan-ip>:5173`. Pick a Physics-IQ clip, or scan the QR code with
 a phone, prop it up side-on and roll a ball through the frame. You see only the first 3 seconds while each step
 reports in, then reality, Foresight, Omni and Genie 4 play side by side with how far each prediction ends up from
-the real object.
+the real object. In the reveal, drag the green start handle on the path plot or adjust velocity, friction and bounce
+to test counterfactual **what-if** 5-second rollouts locally in milliseconds, or audit any model's continuation from
+the terminal (`foresight audit cond_3s.mp4 model_5s.mp4 --reality real_5s.mp4 --out report/`).
 
 <p align="center"><img src="docs/img/app.png" alt="The stage after a run: Reality, Foresight and Omni play in sync; Foresight ends 5.3 cm from the real ball, Omni 34.3 cm; Decision 1 confidences 0.90 and 0.97" width="100%"></p>
 
@@ -84,13 +86,17 @@ was added after the event, starting November 22, and the work is ongoing on `mai
 **The stage**
 - Genie 4 plays next to Omni as a fourth panel.
 - Drop a video from the laptop when the phone cannot reach it (venue Wi-Fi often blocks it).
-- Each reveal draws the predicted path against the real one, explains what Foresight understood in plain words,
-  and offers the predicted trajectory as JSON or CSV in metres, for use in another simulator.
-- Recent runs can be reopened, and a results page shows the eval in the app.
+- Each reveal draws the predicted path against the real one, lets you drag the 3.0 s start position or change
+  velocity, friction and bounce for instant counterfactual **what-if** rollouts (`0` Gemini calls, ~5–19 ms), explains
+  what Foresight understood in plain words, and offers the predicted trajectory as JSON or CSV in metres.
+- Recent runs can be reopened, and `/results` shows both the Physics-IQ evals and the physics auditor side by side.
 
 **The evaluation**
 - A fresh clean run of the 15 clips, and a wider eval: 20 scenes on all three cameras, with five scenes added by a
   rule fixed before the run (`eval/run_wide.py`).
+- `foresight audit` (`backend/foresight/audit.py`, `eval/run_audit.py`) audits object permanence, penalized
+  fixed-horizon position error and free-fall energy bounds across all 105 main and 300 wide predictions (see
+  [Physics auditor](#physics-auditor)).
 - A free development loop on cached Gemini readings (`eval/offline_fit.py`), and two measurement fixes: the scorer
   reused masks of older videos, and the real track followed the edge of whatever hid the object.
 
