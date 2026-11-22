@@ -55,10 +55,10 @@ class VerificationResult:
     failure_reasons: list[str] = field(default_factory=list)
 
     def selection_score(self, fit_error_px: float) -> float:
-        """Scalar ranking score when comparing multiple fit attempts."""
-        outline_score = self.noul_prob if self.answers.get("outline_on_object") == "yes" else (self.noul_prob - 1.0)
+        """Scalar ranking score when comparing multiple fit attempts (continuous in noul_prob, RMSE-penalized)."""
+        outline_score = 2.0 * float(self.noul_prob) - 1.0
         motion_conf = float(self.confidences.get("motion", 0.0))
-        return (1.0 if self.passed else 0.0) * 10.0 + 2.0 * outline_score + motion_conf - 0.002 * fit_error_px
+        return (1.0 if self.passed else 0.0) * 10.0 + 2.0 * outline_score + motion_conf - 0.025 * float(fit_error_px)
 
 
 def _resolve_existing_path(path_str: str | None, work_dir: Path | None = None) -> Path | None:

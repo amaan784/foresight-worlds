@@ -39,14 +39,14 @@ the objects, gravity fixed at 9.81 m/s². `layers.py` reads depth from where thi
 object rolls in the layer of its support line; a static object whose bottom sits on that line blocks it (and is a
 body at rest if it is light enough to be knocked), one lower in the image is in front and hides it, one higher is
 behind. Containers are open on top. Tables and floors are level in 3D, so gravity along their drawn slope is
-cancelled; soft surfaces absorb landings; balls brake with a rolling resistance of 0.04 g. `scipy.optimize.least_squares` fits the start position, velocity and
+cancelled; soft surfaces absorb landings; balls brake with rolling resistance by material. `scipy.optimize.least_squares` fits each body from its own first observation (`t_start_s`): start position, velocity and
 the material parameters the track can support; the rest keep priors. `verify.py` (`gemini-3.8-flash` structured
 output by default, or `gemini-decision-1` when `FORESIGHT_VERIFY_MODE=decisions`) looks at keyframes with
 the fitted outline drawn on them and answers whether it sits on the object, and which motion it is (roll,
-slide, fall, bounce or other), each with a confidence. Under 0.7, `repair.py` (`config.REPAIR`, `gemini-3.8-flash`
-at thinking level low) looks
-at a plot of the track and the keyframes and proposes another motion model and starting guesses; the fit runs
-again, at most twice and within 90 s for the whole loop. The world then runs for exactly 5.000 s and is rendered
+slide, fall, bounce or other), each with a confidence. Under 0.7, `repair.py` (`FORESIGHT_REPAIR_MODE=local` by
+default) runs a deterministic local multi-start across alternative motion models and velocity/material seeds in
+seconds, verifies at most two distinct candidates, and keeps the best fit by RMSE and verification score
+(`FORESIGHT_REPAIR_MODE=llm` keeps multimodal LLM repair via `config.REPAIR` behind a flag). The world then runs for exactly 5.000 s and is rendered
 onto the cleaned frame, each object hidden behind what stands in front of it. If a simulated object moves faster
 than its start speed plus free fall allows, the run falls back to constant velocity and reports why.
 

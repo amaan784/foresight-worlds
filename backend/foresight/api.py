@@ -457,7 +457,7 @@ def _active_models() -> dict[str, str]:
         "perception": config.PERCEPTION,
         "fallback": config.FALLBACK_MODEL,
         "verify": config.DECISION if config.VERIFY_MODE == "decisions" else config.VERIFY,
-        "repair": config.REPAIR,
+        "repair": "local-multistart" if config.REPAIR_MODE == "local" else config.REPAIR,
         "baseline_video": config.OMNI,
         "world_model": config.GENIE,
         "managed_agent": config.MANAGED_AGENT,
@@ -473,6 +473,7 @@ def info():
         "omni_enabled": config.OMNI_ENABLED,
         "genie_enabled": config.GENIE_ENABLED,
         "verify_mode": config.VERIFY_MODE,
+        "repair_mode": config.REPAIR_MODE,
         "models": _active_models(),
     }
 

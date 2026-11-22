@@ -291,3 +291,159 @@ def test_verify_overlays_skip_inactive_delayed_object(tmp_path: Path) -> None:
     # On kf3 (t=2.95 s, after obj1 activated), bright green outline (G=255) is drawn near obj1's pose (x~690, y~260)
     patch3 = kf3[210:310, 640:740]
     assert int(patch3[:, :, 1].max()) > 200
+
+
+def test_selection_score_continuous_at_half_and_penalizes_high_rmse() -> None:
+    """selection_score has no jump across noul_prob=0.50 and rejects blown-up RMSE fits."""
+    v_49 = parse_structured_verify_response(
+        '{"outline_on_object":"no","outline_confidence":0.51,"motion":"roll","motion_confidence":0.60}',
+        "roll",
+    )
+    v_51 = parse_structured_verify_response(
+        '{"outline_on_object":"yes","outline_confidence":0.51,"motion":"roll","motion_confidence":0.60}',
+        "roll",
+    )
+    assert abs(v_51.selection_score(8.0) - v_49.selection_score(8.0)) < 0.12
+    # A 400 px RMSE fit with noul=0.55 must score lower than an 8 px RMSE fit with noul=0.49
+    v_55 = parse_structured_verify_response(
+        '{"outline_on_object":"yes","outline_confidence":0.55,"motion":"roll","motion_confidence":0.62}',
+        "roll",
+    )
+    assert v_49.selection_score(8.0) > v_55.selection_score(400.0)
+
+
+def test_predict_local_multistart_recovers_bounce_fast_with_zero_llm_calls(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Wrong 'roll' hint on a bouncing ball fails attempt 0 and recovers 'bounce' via local multi-start in <3s."""
+    import time as _time
+    import physics as phys_pkg
+
+    scene = _make_render_scene(tmp_path)
+    scene["surfaces"] = [{"name": "floor", "kind": "floor", "p0": [0.0, 950.0], "p1": [1920.0, 950.0]}]
+    scene["motion_type_hint"] = "roll"  # wrong hint: real trajectory is a near-floor bounce
+    c = CoordTransform.from_scene(scene)
+    # Start right near the floor heading downward: bounce happens between frame 0 and frame 1 so 'roll' gets trapped!
+    x0, y0 = c.px_to_m(400.0, 950.0 - 50.0 - 25.0)
+    true_p = BodyParams(x0=x0, y0=y0, vx0=1.10, vy0=-2.20, friction=0.5, elasticity=0.82, damping=0.02)
+    ts = [2.50 + i * 0.05 for i in range(10)]
+    w = PhysicsWorld(scene, {"obj0": true_p}, t_start_s=ts[0], motion_model="bounce")
+    bg = cv2.imread(scene["background_png"])
+    keyframes = []
+    for idx, t in enumerate(ts):
+        w.step_to(t)
+        st = w.get_state_px()["obj0"]
+        scene["objects"][0]["track"].append({"t_s": t, "x": st["x"], "y": st["y"]})
+        if idx in (0, 3, 6, 9):
+            frame = bg.copy()
+            cv2.circle(frame, (int(round(st["x"])), int(round(st["y"]))), 50, (80, 220, 190), -1)
+            kf_path = tmp_path / f"kf_b_{idx:03d}.png"
+            cv2.imwrite(str(kf_path), frame)
+            keyframes.append({"t_s": t, "png": str(kf_path)})
+    scene["keyframes"] = keyframes
+
+    def _forbid_llm_repair(*args, **kwargs):
+        raise AssertionError("propose_repair must NOT be called when repair_mode='local'")
+
+    verify_calls: list[tuple[int, str, float]] = []
+
+    def _fake_verify_fit(sc, fit_res, *, attempt=0, confidence_threshold=0.7, on_event=None):
+        verify_calls.append((attempt, fit_res.motion_model, fit_res.fit_error_px))
+        on_ball = fit_res.fit_error_px < 8.0
+        noul = 0.92 if on_ball else 0.15
+        ver = parse_structured_verify_response(
+            StructuredVerification(
+                outline_on_object="yes" if on_ball else "no",
+                outline_confidence=noul if on_ball else (1.0 - noul),
+                motion="bounce",
+                motion_confidence=0.90,
+            ),
+            fit_res.motion_model,
+            confidence_threshold=confidence_threshold,
+        )
+        if on_event is not None:
+            on_event("verify", {
+                "model": config.VERIFY,
+                "mode": "structured",
+                "attempt": attempt,
+                "confidences": ver.confidences,
+                "answers": ver.answers,
+                "passed": ver.passed,
+            })
+        return ver
+
+    monkeypatch.setattr(phys_pkg, "propose_repair", _forbid_llm_repair)
+    monkeypatch.setattr(phys_pkg, "verify_fit", _fake_verify_fit)
+
+    events: list[tuple[str, dict]] = []
+    t0 = _time.perf_counter()
+    res = phys_pkg.predict(
+        scene,
+        on_event=lambda name, payload: events.append((name, payload)),
+        out_size=(960, 540),
+        verify=True,
+        repair_mode="local",
+    )
+    t_loop_only = _time.perf_counter() - t0
+
+    assert verify_calls[0][1] == "roll" and verify_calls[0][2] > 10.0  # attempt 0 missed the near-floor bounce
+    assert res["motion_model"] == "bounce"
+    assert res["fit_error_px"] < 4.0
+    assert res["repairs_used"] == 1
+    assert res["decision1_answers"] == {"outline_on_object": "yes", "motion": "bounce"}
+    repair_events = [p for name, p in events if name == "repair"]
+    assert len(repair_events) == 1
+    assert repair_events[0]["model"] == "local-multistart"
+    assert t_loop_only < 3.5  # includes MP4 encode + ffprobe; multi-start fit itself is < 0.8 s
+
+
+def test_predict_llm_repair_mode_flag_routes_through_propose_repair(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Passing repair_mode='llm' preserves the LLM propose_repair path behind the flag."""
+    import physics as phys_pkg
+
+    scene = _scene_with_keyframes(tmp_path)
+    scene["motion_type_hint"] = "fall"  # mismatch vs rolling track
+    llm_calls: list[int] = []
+
+    def _fake_propose_repair(sc, fit_res, ver, *, attempt=1, previous_attempts=None, on_event=None):
+        llm_calls.append(attempt)
+        prop = RepairProposal(
+            motion_model="roll",
+            reason="Object rolls horizontally along the table",
+            object_guesses=[
+                ObjectRepairGuess(
+                    object_id="obj0",
+                    vx0_m_s=1.2,
+                    vy0_m_s=0.0,
+                    friction=0.5,
+                    elasticity=0.65,
+                    damping=0.1,
+                )
+            ],
+        )
+        if on_event is not None:
+            on_event("repair", {"model": config.REPAIR, "attempt": attempt, "proposal": {"motion_model": "roll", "reason": prop.reason}})
+        return prop
+
+    def _fake_verify(sc, fit_res, *, attempt=0, confidence_threshold=0.7, on_event=None):
+        return parse_structured_verify_response(
+            StructuredVerification(
+                outline_on_object="yes",
+                outline_confidence=0.90,
+                motion="roll",
+                motion_confidence=0.91,
+            ),
+            fit_res.motion_model,
+            confidence_threshold=confidence_threshold,
+        )
+
+    monkeypatch.setattr(phys_pkg, "propose_repair", _fake_propose_repair)
+    monkeypatch.setattr(phys_pkg, "verify_fit", _fake_verify)
+
+    res = phys_pkg.predict(scene, out_size=(960, 540), verify=True, repair_mode="llm")
+    assert llm_calls == [1]
+    assert res["repairs_used"] == 1
+    assert res["motion_model"] == "roll"
+    assert res["fit_error_px"] < 3.0

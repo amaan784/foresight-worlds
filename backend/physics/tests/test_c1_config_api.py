@@ -11,6 +11,7 @@ def test_config_public_defaults_and_fallbacks() -> None:
     assert config.FALLBACK_MODEL == "gemini-3.6-flash"
     assert config.VERIFY == "gemini-3.8-flash"
     assert config.VERIFY_MODE in ("structured", "decisions")
+    assert config.REPAIR_MODE in ("local", "llm")
     assert config.REPAIR == "gemini-3.8-flash"
     assert config.CARBON == config.REPAIR
     assert config.FALLBACK["gemini-3.8-flash"] == "gemini-3.6-flash"
@@ -37,9 +38,11 @@ def test_api_info_reflects_config_toggles_and_models() -> None:
     assert inf["omni_enabled"] is config.OMNI_ENABLED
     assert inf["genie_enabled"] is config.GENIE_ENABLED
     assert inf["verify_mode"] == config.VERIFY_MODE
+    assert inf["repair_mode"] == config.REPAIR_MODE
     assert inf["models"]["perception"] == config.PERCEPTION
     assert inf["models"]["fallback"] == config.FALLBACK_MODEL
-    assert inf["models"]["repair"] == config.REPAIR
+    expected_repair = "local-multistart" if config.REPAIR_MODE == "local" else config.REPAIR
+    assert inf["models"]["repair"] == expected_repair
     assert inf["models"]["baseline_video"] == config.OMNI
     assert inf["models"]["world_model"] == config.GENIE
 

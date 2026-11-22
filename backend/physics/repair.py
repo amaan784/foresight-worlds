@@ -1,14 +1,18 @@
-"""Physics fit repair via config.REPAIR (config.REPAIR_THINKING, native structured output).
+"""Physics fit repair: fast local multi-start by default, with optional LLM diagnostics behind FORESIGHT_REPAIR_MODE=llm.
 
-When fit verification fails (low confidence < 0.7, outline miss, or motion mismatch),
-renders a 2-panel diagnostic trajectory plot and sends it alongside the annotated conditioning
-keyframes to `config.REPAIR`. The model proposes a motion model and per-object velocity/material
-prior overrides for refitting (up to MAX_REPAIRS = 2).
+When fit verification fails (low confidence < 0.7, outline miss, or motion mismatch):
+- Default (`REPAIR_MODE == "local"`): refits locally across alternative motion models (`roll`, `slide`,
+  `fall`, `bounce`) and initial velocity / material seeds in under a second, ranking distinct fits by
+  RMSE and verifier motion agreement before re-checking at most `MAX_REPAIRS` candidates.
+- Optional (`REPAIR_MODE == "llm"`): renders a 2-panel diagnostic trajectory plot and queries
+  `config.REPAIR` (`config.REPAIR_THINKING`, native structured output) for a `RepairProposal`.
 """
 from __future__ import annotations
 
 import base64
+import math
 import os
+import time
 from pathlib import Path
 from typing import Any, Callable, List, Literal
 
@@ -24,13 +28,23 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from foresight import config, gemini  # noqa: E402
 
-from .fit import DAMPING_BOUNDS, ELASTICITY_BOUNDS, FRICTION_BOUNDS, FitResult  # noqa: E402
+from .fit import (  # noqa: E402
+    DAMPING_BOUNDS,
+    ELASTICITY_BOUNDS,
+    FRICTION_BOUNDS,
+    FitResult,
+    _obj_vertical_half_m,
+    _surface_top_y_at_x,
+    fit_scene,
+)
 from .simulate import evaluate_at_times  # noqa: E402
-from .verify import VerificationResult, render_verification_overlays  # noqa: E402
+from .verify import CONFIDENCE_THRESHOLD, VerificationResult, render_verification_overlays  # noqa: E402
+from .world import CoordTransform  # noqa: E402
 
 OnEvent = Callable[[str, dict[str, Any]], None]
 
 MAX_REPAIRS = 2
+LOCAL_REPAIR_MODEL = "local-multistart"
 
 
 class ObjectRepairGuess(BaseModel):
@@ -288,3 +302,165 @@ def propose_repair(
             },
         })
     return proposal
+
+
+def build_multistart_candidates(
+    scene: dict[str, Any],
+    fit_result: FitResult,
+    verification: VerificationResult | None = None,
+) -> list[tuple[str, dict[str, dict[str, float]] | None, dict[str, dict[str, float]] | None, str]]:
+    """Build deterministic `(motion_model, initial_guess, param_priors, reason)` starts for local refitting."""
+    objects = [o for o in scene.get("objects", []) if o.get("track")]
+    if not objects:
+        return []
+
+    coord = CoordTransform.from_scene(scene)
+    g = float(scene.get("gravity_m_s2", 9.81))
+    all_boxes = all(o.get("shape") == "box" for o in objects)
+    valid_models = ["slide", "fall", "bounce"] if all_boxes else ["roll", "slide", "fall", "bounce"]
+    ver_motion = verification.answers.get("motion") if verification else None
+
+    alt_models = [m for m in valid_models if m != fit_result.motion_model]
+    if ver_motion in alt_models:
+        alt_models = [ver_motion, *[m for m in alt_models if m != ver_motion]]
+
+    specs: list[tuple[str, dict[str, dict[str, float]] | None, dict[str, dict[str, float]] | None, str]] = []
+    for m in alt_models:
+        note = f"refit with '{m}' dynamics"
+        if m == ver_motion:
+            note += f" matching verifier '{ver_motion}'"
+        specs.append((m, None, None, note))
+
+    bounce_init: dict[str, dict[str, float]] = {}
+    bounce_priors: dict[str, dict[str, float]] = {}
+    chord_init: dict[str, dict[str, float]] = {}
+    chord_priors: dict[str, dict[str, float]] = {}
+    fall_init: dict[str, dict[str, float]] = {}
+    fall_priors: dict[str, dict[str, float]] = {}
+
+    for obj in objects:
+        oid = obj["id"]
+        track = sorted(obj.get("track", []), key=lambda p: float(p["t_s"]))
+        if len(track) < 2:
+            continue
+        ts = np.asarray([float(pt["t_s"]) for pt in track], dtype=float)
+        pts_m = [coord.px_to_m(float(pt["x"]), float(pt["y"])) for pt in track]
+        xs = np.asarray([p[0] for p in pts_m], dtype=float)
+        ys = np.asarray([p[1] for p in pts_m], dtype=float)
+
+        dt_all = max(1e-3, float(ts[-1] - ts[0]))
+        vx_ch = float(np.clip((xs[-1] - xs[0]) / dt_all, -20.0, 20.0))
+        vy_ch = float(np.clip((ys[-1] - ys[0]) / dt_all, -20.0, 20.0))
+        chord_init[oid] = {
+            "x0": float(xs[0]),
+            "y0": float(ys[0]),
+            "vx0": vx_ch,
+            "vy0": vy_ch,
+            "friction": 0.15,
+            "damping": 0.0,
+        }
+        chord_priors[oid] = {"friction": 0.15, "damping": 0.0}
+
+        idx_min = int(np.argmin(ys))
+        e_seed = 0.82
+        if ys[1] >= ys[0]:
+            # Impact occurred between frame 0 and frame 1: infer pre-bounce downward speed from rebound apex height
+            half_h = _obj_vertical_half_m(obj, coord)
+            surf_ys = _surface_top_y_at_x(scene, coord, float(xs[0]), oid)
+            y_contact = (max(surf_ys) + half_h) if surf_ys else float(np.min(ys))
+            h_reb = max(0.02, float(np.max(ys)) - y_contact)
+            vx_pre = vx_ch
+            vy_pre = -math.sqrt(2.0 * g * h_reb) / e_seed
+        elif 0 < idx_min < len(ts) and ts[idx_min] > ts[0] + 1e-4:
+            dt_imp = float(ts[idx_min] - ts[0])
+            vx_pre = float((xs[idx_min] - xs[0]) / dt_imp)
+            vy_pre = float(min(-0.35, (ys[idx_min] - ys[0]) / dt_imp + 0.5 * g * dt_imp))
+        else:
+            dt1 = max(1e-3, float(ts[1] - ts[0]))
+            vx_pre = vx_ch
+            vy_pre = float(-max(0.8, abs((ys[1] - ys[0]) / dt1)))
+        bounce_init[oid] = {
+            "x0": float(xs[0]),
+            "y0": float(ys[0]),
+            "vx0": float(np.clip(vx_pre, -20.0, 20.0)),
+            "vy0": float(np.clip(vy_pre, -20.0, 20.0)),
+            "elasticity": e_seed,
+        }
+        bounce_priors[oid] = {"elasticity": e_seed, "damping": 0.02}
+
+        k_end = min(len(ts) - 1, 3)
+        dt_e = max(1e-3, float(ts[k_end] - ts[0]))
+        vx_e = float(np.clip((xs[k_end] - xs[0]) / dt_e, -20.0, 20.0))
+        vy_e = float(np.clip((ys[k_end] - ys[0]) / dt_e + 0.5 * g * dt_e, -20.0, 20.0))
+        fall_init[oid] = {
+            "x0": float(xs[0]),
+            "y0": float(ys[0]),
+            "vx0": vx_e,
+            "vy0": vy_e,
+            "damping": 0.0,
+        }
+        fall_priors[oid] = {"damping": 0.0}
+
+    if bounce_init:
+        bounce_spec = ("bounce", bounce_init, bounce_priors, "pre-impact bounce seed (elasticity 0.82)")
+        if ver_motion == "bounce":
+            specs.insert(min(1, len(specs)), bounce_spec)
+        else:
+            specs.append(bounce_spec)
+    if chord_init:
+        surf_model = "slide" if all_boxes else "roll"
+        specs.append((surf_model, chord_init, chord_priors, f"low-friction chord velocity seed ('{surf_model}')"))
+    if fall_init:
+        specs.append(("fall", fall_init, fall_priors, "early-arc ballistic fall seed"))
+    return specs
+
+
+def local_multistart_repair(
+    scene: dict[str, Any],
+    fit_result: FitResult,
+    verification: VerificationResult | None = None,
+    *,
+    confidence_threshold: float = CONFIDENCE_THRESHOLD,
+    budget_s: float = 15.0,
+) -> list[tuple[FitResult, str]]:
+    """Evaluate local multi-start candidates and return distinct plausible fits ordered best-first."""
+    specs = build_multistart_candidates(scene, fit_result, verification)
+    if not specs:
+        return []
+
+    t0 = time.time()
+    ver_motion = verification.answers.get("motion") if verification else None
+    ver_conf = float((verification.confidences if verification else {}).get("motion", 0.0))
+    ver_motion_strong = ver_motion not in (None, "other", fit_result.motion_model) and ver_conf >= confidence_threshold
+
+    by_bucket: dict[tuple[str, int], tuple[FitResult, str]] = {}
+    for idx, (model, init_g, priors, reason) in enumerate(specs):
+        if idx > 0 and (time.time() - t0) >= budget_s:
+            break
+        cand = fit_scene(
+            scene,
+            motion_model=model,
+            initial_guess=init_g,
+            param_priors=priors,
+            on_event=None,
+        )
+        # Skip duplicate of the attempt-0 fit or severely degraded fits
+        if cand.motion_model == fit_result.motion_model and abs(cand.fit_error_px - fit_result.fit_error_px) < 0.25:
+            continue
+        if cand.fit_error_px > max(35.0, 1.5 * fit_result.fit_error_px) and cand.fit_error_px >= fit_result.fit_error_px:
+            continue
+        bucket = (cand.motion_model, int(round(cand.fit_error_px / 2.0)))
+        prev = by_bucket.get(bucket)
+        if prev is None or cand.fit_error_px < prev[0].fit_error_px:
+            by_bucket[bucket] = (cand, reason)
+
+    def _rank_key(item: tuple[FitResult, str]) -> tuple[int, float]:
+        cand, _ = item
+        matches_ver = (
+            ver_motion_strong
+            and cand.motion_model == ver_motion
+            and cand.fit_error_px <= max(25.0, 1.5 * fit_result.fit_error_px)
+        )
+        return (0 if matches_ver else 1, cand.fit_error_px)
+
+    return sorted(by_bucket.values(), key=_rank_key)

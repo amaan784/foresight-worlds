@@ -47,11 +47,12 @@ Each agent edits ONLY its own section. Format: Done / Next / Blockers.
   - `gemini-decision-1` (`verify.py`, v1beta, 1.7 s): good rolling fit passed (`outline_on_object='yes'` 0.8275, `motion='roll'` 0.9599); corrupted bouncing fit failed (`outline_on_object='no'` P=0.07, `motion='fall'` 0.4004 < 0.7).
   - `gemini-4-carbon` (`repair.py`, `thinking_level='medium'`, structured output): diagnosed `'bounce'` from 2-panel plot + keyframes, estimated `vy0=-1.1 m/s` and `elasticity=0.82`; refit dropped RMSE `185.0 px -> 0.003 px` and passed re-verification (`outline='yes'` 0.8276, `motion='bounce'` 0.8957).
   - `antigravity-preview-09-2026` (`agent_runner.py`, v1beta): provisioned sandbox once (79 s), reused `environment_id` on `scene_ball-rolls-off/scene.json` (27 s), reproduced exact local fit (`fit_error_px=7.884`, `vx0=1.2649`, `damping=0.4242`); added fenced-JSON parser for Managed Agent markdown output.
-- All 48 backend/physics unit & SDK-schema validation tests pass (`backend/physics/tests/`).
+- All 51 backend/physics unit & SDK-schema validation tests pass (`backend/physics/tests/`).
 - C5 (per-object start times): `BodyParams.t_start_s` + scheduled `PhysicsWorld` body activation (`world.py`), per-object `t_obj_start` initial-guess and active-body rollout fitting (`fit.py`), pre-activation overlay/plot filtering (`verify.py`, `repair.py`), and 4 staggered multi-object unit tests; offline 15-clip `--rebuild` `77.64 -> 77.64` (`two-balls-pass` `99.0 -> 99.1`, `balls-collide` `86.1 -> 86.1`, `ball-train` `77.9 -> 77.9`), `perception_public` `76.89 -> 76.90` (`two-balls-pass` `98.9 -> 99.1`, `balls-collide` `100.0`, `ball-train` `58.4`), legacy cached `74.52 -> 74.48` (eval/FAILURES.md row 32).
+- C6 (local multi-start repair): `config.REPAIR_MODE` defaults to `"local"` (`FORESIGHT_REPAIR_MODE=llm` keeps LLM `propose_repair`), `local_multistart_repair` (`repair.py` + `physics.predict`) refits across motion models (`roll`, `slide`, `fall`, `bounce`) and apex-rebound / chord / ballistic seeds in **0.015 s min / 0.379 s median / 3.346 s max** across the 15 4K Physics-IQ clips (0 LLM repair calls), `verify.py` smooths `selection_score` with `-0.025 * fit_error_px`, `/api/info` + `Stage.tsx` surface `"local-multistart"` / `"Local multi-start"`, and `README.md` + `docs/architecture.md` document the flow; 51/51 backend/physics tests + 4/4 frontend tests + `vite build` pass, offline 15-clip `c6_rebuild` 77.64 and `c6_public` 76.90 (eval/FAILURES.md row 33).
 
 ### Next
-- Local multi-start fit replacing slow LLM repairs (C6), then packaging & CI (C7) and Option A physics auditor.
+- Packaging & CI (`pyproject.toml` + GitHub Actions, C7), then Option A physics auditor and interactive what-if stage controls.
 
 ### Blockers
 - None.

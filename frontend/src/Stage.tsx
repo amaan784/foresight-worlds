@@ -379,9 +379,13 @@ function Running({ job, models, onReset }: { job: JobState; models?: Record<stri
           </StepRow>
           <StepRow n={5} title={`${verifyModel} checks the fit`} state={job.verifies.length ? "done" : stageState(job, "verify")}>
             {ver && <Bars conf={ver.confidences} />}
-            {job.repairs.map((r) => (
-              <p key={r.attempt} className="mt-2">{r.model ?? models?.repair ?? "Gemini"} proposed {r.proposal.motion_model}: {r.proposal.reason}</p>
-            ))}
+            {job.repairs.map((r) => {
+              const raw = r.model ?? models?.repair ?? "Local multi-start";
+              const label = raw === "local-multistart" ? "Local multi-start" : raw;
+              return (
+                <p key={r.attempt} className="mt-2">{label} proposed {r.proposal.motion_model}: {r.proposal.reason}</p>
+              );
+            })}
             {job.repairSkipped && <p className="mt-2 text-muted">Stopped repairing: {job.repairSkipped.reason}.</p>}
           </StepRow>
           <StepRow n={6} title="Render the next 5 seconds" state={job.render ? "done" : stageState(job, "render")}>

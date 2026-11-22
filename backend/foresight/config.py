@@ -36,7 +36,8 @@ VERIFY_MODE = _os.environ.get("FORESIGHT_VERIFY_MODE", "structured").strip().low
 VERIFY_THINKING = _os.environ.get("FORESIGHT_VERIFY_THINKING", "low")
 DECISION = _os.environ.get("FORESIGHT_DECISION_MODEL", "gemini-decision-1")
 
-# Repair: gemini-3.8-flash at thinking_level="low" inside a 90 s budget (CARBON kept as backwards-compatible alias).
+# Repair: local deterministic multi-start by default; set FORESIGHT_REPAIR_MODE=llm to query FORESIGHT_REPAIR_MODEL.
+REPAIR_MODE = _os.environ.get("FORESIGHT_REPAIR_MODE", "local").strip().lower()
 REPAIR = _os.environ.get("FORESIGHT_REPAIR_MODEL", FLASH_38)
 CARBON = REPAIR
 REPAIR_THINKING = _os.environ.get("FORESIGHT_REPAIR_THINKING", "low")

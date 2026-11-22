@@ -18,6 +18,7 @@ export type Info = {
   omni_enabled: boolean;
   genie_enabled?: boolean;
   verify_mode?: string;
+  repair_mode?: string;
   models: Record<string, string>;
 };
 export type Sample = { id: string; title: string; thumb_url: string };

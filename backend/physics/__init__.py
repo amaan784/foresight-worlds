@@ -12,7 +12,14 @@ from foresight import config, gemini
 
 from .fit import FitResult, fit_scene
 from .render import render_trajectory
-from .repair import MAX_REPAIRS, RepairProposal, proposal_to_fit_overrides, propose_repair
+from .repair import (
+    LOCAL_REPAIR_MODEL,
+    MAX_REPAIRS,
+    RepairProposal,
+    local_multistart_repair,
+    proposal_to_fit_overrides,
+    propose_repair,
+)
 from .simulate import evaluate_at_times, simulate_future
 from .verify import CONFIDENCE_THRESHOLD, VerificationResult, select_keyframes, verify_fit
 from .world import BodyParams, CoordTransform, PhysicsWorld, default_priors
@@ -54,15 +61,17 @@ def predict(
     *,
     out_size: tuple[int, int] | None = None,
     verify: bool | None = None,
+    repair_mode: str | None = None,
     max_repairs: int = MAX_REPAIRS,
     confidence_threshold: float = CONFIDENCE_THRESHOLD,
     repair_budget_s: float | None = None,
 ) -> dict[str, Any]:
-    """Fit physics to a Foresight scene JSON, verify/repair via Gemini, simulate 5.000 s, render MP4.
+    """Fit physics to a Foresight scene JSON, verify/repair, simulate 5.000 s, render MP4.
 
-    Verification via `gemini-decision-1` and repair via `gemini-4-carbon` run automatically
-    when keyframes exist and GEMINI_API_KEY is configured (or always if `verify=True`).
-    `SpendCapHit` (HTTP 429) always propagates immediately.
+    Verification runs automatically when keyframes exist and GEMINI_API_KEY is configured
+    (or always if `verify=True`). When verification fails, `REPAIR_MODE == "local"` (default)
+    refits across a fast deterministic multi-start pool in seconds; `REPAIR_MODE == "llm"`
+    queries `config.REPAIR` for diagnostic proposals. `SpendCapHit` (HTTP 429) propagates immediately.
     """
     fit_res = fit_scene(scene, attempt=0, on_event=on_event)
 
@@ -87,60 +96,75 @@ def predict(
 
     t_loop = time.time()
     budget_s = config.REPAIR_BUDGET_S if repair_budget_s is None else repair_budget_s
+    eff_repair_mode = (repair_mode or config.REPAIR_MODE).strip().lower()
     if should_verify and fit_res.n_points > 0:
-        for attempt in range(max_repairs + 1):
-            ver = verify_fit(
-                scene,
-                fit_res,
-                attempt=attempt,
-                confidence_threshold=confidence_threshold,
-                on_event=on_event,
-            )
-            score = ver.selection_score(fit_res.fit_error_px)
-            if best_ver is None or (ver.passed and not best_ver.passed) or (
-                ver.passed == best_ver.passed and score > best_score
-            ):
-                best_fit = fit_res
-                best_ver = ver
-                best_score = score
+        ver0 = verify_fit(scene, fit_res, attempt=0, confidence_threshold=confidence_threshold, on_event=on_event)
+        best_fit, best_ver, best_score = fit_res, ver0, ver0.selection_score(fit_res.fit_error_px)
 
-            if ver.passed or attempt >= max_repairs:
-                break
-            left = budget_s - (time.time() - t_loop)
-            if left <= 5:
-                if on_event is not None:
-                    on_event("repair_skipped", {"reason": f"check-and-repair budget of {budget_s:.0f} s used"})
-                break
+        def _accept(cand_f: FitResult, cand_v: VerificationResult) -> bool:
+            nonlocal best_fit, best_ver, best_score
+            assert best_ver is not None
+            sc = cand_v.selection_score(cand_f.fit_error_px)
+            rmse_ok = cand_f.fit_error_px <= max(35.0, 1.5 * best_fit.fit_error_px) or cand_f.fit_error_px < best_fit.fit_error_px
+            if rmse_ok and ((cand_v.passed and not best_ver.passed) or (cand_v.passed == best_ver.passed and sc > best_score)):
+                best_fit, best_ver, best_score = cand_f, cand_v, sc
+            return bool(cand_v.passed and rmse_ok)
 
-            # A repair that outruns the budget is abandoned (its call still finishes and is logged in the background).
-            pool = ThreadPoolExecutor(max_workers=1)
-            fut = pool.submit(propose_repair, scene, fit_res, ver, attempt=attempt + 1,
-                              previous_attempts=history, on_event=on_event)
-            pool.shutdown(wait=False)
-            try:
-                proposal = fut.result(timeout=left)
-            except FuturesTimeout:
-                if on_event is not None:
-                    on_event("repair_skipped", {"reason": f"{config.REPAIR} repair still running after {left:.0f} s; keeping the best fit"})
-                break
-            history.append({
-                "attempt": attempt,
-                "motion_model": fit_res.motion_model,
-                "fit_error_px": fit_res.fit_error_px,
-                "confidences": ver.confidences,
-                "answers": ver.answers,
-                "proposal": proposal.model_dump(),
-            })
-            repairs_used += 1
-            init_guess, priors_override = proposal_to_fit_overrides(proposal)
-            fit_res = fit_scene(
-                scene,
-                motion_model=proposal.motion_model,
-                initial_guess=init_guess,
-                param_priors=priors_override,
-                attempt=attempt + 1,
-                on_event=on_event,
-            )
+        if not ver0.passed and max_repairs > 0:
+            if eff_repair_mode == "llm":
+                cur_fit, cur_ver = fit_res, ver0
+                for attempt in range(max_repairs):
+                    left = budget_s - (time.time() - t_loop)
+                    if left <= 5:
+                        if on_event is not None:
+                            on_event("repair_skipped", {"reason": f"check-and-repair budget of {budget_s:.0f} s used"})
+                        break
+                    pool = ThreadPoolExecutor(max_workers=1)
+                    fut = pool.submit(propose_repair, scene, cur_fit, cur_ver, attempt=attempt + 1,
+                                      previous_attempts=history, on_event=on_event)
+                    pool.shutdown(wait=False)
+                    try:
+                        proposal = fut.result(timeout=left)
+                    except FuturesTimeout:
+                        if on_event is not None:
+                            on_event("repair_skipped", {"reason": f"{config.REPAIR} repair still running after {left:.0f} s; keeping the best fit"})
+                        break
+                    history.append({"attempt": attempt, "motion_model": cur_fit.motion_model,
+                                    "fit_error_px": cur_fit.fit_error_px, "confidences": cur_ver.confidences,
+                                    "answers": cur_ver.answers, "proposal": proposal.model_dump()})
+                    repairs_used += 1
+                    init_guess, priors_override = proposal_to_fit_overrides(proposal)
+                    cur_fit = fit_scene(scene, motion_model=proposal.motion_model, initial_guess=init_guess,
+                                        param_priors=priors_override, attempt=repairs_used, on_event=on_event)
+                    cur_ver = verify_fit(scene, cur_fit, attempt=repairs_used,
+                                         confidence_threshold=confidence_threshold, on_event=on_event)
+                    if _accept(cur_fit, cur_ver):
+                        break
+            else:
+                left = budget_s - (time.time() - t_loop)
+                if left <= 0.2:
+                    if on_event is not None:
+                        on_event("repair_skipped", {"reason": f"check-and-repair budget of {budget_s:.0f} s used"})
+                else:
+                    ranked = local_multistart_repair(scene, fit_res, ver0,
+                                                     confidence_threshold=confidence_threshold, budget_s=min(left, 15.0))
+                    for cand_fit, reason in ranked[:max_repairs]:
+                        if (time.time() - t_loop) >= budget_s:
+                            if on_event is not None:
+                                on_event("repair_skipped", {"reason": f"check-and-repair budget of {budget_s:.0f} s used"})
+                            break
+                        repairs_used += 1
+                        if on_event is not None:
+                            on_event("repair", {"model": LOCAL_REPAIR_MODEL, "attempt": repairs_used,
+                                                "proposal": {"motion_model": cand_fit.motion_model,
+                                                             "reason": f"{reason} (RMSE {cand_fit.fit_error_px:.1f} px)"}})
+                            on_event("fit", {"attempt": repairs_used, "motion_model": cand_fit.motion_model,
+                                             "params": cand_fit.fit_params_dict, "fit_error_px": cand_fit.fit_error_px,
+                                             "n_points": cand_fit.n_points})
+                        cand_ver = verify_fit(scene, cand_fit, attempt=repairs_used,
+                                              confidence_threshold=confidence_threshold, on_event=on_event)
+                        if _accept(cand_fit, cand_ver):
+                            break
 
     trajectory = simulate_future(scene, best_fit)
     dynamics_used, fallback_reason = "physics", implausible(scene, best_fit, trajectory)
@@ -183,6 +207,7 @@ __all__ = [
     "BodyParams",
     "CoordTransform",
     "FitResult",
+    "LOCAL_REPAIR_MODEL",
     "MAX_REPAIRS",
     "PhysicsWorld",
     "RepairProposal",
@@ -191,6 +216,7 @@ __all__ = [
     "evaluate_at_times",
     "fit_scene",
     "implausible",
+    "local_multistart_repair",
     "predict",
     "propose_repair",
     "render_trajectory",

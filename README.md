@@ -45,7 +45,7 @@ PYTHONPATH=backend uvicorn foresight.api:app --app-dir backend --host 0.0.0.0 --
 npm --prefix frontend run dev
 ```
 
-Open `https://<your-lan-ip>:5173`. Pick a Physics-IQ clip (rolling ones are quick; falls can take a few minutes while Gemini repairs the fit), or scan the QR code with
+Open `https://<your-lan-ip>:5173`. Pick a Physics-IQ clip, or scan the QR code with
 a phone, prop it up side-on and roll a ball through the frame. You see only the first 3 seconds while each step
 reports in, then reality, Foresight, Omni and Genie 4 play side by side with how far each prediction ends up from
 the real object.
@@ -68,10 +68,13 @@ was added after the event, starting November 22, and the work is ongoing on `mai
 - Tables stay level even when perspective draws them sloped, surfaces are solid, and balls brake with rolling
   resistance that depends on what they are made of, instead of creeping on for seconds.
 - Gemini 4 Hydrogen now also reports whether each surface is hard or soft, and each object's mass and material.
-- Cleaner tracks: the moment a grabber lets go, and points from a half-hidden object, are handled before fitting.
+- Cleaner tracks and staggered multi-object starts: the moment a grabber lets go, points from a half-hidden object,
+  and objects that enter the scene at different times are each fitted from their own first observation.
 - An energy check: if a simulated object speeds up in a way real contacts cannot cause, the run falls back to
   constant velocity and says so.
-- Faster repairs: Gemini 4 Carbon runs at thinking level low inside a 90 s budget.
+- Local multi-start repair in seconds: when verification fails, Foresight refits locally across motion models
+  (`roll`, `slide`, `fall`, `bounce`) and velocity/material seeds instead of waiting minutes on LLM repair calls
+  (LLM diagnostic repair stays available behind `FORESIGHT_REPAIR_MODE=llm`).
 
 **Every Gemini model, run for real**
 - Gemini 4 Neon read all 15 eval scenes as a variant (it is also Hydrogen's automatic backup).
@@ -162,8 +165,10 @@ Across the 60 scene-views Foresight scores below constant velocity on the Physic
    structured output with a stated confidence, whether the outline sits on the object and what the motion is
    (`roll`, `slide`, `fall`, `bounce` or `other`). *(Changed after the hackathon from Gemini Decision 1's calibrated
    prefill probabilities so any personal API key can run it; set `FORESIGHT_VERIFY_MODE=decisions` for Decision 1.)*
-   Under 0.7, Gemini 3.8 Flash (`FORESIGHT_REPAIR_MODEL`; Gemini 4 Carbon in the Nov 21–22 evals) proposes another
-   motion model and the fit runs again, within a 90 s budget.
+   Under 0.7 (or on a motion mismatch), a deterministic local multi-start refits across alternative motion models
+   and initial velocity/material seeds in under a second, re-checks the top distinct candidates (at most twice),
+   and keeps the best fit by fit error and verification check. *(Set `FORESIGHT_REPAIR_MODE=llm` to use
+   `FORESIGHT_REPAIR_MODEL` for written diagnostic proposals instead.)*
 6. **Render.** The world runs for exactly 5.000 s and the objects are drawn onto the frame they were cleaned from,
    hidden behind whatever stands in front of them. If a simulated object gains energy, which real contacts cannot
    do, the run falls back to constant velocity and says so.
@@ -184,7 +189,7 @@ Gemini 4, Decision 1, Omni 1.2 and Genie 4 runs recorded on those dates.
 
 | Model | Its job |
 |---|---|
-| Gemini 3.8 Flash (`gemini-3.8-flash`) | **Default live model** for scene reading (`FORESIGHT_PERCEPTION_MODEL`, agentic video + structured output, thinking level low), fit checking (`FORESIGHT_VERIFY_MODEL`, structured output + stated confidences with the 0.7 gate), and fit repair (`FORESIGHT_REPAIR_MODEL`, inside a 90 s budget). |
+| Gemini 3.8 Flash (`gemini-3.8-flash`) | **Default live model** for scene reading (`FORESIGHT_PERCEPTION_MODEL`, agentic video + structured output, thinking level low) and fit checking (`FORESIGHT_VERIFY_MODEL`, structured output + stated confidences with the 0.7 gate); also optional LLM fit repair (`FORESIGHT_REPAIR_MODEL`) when `FORESIGHT_REPAIR_MODE=llm` (default repair is `local-multistart`). |
 | Gemini 3.6 Flash (`gemini-3.6-flash`) | **Default 503 backup** (`FORESIGHT_FALLBACK_MODEL`): takes over automatically if `gemini-3.8-flash` repeatedly returns 503. |
 | Gemini Omni Flash (`gemini-omni-1.1-flash` / `gemini-omni-1.2-flash`) | Video-continuation baseline (`FORESIGHT_OMNI_MODEL`, off by default on personal keys; enable with `FORESIGHT_OMNI_ENABLED=true` on a paid-tier key). Nov 21–22 evals ran `gemini-omni-1.2-flash`. |
 | Gemini 4 Hydrogen (`gemini-4-hydrogen`) | Read the scene in the Nov 21–22 evaluations (12.5 s in [Phase 0](phase0/REPORT.md)). |
