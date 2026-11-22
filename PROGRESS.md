@@ -19,8 +19,10 @@ Each agent edits ONLY its own section. Format: Done / Next / Blockers.
 - Stage: drop a video from the laptop, recent runs, path plot, "what Foresight understood", trajectory JSON/CSV, /results page.
 - README: "Post-hackathon changes" section; submitted version is branch hackathon-submission-branch-archive at b3b3f79.
 
-### Next
-- Push main and the archive branch when the user says so (the README links the branch).
+### Next (handed over to Antigravity on Nov 22, see HANDOVER.md)
+- Option C, hardening: public Gemini models (the hackathon account is deleted Nov 22), phone spend bug, synced
+  playback reset, gravity scale guard, per-object start times, local multi-start instead of Carbon repairs, CI.
+- Then Option A: a physics auditor for video and world models, and an interactive what-if on the stage.
 - Physics-IQ Verified ground truth: needs the gated Hugging Face dataset accepted by the account owner.
 - Glancing collisions in depth (balls-collide, ball-hits-duck) are out of reach for a 2D world.
 

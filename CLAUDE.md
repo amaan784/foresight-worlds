@@ -28,7 +28,7 @@ Built during the Gemini 4 NYC Hackathon (Nov 21 2026, submissions due 5:00 PM ET
 
 ## Git
 - Commit with the user's configured git identity. NEVER add Co-Authored-By, "Generated with", or any AI identity lines to commits or PRs.
-- Commit in batches of roughly 150–300 changed lines; author is the user (configured identity).
+- Commit in batches of roughly 450–600 changed lines (raised Nov 22); author is the user (configured identity). Push only when the user says so.
 - Always `git pull --rebase` before pushing (other agents work in `frontend/` and `eval/`).
 
 ## Product rules
