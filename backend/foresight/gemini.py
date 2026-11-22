@@ -100,8 +100,11 @@ def _log(record: dict) -> Path:
     config.LOG_DIR.mkdir(parents=True, exist_ok=True)
     day = datetime.now(timezone.utc).strftime("%Y%m%d")
     path = config.LOG_DIR / f"genai_calls_{day}.jsonl"
+    line = json.dumps(_strip_media(_to_jsonable(record)), default=repr)
+    # Nested SDK objects (e.g. an Omni Interaction) only become text in default=repr above: scrub the final line too.
+    line = _B64_RUN.sub(lambda m: f"<stripped base64 {len(m.group(0))} chars>", line)
     with open(path, "a") as f:
-        f.write(json.dumps(_strip_media(_to_jsonable(record)), default=repr) + "\n")
+        f.write(line + "\n")
     return path
 
 
