@@ -204,7 +204,7 @@ def _initial_guess_for_object(
                 if vy0 < 0.0 and abs(vy0) < 0.5:
                     vy0 = 0.0
 
-    params = BodyParams(x0=x0, y0=y0, vx0=vx0, vy0=vy0, **priors)
+    params = BodyParams(x0=x0, y0=y0, vx0=vx0, vy0=vy0, t_start_s=float(t_start_s), **priors)
     if override:
         for k in ("x0", "y0", "vx0", "vy0", "friction", "elasticity", "damping"):
             if k in override and override[k] is not None:
@@ -227,7 +227,7 @@ def _rollout_track(
     }
     prev_vel: dict[str, tuple[float, float]] = {
         oid: (world.bodies[oid].velocity.x, world.bodies[oid].velocity.y)
-        for oid in params_by_id if oid in world.bodies
+        for oid in params_by_id if oid in world.bodies and world.is_active(oid)
     }
 
     traj: list[dict[str, Any]] = []
@@ -236,10 +236,12 @@ def _rollout_track(
         while world.time_s + 1e-9 < t:
             t_next = min(t, world.time_s + 0.01)
             world.step_to(t_next)
-            for oid in prev_vel:  # fitted bodies only (bodies at rest are not fitted)
+            for oid, bp in params_by_id.items():  # active fitted bodies only (bodies at rest are not fitted)
+                if oid not in world.bodies or not world.is_active(oid):
+                    continue
                 body = world.bodies[oid]
                 vx, vy = float(body.velocity.x), float(body.velocity.y)
-                pvx, pvy = prev_vel[oid]
+                pvx, pvy = prev_vel.get(oid, (bp.vx0, bp.vy0))
                 if (pvy < -0.45 and vy > 0.25) or (pvx * vx < 0 and abs(vx - pvx) > 0.50):
                     contacts[oid]["bounce"] = True
                     if abs(pvx) > 0.15 or abs(vx - pvx) > 0.1:
@@ -258,6 +260,7 @@ def _rollout_track(
             "objects": {
                 oid: {"x": s["x"], "y": s["y"], "angle": s["angle"]}
                 for oid, s in st_px.items()
+                if s.get("active", True)
             },
         })
     return traj, contacts
@@ -447,11 +450,13 @@ def fit_scene(
 
     for obj in objects:
         oid = obj["id"]
+        t_obj_start = min(float(pt["t_s"]) for pt in obj["track"])
         override = (initial_guess or {}).get(oid)
         p_override = (param_priors or {}).get(oid)
         bp, has_b = _initial_guess_for_object(
-            obj, scene, coord, t_start_s, model, override=override, prior_override=p_override
+            obj, scene, coord, t_obj_start, model, override=override, prior_override=p_override
         )
+        bp.t_start_s = t_obj_start
         init_params[oid] = bp
         priors_by_id[oid] = {
             "friction": bp.friction,

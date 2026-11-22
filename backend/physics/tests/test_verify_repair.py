@@ -261,3 +261,33 @@ def test_structured_verify_payload_schema_and_gating(tmp_path: Path) -> None:
         "roll",
     )
     assert v_other.passed is True
+
+
+def test_verify_overlays_skip_inactive_delayed_object(tmp_path: Path) -> None:
+    """An object whose track starts at t=2.80 s is not drawn on keyframes at t=2.50 s."""
+    scene = _scene_with_keyframes(tmp_path)
+    obj1 = dict(
+        scene["objects"][0],
+        id="obj1",
+        name="late ball",
+        track=[
+            {"t_s": 2.80, "x": 1500.0, "y": 400.0},
+            {"t_s": 2.85, "x": 1460.0, "y": 430.0},
+            {"t_s": 2.90, "x": 1420.0, "y": 470.0},
+            {"t_s": 2.95, "x": 1380.0, "y": 520.0},
+        ],
+    )
+    scene["objects"].append(obj1)
+    fit_res = fit_scene(scene)
+    overlays = render_verification_overlays(scene, fit_res, attempt=0)
+    assert len(overlays) == 4
+    # Keyframe 0 is at t=2.50 s (before obj1's t_start_s=2.80 s); around (1500, 400) scaled by 0.5 -> (750, 200)
+    kf0 = cv2.imread(overlays[0]["path"])
+    kf3 = cv2.imread(overlays[-1]["path"])
+    assert kf0 is not None and kf3 is not None
+    # On kf0, patch around obj1's start (x~750, y~200) must match plain background (no bright green outline)
+    patch0 = kf0[160:240, 710:790]
+    assert int(patch0[:, :, 1].max()) < 100
+    # On kf3 (t=2.95 s, after obj1 activated), bright green outline (G=255) is drawn near obj1's pose (x~690, y~260)
+    patch3 = kf3[210:310, 640:740]
+    assert int(patch3[:, :, 1].max()) > 200

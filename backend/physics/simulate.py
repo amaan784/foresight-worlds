@@ -62,7 +62,15 @@ def simulate_future(
         model = motion_model or fit_result.motion_model
     else:
         params = fit_result
-        t0 = t_cond_end_s if t_start_s is None else float(t_start_s)
+        if t_start_s is None:
+            starts = [
+                float(p.t_start_s if isinstance(p, BodyParams) else p["t_start_s"])
+                for p in params.values()
+                if (p.t_start_s if isinstance(p, BodyParams) else p.get("t_start_s")) is not None
+            ]
+            t0 = min(starts) if starts else t_cond_end_s
+        else:
+            t0 = float(t_start_s)
         model = motion_model or scene.get("motion_type_hint", "roll")
 
     timestamps = [t_cond_end_s + (k / fps_out) for k in range(n_frames)]

@@ -179,3 +179,48 @@ def test_sliding_box_decelerates_with_friction() -> None:
     st = w.get_state_m()["obj0"]
     expected_v = v0 - mu * 9.81 * 0.4
     assert st["vx"] == pytest.approx(expected_v, rel=0.04)
+
+
+def test_delayed_body_held_out_until_activation_time() -> None:
+    """A body with `t_start_s > world.time_s` has zero gravity/damping/collisions before `t_start_s`."""
+    scene = _base_scene(
+        surfaces=[{"name": "table", "kind": "table", "p0": [0.0, 800.0], "p1": [4000.0, 800.0]}],
+    )
+    obj1 = dict(scene["objects"][0], id="obj1", name="second ball",
+                track=[{"t_s": 2.2, "x": 800.0, "y": 750.0}])
+    scene["objects"].append(obj1)
+    c = CoordTransform.from_scene(scene)
+    x0_a, y0_a = c.px_to_m(300.0, 750.0)
+    x0_b, y0_b = c.px_to_m(800.0, 750.0)
+    # Same table layer: if obj1 were already in the space at t=1.0, obj0 would hit it around t=1.5 s.
+    p_a = BodyParams(x0=x0_a, y0=y0_a, vx0=1.2, vy0=0.0, damping=0.0, t_start_s=1.0)
+    p_b = BodyParams(x0=x0_b, y0=y0_b, vx0=-0.6, vy0=0.0, damping=0.5, t_start_s=2.2)
+
+    w = PhysicsWorld(scene, {"obj0": p_a, "obj1": p_b}, t_start_s=1.0, motion_model="roll")
+    assert frozenset(("obj0", "obj1")) in w.layers.pair_hits
+    assert w.is_active("obj0") is True
+    assert w.is_active("obj1") is False
+    assert w.get_state_px()["obj1"]["visible"] is False
+    assert w.get_state_px()["obj1"]["active"] is False
+
+    # Step across where obj1 will later spawn (t=1.6 s) and up to t=2.0 s: no collision, no drift on obj1
+    w.step_to(2.0)
+    assert w.is_active("obj1") is False
+    st_a = w.get_state_m()["obj0"]
+    st_b = w.get_state_m()["obj1"]
+    assert st_a["x"] > 1.25  # passed cleanly beyond x=0.80 m without bouncing back
+    assert st_a["vx"] > 0.7
+    assert st_b["x"] == pytest.approx(x0_b, abs=1e-9)
+    assert st_b["y"] == pytest.approx(y0_b, abs=1e-9)
+    assert st_b["vx"] == pytest.approx(-0.6, abs=1e-9)
+    assert w.get_state_px()["obj1"]["visible"] is False
+
+    # Single step_to(2.5) splits at t=2.2 s, activating obj1 on schedule and stepping it for 0.3 s
+    w.step_to(2.5)
+    assert w.is_active("obj1") is True
+    px_b = w.get_state_px()["obj1"]
+    assert px_b["active"] is True
+    assert px_b["visible"] is True
+    st_b2 = w.get_state_m()["obj1"]
+    assert st_b2["x"] < x0_b - 0.12
+    assert st_b2["y"] == pytest.approx(y0_b, abs=0.005)

@@ -99,12 +99,12 @@ def plot_trajectory_diagnostics(
         cond_pts = [
             (s["objects"][oid]["x"], s["objects"][oid]["y"])
             for s in dense_traj
-            if s["t_s"] <= t_cond_end + 1e-4 and oid in s["objects"]
+            if s["t_s"] <= t_cond_end + 1e-4 and oid in s["objects"] and s["objects"][oid].get("active", True)
         ]
         fut_pts = [
             (s["objects"][oid]["x"], s["objects"][oid]["y"])
             for s in dense_traj
-            if s["t_s"] >= t_cond_end - 1e-4 and oid in s["objects"]
+            if s["t_s"] >= t_cond_end - 1e-4 and oid in s["objects"] and s["objects"][oid].get("active", True)
         ]
         if cond_pts:
             ax_xy.plot([p[0] for p in cond_pts], [p[1] for p in cond_pts], c="#2ca02c", lw=2.5, label=f"{oid} fit")

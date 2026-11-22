@@ -30,7 +30,11 @@ def implausible(scene: dict[str, Any], fit: FitResult, trajectory: list[dict[str
     ppm, g = float(scene["px_per_m"]), float(scene.get("gravity_m_s2", 9.81))
     fps = float(scene.get("fps_out", 24))
     for oid, bp in fit.params.items():
-        pts = [(st["objects"][oid]["x"], st["objects"][oid]["y"]) for st in trajectory if oid in st.get("objects", {})]
+        pts = [
+            (st["objects"][oid]["x"], st["objects"][oid]["y"])
+            for st in trajectory
+            if oid in st.get("objects", {}) and st["objects"][oid].get("active", True)
+        ]
         if len(pts) < 3:
             continue
         v0 = max((bp.vx0 ** 2 + bp.vy0 ** 2) ** 0.5, ((pts[1][0] - pts[0][0]) ** 2 + (pts[1][1] - pts[0][1]) ** 2) ** 0.5 * fps / ppm)

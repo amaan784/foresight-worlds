@@ -249,3 +249,98 @@ def test_fit_free_fall_parabola_recovers_pos_vel() -> None:
     assert p.vx0 == pytest.approx(true_p.vx0, rel=0.05)
     assert p.vy0 == pytest.approx(true_p.vy0, rel=0.05)
     assert res.fit_error_px < 2.0
+
+
+def test_fit_staggered_multi_object_crossing_paths_no_ghost_collision() -> None:
+    """Two balls on the same table starting at t=1.0 s and t=2.2 s fit <5% without pre-birth collision."""
+    scene = _make_scene(
+        orig_size=(3840, 2160),
+        px_per_m=1500.0,
+        motion_hint="roll",
+        radius_px=60.0,
+        surfaces=[{"name": "table", "kind": "table", "p0": [0.0, 1500.0], "p1": [3840.0, 1500.0]}],
+    )
+    obj1 = dict(
+        scene["objects"][0],
+        id="obj1",
+        name="second ball",
+        track=[],
+    )
+    scene["objects"].append(obj1)
+    c = CoordTransform.from_scene(scene)
+    x0_a, y0_a = c.px_to_m(500.0, 1500.0 - 60.0)
+    x0_b, y0_b = c.px_to_m(1500.0, 1500.0 - 60.0)
+    # If obj1 were extrapolated back from t=2.2 s to t=1.0 s at vx=-1.15 m/s, it would start at x ~ 2.38 m
+    # and collide head-on with obj0 (rolling right at +1.35 m/s from x=0.33 m) around t ~ 1.82 s!
+    true_a = BodyParams(x0=x0_a, y0=y0_a, vx0=1.35, vy0=0.0, friction=0.50, elasticity=0.70, damping=0.0, t_start_s=1.0)
+    true_b = BodyParams(x0=x0_b, y0=y0_b, vx0=-1.15, vy0=0.0, friction=0.50, elasticity=0.70, damping=0.0, t_start_s=2.2)
+
+    ts_a = [round(1.0 + i * 0.05, 4) for i in range(10)]  # [1.00 .. 1.45]
+    ts_b = [round(2.2 + i * 0.05, 4) for i in range(10)]  # [2.20 .. 2.65]
+    all_ts = sorted(set(ts_a + ts_b))
+    w = PhysicsWorld(scene, {"obj0": true_a, "obj1": true_b}, t_start_s=1.0, motion_model="roll")
+    for t in all_ts:
+        w.step_to(t)
+        st = w.get_state_px()
+        if t in ts_a:
+            scene["objects"][0]["track"].append({"t_s": t, "x": st["obj0"]["x"], "y": st["obj0"]["y"]})
+        if t in ts_b:
+            scene["objects"][1]["track"].append({"t_s": t, "x": st["obj1"]["x"], "y": st["obj1"]["y"]})
+
+    res = fit_scene(scene)
+    assert res.t_start_s == pytest.approx(1.0)
+    pa, pb = res.params["obj0"], res.params["obj1"]
+    assert pa.t_start_s == pytest.approx(1.0)
+    assert pb.t_start_s == pytest.approx(2.2)
+    assert pa.x0 == pytest.approx(true_a.x0, rel=0.05, abs=0.005)
+    assert pa.y0 == pytest.approx(true_a.y0, rel=0.05, abs=0.005)
+    assert pa.vx0 == pytest.approx(true_a.vx0, rel=0.05)
+    assert pb.x0 == pytest.approx(true_b.x0, rel=0.05, abs=0.005)
+    assert pb.y0 == pytest.approx(true_b.y0, rel=0.05, abs=0.005)
+    assert pb.vx0 == pytest.approx(true_b.vx0, rel=0.05)
+    assert res.fit_error_px < 2.5
+
+    for entry in res.fit_trajectory:
+        if entry["t_s"] < 2.2 - 1e-6:
+            assert "obj1" not in entry["objects"]
+        else:
+            assert "obj1" in entry["objects"]
+
+
+def test_fit_staggered_free_fall_no_backward_parabola_blowup() -> None:
+    """A second falling body released 1.5 s after the first is fitted at its own release time."""
+    scene = _make_scene(
+        orig_size=(1920, 1080),
+        px_per_m=1000.0,
+        motion_hint="fall",
+        radius_px=40.0,
+        surfaces=[],
+    )
+    obj1 = dict(scene["objects"][0], id="obj1", name="late block", shape="box",
+                radius_px=None, w_px=90.0, h_px=70.0, track=[])
+    scene["objects"].append(obj1)
+    c = CoordTransform.from_scene(scene)
+    xa, ya = c.px_to_m(400.0, 220.0)
+    xb, yb = c.px_to_m(1300.0, 260.0)
+    true_a = BodyParams(x0=xa, y0=ya, vx0=0.40, vy0=0.0, t_start_s=1.0)
+    true_b = BodyParams(x0=xb, y0=yb, vx0=-0.30, vy0=-0.20, t_start_s=2.5)
+
+    ts_a = [round(1.0 + i * 0.04, 4) for i in range(8)]
+    ts_b = [round(2.5 + i * 0.04, 4) for i in range(6)]
+    w = PhysicsWorld(scene, {"obj0": true_a, "obj1": true_b}, t_start_s=1.0, motion_model="fall")
+    for t in sorted(set(ts_a + ts_b)):
+        w.step_to(t)
+        st = w.get_state_px()
+        if t in ts_a:
+            scene["objects"][0]["track"].append({"t_s": t, "x": st["obj0"]["x"], "y": st["obj0"]["y"]})
+        if t in ts_b:
+            scene["objects"][1]["track"].append({"t_s": t, "x": st["obj1"]["x"], "y": st["obj1"]["y"]})
+
+    res = fit_scene(scene)
+    pb = res.params["obj1"]
+    assert pb.t_start_s == pytest.approx(2.5)
+    assert pb.x0 == pytest.approx(true_b.x0, rel=0.05, abs=0.005)
+    assert pb.y0 == pytest.approx(true_b.y0, rel=0.05, abs=0.005)
+    assert pb.vx0 == pytest.approx(true_b.vx0, rel=0.05, abs=0.02)
+    assert pb.vy0 == pytest.approx(true_b.vy0, rel=0.05, abs=0.03)
+    assert res.fit_error_px < 2.0

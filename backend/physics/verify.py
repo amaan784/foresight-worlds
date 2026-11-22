@@ -201,21 +201,23 @@ def render_verification_overlays(
         sx = iw / float(orig_w)
         sy = ih / float(orig_h)
 
-        # Draw fitted path polyline up to this keyframe time
+        # Draw fitted path polyline up to this keyframe time (only while the body is active)
         for oid in fit_result.params:
             pts = [
                 (int(round(st["objects"][oid]["x"] * sx)), int(round(st["objects"][oid]["y"] * sy)))
                 for st in dense_states
-                if st["t_s"] <= kf["t_s"] + 1e-4 and oid in st["objects"]
+                if st["t_s"] <= kf["t_s"] + 1e-4
+                and oid in st["objects"]
+                and st["objects"][oid].get("active", True)
             ]
             if len(pts) >= 2:
                 arr = np.asarray(pts, dtype=np.int32).reshape((-1, 1, 2))
                 cv2.polylines(img, [arr], False, (255, 220, 0), 2, cv2.LINE_AA)
 
-        # Draw fitted outline at exact keyframe timestamp
+        # Draw fitted outline at exact keyframe timestamp (skip before the body's t_start_s or off-screen)
         objs_at_t = state_by_t.get(round(kf["t_s"], 6), {})
         for oid, pose in objs_at_t.items():
-            if oid in obj_by_id:
+            if oid in obj_by_id and pose.get("visible", True):
                 _draw_object_outline(img, obj_by_id[oid], pose, sx, sy)
 
         label = f"KF {idx + 1}/{len(keyframes)}  t={kf['t_s']:.3f}s  model={fit_result.motion_model}"

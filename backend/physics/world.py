@@ -120,9 +120,10 @@ class BodyParams:
     damping: float = 0.25
     angle0: float = 0.0
     omega0: float | None = None
+    t_start_s: float | None = None
 
     def to_dict(self) -> dict[str, float]:
-        return {
+        out = {
             "x0": float(self.x0),
             "y0": float(self.y0),
             "vx0": float(self.vx0),
@@ -131,6 +132,9 @@ class BodyParams:
             "elasticity": float(self.elasticity),
             "damping": float(self.damping),
         }
+        if self.t_start_s is not None:
+            out["t_start_s"] = float(self.t_start_s)
+        return out
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "BodyParams":
@@ -144,6 +148,7 @@ class BodyParams:
             damping=float(d.get("damping", 0.25)),
             angle0=float(d.get("angle0", 0.0)),
             omega0=None if d.get("omega0") is None else float(d["omega0"]),
+            t_start_s=None if d.get("t_start_s") is None else float(d["t_start_s"]),
         )
 
 
@@ -219,6 +224,7 @@ class PhysicsWorld:
         self.shapes: dict[str, pymunk.Shape] = {}
         self.damping_rates: dict[str, float] = {}
         self.object_meta: dict[str, dict[str, Any]] = {}
+        self._pending: dict[str, float] = {}
         self.skipped_static: list[str] = []
         self.layers = assign_layers(scene)
         ids = [o["id"] for o in scene.get("objects", [])] + [r["id"] for r in self.layers.resting]
@@ -389,7 +395,6 @@ class PhysicsWorld:
         shape.filter = self._filter_body(oid)
         shape.collision_type = _BODY
 
-        self.space.add(body, shape)
         self.bodies[oid] = body
         self.shapes[oid] = shape
         self.damping_rates[oid] = max(0.0, float(params.damping))
@@ -401,6 +406,22 @@ class PhysicsWorld:
             "rolling_resistance": ROLLING_RESISTANCE_BY_MATERIAL.get(material, ROLLING_RESISTANCE)
             if material and _os.environ.get("FORESIGHT_RR_BY_MATERIAL", "1") == "1" else ROLLING_RESISTANCE,
         }
+        if params.t_start_s is not None and float(params.t_start_s) > self.time_s + 1e-6:
+            self._pending[oid] = float(params.t_start_s)
+        else:
+            self.space.add(body, shape)
+
+    def is_active(self, oid: str) -> bool:
+        """True once dynamic body `oid` has entered the simulation space."""
+        return oid in self.bodies and oid not in self._pending
+
+    def _activate_due(self) -> None:
+        if not self._pending:
+            return
+        due = [oid for oid, t_act in self._pending.items() if t_act <= self.time_s + 1e-6]
+        for oid in due:
+            del self._pending[oid]
+            self.space.add(self.bodies[oid], self.shapes[oid])
 
     def _apply_contact_damping(self, dt: float) -> None:
         """While a body is on a support surface: rolling/sliding damping, and level tables stay level.
@@ -412,6 +433,8 @@ class PhysicsWorld:
         """
         g = self.space.gravity
         for oid, body in self.bodies.items():
+            if oid in self._pending:
+                continue
             gamma = self.damping_rates[oid]
             normals: list[tuple[float, float]] = []
             level: list[tuple[float, float]] = []
@@ -468,8 +491,7 @@ class PhysicsWorld:
             body.velocity = (vnx + vtx * decay * keep, vny + vty * decay * keep)
             body.angular_velocity = body.angular_velocity * decay * keep
 
-    def step(self, dt: float) -> None:
-        """Advance the simulation by `dt` seconds using fixed-size substeps."""
+    def _step_segment(self, dt: float) -> None:
         if dt <= 0.0:
             return
         n_steps = max(1, int(math.ceil(dt / self.substep_dt)))
@@ -479,14 +501,30 @@ class PhysicsWorld:
             self._apply_contact_damping(sub_dt)
         self.time_s += dt
 
+    def step(self, dt: float) -> None:
+        """Advance the simulation by `dt` seconds using fixed-size substeps."""
+        if dt <= 0.0:
+            return
+        self.step_to(self.time_s + float(dt))
+
     def step_to(self, target_t_s: float) -> None:
-        """Advance the simulation from current `time_s` to `target_t_s`."""
-        dt = float(target_t_s) - self.time_s
+        """Advance the simulation from current `time_s` to `target_t_s`, activating pending bodies on schedule."""
+        target = float(target_t_s)
+        dt = target - self.time_s
         if dt < -1e-9:
             raise ValueError(f"Cannot step backwards from {self.time_s} to {target_t_s}")
+        self._activate_due()
         if dt > 1e-12:
-            self.step(dt)
-        self.time_s = float(target_t_s)
+            cuts = sorted({t for t in self._pending.values() if self.time_s + 1e-9 < t < target - 1e-9})
+            for t_cut in [*cuts, target]:
+                seg_dt = t_cut - self.time_s
+                if seg_dt > 1e-12:
+                    self._step_segment(seg_dt)
+                self.time_s = t_cut
+                self._activate_due()
+        else:
+            self.time_s = target
+            self._activate_due()
 
     def get_state_m(self) -> dict[str, dict[str, float]]:
         """Current state of every dynamic body in y-up metres."""
@@ -506,12 +544,14 @@ class PhysicsWorld:
         """Current state of every dynamic body in orig y-down pixels (CONTRACT.md §2)."""
         out: dict[str, dict[str, Any]] = {}
         for oid, body in self.bodies.items():
+            active = oid not in self._pending
             x_px, y_px = self.coord.m_to_px(body.position.x, body.position.y)
             extent_px = self.object_meta[oid]["extent_px"]
             out[oid] = {
                 "x": x_px,
                 "y": y_px,
                 "angle": float(body.angle),
-                "visible": self.coord.is_visible(x_px, y_px, extent_px=extent_px),
+                "visible": active and self.coord.is_visible(x_px, y_px, extent_px=extent_px),
+                "active": active,
             }
         return out

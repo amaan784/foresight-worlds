@@ -35,6 +35,7 @@ class RemoteBodyParams(BaseModel):
     friction: float
     elasticity: float
     damping: float
+    t_start_s: float | None = None
 
 
 class RemoteFitOutput(BaseModel):
