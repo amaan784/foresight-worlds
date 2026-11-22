@@ -35,6 +35,9 @@ dev = [
   "pytest>=8.0",
 ]
 
+[project.scripts]
+foresight = "foresight.cli:main"
+
 [project.urls]
 Repository = "https://github.com/amaan784/foresight-worlds"
 

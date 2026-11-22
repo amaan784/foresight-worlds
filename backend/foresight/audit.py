@@ -470,6 +470,9 @@ def _maybe_score_single_clip_physics_iq(cond_video: Path, pred_video: Path, benc
         return float(score_subset.score_folder(stage_dir, bench_dir, fps, td_path / "out")["physics_iq_verified_score_pct"])
 
 
+from .audit_html import render_audit_html
+
+
 def audit_video(
     cond_video: Path | str,
     pred_video: Path | str,
@@ -582,9 +585,10 @@ def audit_video(
     if out_path is not None:
         out_path.mkdir(parents=True, exist_ok=True)
         (out_path / "audit.json").write_text(json.dumps(report, indent=2))
+        (out_path / "audit.html").write_text(render_audit_html(report))
     return report
 
 
 audit_continuation = audit_video
 
-__all__ = ["EVAL_OFFSETS_S", "SIZE_CHANGE_LIMIT", "audit_continuation", "audit_video"]
+__all__ = ["EVAL_OFFSETS_S", "SIZE_CHANGE_LIMIT", "audit_continuation", "audit_video", "render_audit_html"]
