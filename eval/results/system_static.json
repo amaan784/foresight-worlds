@@ -1,0 +1,118 @@
+{
+  "scenes": [
+    "ball-hits-nothing",
+    "ball-rolls-off",
+    "ball-rolls-on-glass",
+    "ball-ramp",
+    "roll-behind-box",
+    "roll-front-box",
+    "roll-in-box",
+    "ball-hits-duck",
+    "weight-protects-duck",
+    "ball-in-basket",
+    "duck-falls-in-box",
+    "ball-and-block-fall",
+    "ball-train",
+    "balls-collide",
+    "two-balls-pass"
+  ],
+  "gt_source": "gcs",
+  "gt_source_name": "physics-IQ-benchmark (original)",
+  "view": "center",
+  "fps": 24,
+  "n_clips": 15,
+  "git_commit": "5e5ba33",
+  "systems": {
+    "static": {
+      "physics_iq_verified_pct": 34.96,
+      "physics_iq_original_pct": 32.42,
+      "per_scenario_verified_pct": {
+        "ball-and-block-fall": 34.31,
+        "ball-hits-duck": 33.29,
+        "ball-hits-nothing": 33.08,
+        "ball-in-basket": 28.98,
+        "ball-ramp": 47.32,
+        "ball-rolls-off": 39.66,
+        "ball-rolls-on-glass": 32.29,
+        "ball-train": 30.2,
+        "balls-collide": 48.32,
+        "duck-falls-in-box": 17.71,
+        "roll-behind-box": 48.0,
+        "roll-front-box": 33.92,
+        "roll-in-box": 30.75,
+        "two-balls-pass": 30.29,
+        "weight-protects-duck": 36.31
+      },
+      "n_ok": 15,
+      "n_failed": 0,
+      "latency_s_median": 1.33,
+      "endpoint_error_cm_median": null,
+      "run_at": "2026-11-22T07:50:00+00:00",
+      "clean_run": true
+    }
+  },
+  "runs": {
+    "static": {
+      "ball-hits-nothing": {
+        "ok": true,
+        "latency_s": 2.16
+      },
+      "ball-rolls-off": {
+        "ok": true,
+        "latency_s": 1.21
+      },
+      "ball-rolls-on-glass": {
+        "ok": true,
+        "latency_s": 1.18
+      },
+      "ball-ramp": {
+        "ok": true,
+        "latency_s": 1.38
+      },
+      "roll-behind-box": {
+        "ok": true,
+        "latency_s": 1.26
+      },
+      "roll-front-box": {
+        "ok": true,
+        "latency_s": 1.41
+      },
+      "roll-in-box": {
+        "ok": true,
+        "latency_s": 1.4
+      },
+      "ball-hits-duck": {
+        "ok": true,
+        "latency_s": 1.31
+      },
+      "weight-protects-duck": {
+        "ok": true,
+        "latency_s": 1.43
+      },
+      "ball-in-basket": {
+        "ok": true,
+        "latency_s": 1.3
+      },
+      "duck-falls-in-box": {
+        "ok": true,
+        "latency_s": 1.35
+      },
+      "ball-and-block-fall": {
+        "ok": true,
+        "latency_s": 1.26
+      },
+      "ball-train": {
+        "ok": true,
+        "latency_s": 1.35
+      },
+      "balls-collide": {
+        "ok": true,
+        "latency_s": 1.3
+      },
+      "two-balls-pass": {
+        "ok": true,
+        "latency_s": 1.33
+      }
+    }
+  }
+}
