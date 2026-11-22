@@ -40,13 +40,14 @@ def _mean_coefficients(arb: pymunk.Arbiter, space: pymunk.Space, data: Any) -> N
 DEFAULT_SUBSTEP_DT = 1.0 / 480.0
 DEFAULT_SOLVER_ITERATIONS = 20
 
-# Priors indexed by motion_type_hint: (friction, elasticity, damping_s^-1)
+# Priors indexed by motion_type_hint: (friction, elasticity, damping_s^-1). Rolling balls already brake through
+# ROLLING_RESISTANCE, so their extra exponential damping starts at 0 (the fitter raises it when a track shows it).
 _MOTION_PRIORS: dict[str, dict[str, float]] = {
-    "roll": {"friction": 0.50, "elasticity": 0.65, "damping": 0.25},
+    "roll": {"friction": 0.50, "elasticity": 0.65, "damping": 0.0},
     "slide": {"friction": 0.35, "elasticity": 0.30, "damping": 0.00},
     "fall": {"friction": 0.50, "elasticity": 0.65, "damping": 0.02},
     "bounce": {"friction": 0.50, "elasticity": 0.70, "damping": 0.05},
-    "other": {"friction": 0.50, "elasticity": 0.60, "damping": 0.15},
+    "other": {"friction": 0.50, "elasticity": 0.60, "damping": 0.0},
 }
 
 

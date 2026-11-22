@@ -188,7 +188,9 @@ def test_fit_rolling_strong_deceleration_recovers_damping_and_vel() -> None:
     ts = [2.50 + i * 0.045 for i in range(12)]  # 12 points over 0.495 s
     scene["objects"][0]["track"] = _sample_synthetic_track(scene, true_p, ts, "roll")
 
-    res = fit_scene(scene)
+    # The default rolling prior is now 0 (rolling resistance does the usual braking); this test is about recovering
+    # damping from the track, so it keeps the prior it was written with.
+    res = fit_scene(scene, param_priors={"obj0": {"damping": 0.25}})
     p = res.params["obj0"]
     assert p.x0 == pytest.approx(true_p.x0, rel=0.05, abs=0.005)
     assert p.vx0 == pytest.approx(true_p.vx0, rel=0.05)
