@@ -25,7 +25,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import config, genie, omni
+from . import config, genie, omni, whatif
 from .gemini import SpendCapHit, _status
 from .pipeline import draw_overlay, endpoint_error, predict_clip, track_in_video
 from .video import probe, transcode
@@ -49,6 +49,15 @@ class SessionPrefs(BaseModel):
     omni: bool = False
     genie: bool = False
     dynamics: str | None = None
+
+
+class WhatIfRequest(BaseModel):
+    object_id: str | None = None
+    start_px: list[float] | None = None
+    vx0: float | None = None
+    vy0: float | None = None
+    friction: float | None = None
+    bounce: float | None = None
 
 
 def _parse_form_bool(val: str | None) -> bool | None:
@@ -604,6 +613,36 @@ def cancel(job_id: str):
         j.emit("end", {"status": "cancelled"})
         j.close()
     return {"job_id": j.id, "status": j.status}
+
+
+@app.get("/api/jobs/{job_id}/whatif")
+def job_whatif_baseline(job_id: str):
+    """Baseline t = t_cond_end_s state for interactive counterfactual rollouts (zero Gemini calls)."""
+    if not _physics_available():
+        raise HTTPException(503, "physics module (backend/physics) is not available yet")
+    try:
+        return whatif.get_whatif_baseline(job_id, OUT, JOBS)
+    except whatif.InvalidJobIdError as e:
+        raise HTTPException(400, str(e)) from e
+    except whatif.JobNotFoundError as e:
+        raise HTTPException(404, str(e)) from e
+    except whatif.InvalidWhatIfError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+@app.post("/api/jobs/{job_id}/whatif")
+def job_whatif_rollout(job_id: str, req: WhatIfRequest):
+    """Simulate a 5.0 s counterfactual trajectory from t = t_cond_end_s with overridden parameters."""
+    if not _physics_available():
+        raise HTTPException(503, "physics module (backend/physics) is not available yet")
+    try:
+        return whatif.run_whatif(job_id, req.model_dump(exclude_none=True), OUT, JOBS)
+    except whatif.InvalidJobIdError as e:
+        raise HTTPException(400, str(e)) from e
+    except whatif.JobNotFoundError as e:
+        raise HTTPException(404, str(e)) from e
+    except whatif.InvalidWhatIfError as e:
+        raise HTTPException(400, str(e)) from e
 
 
 @app.get("/api/jobs/{job_id}/events")
