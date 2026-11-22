@@ -33,7 +33,13 @@ export type Result = {
   job_id: string;
   status: string;
   dynamics: "physics" | "const_velocity";
-  urls: { conditioning: string; reality: string | null; foresight: string; omni: string | null; genie?: string | null; overlay: string | null };
+  urls: { conditioning: string; reality: string | null; foresight: string; omni: string | null; genie?: string | null; overlay: string | null;
+          trajectory_json?: string; trajectory_csv?: string };
+  title?: string;
+  source?: string;
+  frame_url?: string;
+  paths?: Paths;
+  understanding?: Understanding;
   metrics: {
     latency_s_total: number;
     latency_s_by_stage: Record<string, number>;
@@ -50,6 +56,26 @@ export type Result = {
   omni?: { status: string; latency_s: number | null; error: string | null };
   genie?: { status: string; latency_s: number | null; error: string | null };
 };
+
+/** Points are [t_s, x, y] in the clip's original pixels. */
+export type Paths = { orig_size: [number, number]; seen: number[][]; predicted: number[][]; real: number[][] };
+
+export type Understanding = {
+  objects: { id: string; name: string; shape: string; size_cm: number | null; mass_g: number | null; role: string;
+             fit: { speed_m_s: number | null; friction: number | null; bounce: number | null; damping_per_s: number | null } | null }[];
+  surfaces: { name: string; kind: string; material: string }[];
+  depth_notes: string[];
+  px_per_m: number;
+  scale_source?: string;
+  motion_model?: string | null;
+  checks: { answers: Record<string, string>; confidences: Record<string, number> };
+  repairs_used?: number | null;
+  dynamics_used?: string | null;
+  fallback_reason?: string | null;
+};
+
+export type RecentRun = { job_id: string; created: string; title: string; poster: string | null; dynamics: string | null;
+                          endpoint_error_cm: { foresight: number | null; omni: number | null; genie: number | null } };
 
 export type Lane = { status: string; url: string | null; latency_s: number | null; error: string | null; endpoint_error_cm?: number | null; t?: number };
 
@@ -173,4 +199,12 @@ export async function cancelJob(id: string): Promise<void> {
 export function fmtCm(v: number | null | undefined): string {
   if (v === null || v === undefined) return "—";
   return v >= 100 ? `${(v / 100).toFixed(2)} m` : `${v.toFixed(1)} cm`;
+}
+
+export async function getRecent(limit = 8): Promise<RecentRun[]> {
+  return fetch(apiUrl(`/api/recent?limit=${limit}`)).then((r) => (r.ok ? r.json() : [])).catch(() => []);
+}
+
+export async function getEval(which: "main" | "wide"): Promise<any | null> {
+  return fetch(apiUrl(which === "main" ? "/api/eval" : "/api/eval/wide")).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 }

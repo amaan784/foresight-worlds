@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { apiUrl, cancelJob, fmtCm, getInfo, getSamples, listSessionJobs, startJob, useJob, type Info, type JobState, type Lane, type Sample } from "./api";
+import { apiUrl, cancelJob, fmtCm, getInfo, getRecent, getSamples, listSessionJobs, startJob, useJob, type Info, type JobState, type Lane, type RecentRun, type Sample } from "./api";
+import { Downloads, PathPlot, Understood } from "./Insights";
 
 const newSession = () => Math.random().toString(36).slice(2, 10);
 
@@ -14,12 +15,14 @@ export default function Stage() {
   const [askGenie, setAskGenie] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [startErr, setStartErr] = useState<string | null>(null);
+  const [recent, setRecent] = useState<RecentRun[]>([]);
   const job = useJob(jobId);
 
   useEffect(() => {
     getInfo().then(setInfo).catch((e) => setInfoErr(String(e.message ?? e)));
     getSamples().then(setSamples);
   }, []);
+  useEffect(() => { if (!jobId) getRecent(8).then(setRecent); }, [jobId]);
 
   // A phone that scanned the QR code posts with this session; pick its job up.
   useEffect(() => {
@@ -45,12 +48,36 @@ export default function Stage() {
     f.set("genie", String(askGenie));
     f.set("dynamics", dynamics);
     try {
-      setJobId((await startJob(f)).job_id);
+      open((await startJob(f)).job_id);
     } catch (e) {
       setStartErr(String((e as Error).message));
     } finally {
       setBusy(null);
     }
+  }
+
+  async function runUpload(file: File) {
+    setBusy("upload");
+    setStartErr(null);
+    const f = new FormData();
+    f.set("video", file, file.name);
+    f.set("session", session);
+    f.set("cond_seconds", "3");
+    f.set("omni", String(askOmni));
+    f.set("genie", String(askGenie));
+    f.set("dynamics", dynamics);
+    try {
+      open((await startJob(f)).job_id);
+    } catch (e) {
+      setStartErr(String((e as Error).message));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function open(id: string) {
+    setJobId(id);
+    history.replaceState(null, "", `/?job=${id}`);
   }
 
   function reset() {
@@ -74,6 +101,11 @@ export default function Stage() {
         <button onClick={reset} className="display text-3xl font-extrabold tracking-tight" aria-label="Foresight, back to start">
           Foresight
         </button>
+        {!job && (
+          <nav className="flex items-center gap-6 text-lg">
+            <a href="/results" className="font-medium underline decoration-line decoration-2 underline-offset-4 hover:decoration-ink">How well it predicts</a>
+          </nav>
+        )}
         {job && (
           <div className="flex items-center gap-4">
             <Elapsed job={job} />
@@ -90,7 +122,8 @@ export default function Stage() {
       <main className="flex-1 px-4 sm:px-10 pb-10">
         {!job && (
           <Idle info={info} infoErr={infoErr} samples={samples} captureUrl={captureUrl} askOmni={askOmni}
-                setAskOmni={setAskOmni} askGenie={askGenie} setAskGenie={setAskGenie} busy={busy} onSample={runSample} startErr={startErr} />
+                setAskOmni={setAskOmni} askGenie={askGenie} setAskGenie={setAskGenie} busy={busy} onSample={runSample} startErr={startErr}
+                onUpload={runUpload} recent={recent} onOpen={open} />
         )}
         {job && !job.result && <Running job={job} onReset={reset} />}
         {job && job.result && <Reveal job={job} onReset={reset} />}
@@ -121,6 +154,7 @@ function Elapsed({ job }: { job: JobState }) {
 function Idle(p: {
   info: Info | null; infoErr: string | null; samples: Sample[]; captureUrl: string; askOmni: boolean;
   setAskOmni: (v: boolean) => void; askGenie: boolean; setAskGenie: (v: boolean) => void; busy: string | null; onSample: (s: Sample) => void; startErr: string | null;
+  onUpload: (f: File) => void; recent: RecentRun[]; onOpen: (id: string) => void;
 }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-x-16 gap-y-10 max-w-[1400px]">
@@ -157,6 +191,7 @@ function Idle(p: {
                  onChange={(e) => p.setAskGenie(e.target.checked)} />
           <span>And Genie 4 to play the scene on from its last frame <span className="text-muted">(about 15 s)</span></span>
         </label>
+        <DropVideo busy={p.busy === "upload"} onFile={p.onUpload} />
       </aside>
 
       <section className="lg:col-span-2 min-w-0">
@@ -175,6 +210,43 @@ function Idle(p: {
         </div>
         {p.startErr && <p role="alert" className="mt-4 text-bad font-medium">{p.startErr}</p>}
       </section>
+
+      {p.recent.length > 0 && (
+        <section className="lg:col-span-2 min-w-0">
+          <h2 className="text-2xl font-bold">Recent runs</h2>
+          <p className="mt-1 text-base text-muted">Open one to replay the reveal. The number is how far Foresight's object ended from the real one.</p>
+          <div className="mt-5 flex gap-4 overflow-x-auto pb-2">
+            {p.recent.map((r) => (
+              <button key={r.job_id} onClick={() => p.onOpen(r.job_id)} aria-label={`Open the ${r.title} run`}
+                      className="monitor shrink-0 w-[240px] text-left">
+                {r.poster ? <img src={apiUrl(r.poster)} alt="" /> : <div className="slate">{r.title}</div>}
+                <span className="tag"><span className="dot" style={{ background: "var(--color-cobalt)" }} />{r.title}</span>
+                <span className="tc">{r.endpoint_error_cm.foresight !== null ? fmtCm(r.endpoint_error_cm.foresight) : new Date(r.created).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+/** A video file from this computer: for when the phone cannot reach the laptop (venue Wi-Fi often blocks it). */
+function DropVideo({ busy, onFile }: { busy: boolean; onFile: (f: File) => void }) {
+  const [over, setOver] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const take = (files: FileList | null) => { const f = files?.[0]; if (f && f.type.startsWith("video/")) onFile(f); };
+  return (
+    <div onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
+         onDrop={(e) => { e.preventDefault(); setOver(false); take(e.dataTransfer.files); }}
+         className={`mt-6 rounded-xl border-2 border-dashed p-5 text-base transition-colors ${over ? "border-cobalt bg-cobalt/5" : "border-line"}`}>
+      <p className="font-semibold">No phone on this network?</p>
+      <p className="mt-1 text-muted">Drop a side-view video here, at least 3 s long. Anything after 3 s is kept hidden as the answer.</p>
+      <button onClick={() => input.current?.click()} disabled={busy}
+              className="mt-3 rounded-full bg-ink px-4 py-1.5 font-medium text-paper disabled:opacity-60">
+        {busy ? "Uploading…" : "Choose a video"}
+      </button>
+      <input ref={input} type="file" accept="video/*" className="hidden" onChange={(e) => take(e.target.files)} />
     </div>
   );
 }
@@ -352,6 +424,13 @@ function Reveal({ job, onReset }: { job: JobState; onReset: () => void }) {
         <Stat label="Fit error" value={r.metrics.fit_error_px !== null ? `${r.metrics.fit_error_px.toFixed(1)} px` : "—"} />
         <Stat label="Decision 1" value={r.metrics.decision1_confidences ? Object.values(r.metrics.decision1_confidences).map((v) => v.toFixed(2)).join(" / ") : "—"} />
       </dl>
+      <Downloads r={r} />
+      {(r.paths?.predicted.length || r.understanding) && (
+        <div className="grid grid-cols-1 gap-10 border-t border-line pt-8 xl:grid-cols-[1.25fr_1fr]">
+          {r.paths && r.paths.predicted.length > 0 && <PathPlot paths={r.paths} frameUrl={r.frame_url ?? null} endpointCm={eeF} />}
+          {r.understanding && <Understood u={r.understanding} />}
+        </div>
+      )}
       <button onClick={onReset} className="rounded-full bg-ink px-6 py-3 text-paper text-lg font-medium">Run another clip</button>
     </div>
   );
