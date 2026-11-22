@@ -103,6 +103,13 @@ def clean_track(pts: list[dict], size_px: float, min_keep: int = 3) -> tuple[lis
     if last_still >= 0 and moving_after >= 2:
         info["dropped_before_release"] = last_still + 1
         pts = pts[last_still + 1:]
+    elif last_still >= 0 and moving_after == 1:
+        # Released just before the end of the conditioning window: trim the stationary held prefix while
+        # keeping the release anchor so the final drop point is not outnumbered and pruned as an outlier.
+        cut = max(0, min(last_still, len(pts) - min_keep))
+        if cut > 0:
+            info["dropped_before_release"] = cut
+            pts = pts[cut:]
     dropped = []
     while len(pts) > min_keep:
         ends = [0, 1, len(pts) - 1] if len(pts) > 4 else [0, len(pts) - 1]

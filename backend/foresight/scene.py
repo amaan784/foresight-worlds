@@ -262,7 +262,23 @@ def build_scene(cond_video: Path, work_dir: Path, fit_video: Path | None = None,
     proc_size = list(fit["proc"][0].shape[1::-1])
     del fit
     cond["proc"].clear()
-    # ---- scale (main object = the one with the longest track)
+
+    statics = []
+    for o in scene_p.objects:
+        if o.moving:
+            continue
+        b = o.bbox_last_frame if o.bbox_last_frame != [0, 0, 0, 0] else o.bbox_frame0
+        x0, y0, x1, y1 = _norm_box_to_orig(b, W, H)
+        # a sprite too: the simulation may knock a static object that stands in a moving object's path
+        sprite = work_dir / f"static{len(statics)}.png"
+        cv2.imwrite(str(sprite), _sprite(last_full, (x0 + x1) / 2, (y0 + y1) / 2, o.shape, x1 - x0, y1 - y0))
+        statics.append({"name": o.name, "shape": "box", "bbox": [round(v, 1) for v in (x0, y0, x1, y1)],
+                        "perceived_shape": o.shape, "est_real_size_cm": o.est_real_size_cm, "est_mass_g": o.est_mass_g,
+                        "material": o.material,
+                        "sprite_png": str(sprite)})
+    statics, dropped = drop_source_statics(statics, objects)
+
+    # ---- scale (main object = the one with the longest clean free-motion track)
     main = max(objects, key=lambda ob: len(ob["track"]))
     size_px = 2 * main["radius_px"] if main["shape"] == "circle" else main["w_px"]
     sc = scale.choose_scale(size_px, main["est_real_size_cm"], main["track"], scene_p.motion_type)
@@ -291,24 +307,10 @@ def build_scene(cond_video: Path, work_dir: Path, fit_video: Path | None = None,
         keyframes.append({"t_s": round(f_idx / fit_fps, 4), "png": str(p)})
     timings["assets"] = time.time() - t0
 
-    statics = []
-    for o in scene_p.objects:
-        if o.moving:
-            continue
-        b = o.bbox_last_frame if o.bbox_last_frame != [0, 0, 0, 0] else o.bbox_frame0
-        x0, y0, x1, y1 = _norm_box_to_orig(b, W, H)
-        # a sprite too: the simulation may knock a static object that stands in a moving object's path
-        sprite = work_dir / f"static{len(statics)}.png"
-        cv2.imwrite(str(sprite), _sprite(last_full, (x0 + x1) / 2, (y0 + y1) / 2, o.shape, x1 - x0, y1 - y0))
-        statics.append({"name": o.name, "shape": "box", "bbox": [round(v, 1) for v in (x0, y0, x1, y1)],
-                        "perceived_shape": o.shape, "est_real_size_cm": o.est_real_size_cm, "est_mass_g": o.est_mass_g,
-                        "material": o.material,
-                        "sprite_png": str(sprite)})
     surfaces = [{"name": s.name, "kind": s.kind, "material": s.material,
                  "p0": [round(s.line[1] / 1000 * W, 1), round(s.line[0] / 1000 * H, 1)],
                  "p1": [round(s.line[3] / 1000 * W, 1), round(s.line[2] / 1000 * H, 1)]} for s in scene_p.support_surfaces]
     surfaces, snap = snap_support(surfaces, objects, main, scene_p.motion_type, W)
-    statics, dropped = drop_source_statics(statics, objects)
     timings["surface_snap"] = snap
     timings["statics_dropped"] = dropped
     timings["track_cleaning"] = cleaning
@@ -316,7 +318,8 @@ def build_scene(cond_video: Path, work_dir: Path, fit_video: Path | None = None,
     scene = {
         "clip_id": clip_id or Path(cond_video).stem, "work_dir": str(work_dir), "orig_size": [W, H],
         "fps_out": out_fps, "t_cond_end_s": round(t_cond_end, 4), "pred_seconds": config.PRED_SECONDS,
-        "px_per_m": sc["px_per_m"], "px_per_m_source": sc["source"], "gravity_m_s2": scale.G,
+        "px_per_m": sc["px_per_m"], "px_per_m_size": sc["px_per_m_size"], "px_per_m_source": sc["source"],
+        "px_per_m_reason": sc["reason"], "gravity_check": sc["gravity_check"], "gravity_m_s2": scale.G,
         "motion_type_hint": scene_p.motion_type, "objects": objects, "static_objects": statics,
         "surfaces": surfaces, "background_png": str(work_dir / "background.png"),
         "last_frame_png": str(work_dir / "last_frame.png"), "keyframes": keyframes,
