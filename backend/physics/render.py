@@ -16,6 +16,8 @@ from typing import Any, Callable
 import cv2
 import numpy as np
 
+from .layers import assign_layers
+
 ROOT = Path(__file__).resolve().parents[2]
 _VIDIO_MOD = None
 
@@ -91,8 +93,11 @@ def _composite_sprite(
     cx: float,
     cy: float,
     angle_rad: float,
+    visible: np.ndarray | None = None,
 ) -> None:
-    """Alpha-composite a premultiplied sprite onto `frame_bgr` in-place at `(cx, cy)`."""
+    """Alpha-composite a premultiplied sprite onto `frame_bgr` in-place at `(cx, cy)`.
+
+    `visible` (H x W x 1, 0..1) hides the sprite where something stands in front of the object."""
     h_img, w_img = frame_bgr.shape[:2]
     sh, sw = bgr_pre.shape[:2]
     half_w = sw // 2
@@ -141,6 +146,9 @@ def _composite_sprite(
     roi = frame_bgr[cy0:cy1, cx0:cx1].astype(np.float32)
     sb = src_bgr[sy0:sy1, sx0:sx1]
     sa = src_a[sy0:sy1, sx0:sx1]
+    if visible is not None:
+        v = visible[cy0:cy1, cx0:cx1]
+        sb, sa = sb * v, sa * v
     blended = sb + roi * (1.0 - sa)
     frame_bgr[cy0:cy1, cx0:cx1] = np.clip(blended, 0.0, 255.0).astype(np.uint8)
 
@@ -188,9 +196,41 @@ def render_trajectory(
     scale_x = tw / float(orig_w)
     scale_y = th / float(orig_h)
 
+    # Objects behind a static object (or inside a container) are hidden by it: see physics/layers.py
+    visible: dict[str, np.ndarray] = {}
+    layers = assign_layers(scene)
+    for oid, rects in layers.occluders.items():
+        v = np.ones((th, tw, 1), dtype=np.float32)
+        for x0, y0, x1, y1 in rects:
+            v[max(0, int(round(y0 * scale_y))):max(0, int(round(y1 * scale_y))),
+              max(0, int(round(x0 * scale_x))):max(0, int(round(x1 * scale_x)))] = 0.0
+        visible[oid] = cv2.GaussianBlur(v, (0, 0), 1.0)[..., None]
+
+    # Static objects the simulation knocked (layers.py step 3): patch the background where they stood, then draw
+    # them like the moving objects, offset from where they were seen. Ones that did not move stay in the background.
+    knocked: dict[str, tuple[float, float, float, float]] = {}  # id -> (bbox cx, cy, body x0, y0)
+    for rest in layers.resting:
+        rid = rest["id"]
+        path = [st["objects"][rid] for st in trajectory if rid in st.get("objects", {})]
+        if not path or not rest.get("sprite_png"):
+            continue
+        moved = max(math.hypot(p["x"] - path[0]["x"], p["y"] - path[0]["y"]) * scale_x for p in path)
+        turned = max(abs(p.get("angle", 0.0) - path[0].get("angle", 0.0)) for p in path)
+        if moved < 1.5 and turned < 0.05:
+            continue
+        x0, y0, x1, y1 = scene["static_objects"][rest["static"]]["bbox"]
+        gx, gy = 0.12 * (x1 - x0), 0.12 * (y1 - y0)
+        mask = np.zeros(bg.shape[:2], np.uint8)
+        mask[max(0, int((y0 - gy) * scale_y)):int((y1 + gy) * scale_y), max(0, int((x0 - gx) * scale_x)):int((x1 + gx) * scale_x)] = 255
+        bg = cv2.inpaint(bg, mask, 5, cv2.INPAINT_TELEA)
+        knocked[rid] = (rest["bbox_center"][0], rest["bbox_center"][1], path[0]["x"], path[0]["y"])
+
     # Pre-load and scale sprites once
     sprites: dict[str, tuple[np.ndarray, np.ndarray]] = {}
-    obj_order: list[str] = []
+    for rest in layers.resting:
+        if rest["id"] in knocked:
+            sprites[rest["id"]] = _load_sprite_premul(rest["sprite_png"], scale_x, scale_y)
+    obj_order: list[str] = list(knocked)
     for obj in scene.get("objects", []):
         oid = obj["id"]
         obj_order.append(oid)
@@ -221,13 +261,15 @@ def render_trajectory(
                 if not st.get("visible", True):
                     continue
                 bgr_pre, alpha = sprites[oid]
+                dx, dy = (knocked[oid][0] - knocked[oid][2], knocked[oid][1] - knocked[oid][3]) if oid in knocked else (0.0, 0.0)
                 _composite_sprite(
                     frame,
                     bgr_pre,
                     alpha,
-                    cx=float(st["x"]) * scale_x,
-                    cy=float(st["y"]) * scale_y,
+                    cx=(float(st["x"]) + dx) * scale_x,
+                    cy=(float(st["y"]) + dy) * scale_y,
                     angle_rad=float(st.get("angle", 0.0)),
+                    visible=visible.get(oid),
                 )
             proc.stdin.write(np.ascontiguousarray(frame[:th, :tw]).tobytes())
     finally:

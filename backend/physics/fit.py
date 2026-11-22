@@ -23,6 +23,7 @@ from typing import Any, Callable
 import numpy as np
 from scipy.optimize import least_squares
 
+from .layers import assign_layers, surfaces_touching
 from .world import BodyParams, CoordTransform, PhysicsWorld, default_priors
 
 OnEvent = Callable[[str, dict[str, Any]], None]
@@ -93,10 +94,14 @@ def _surface_top_and_slope_at_x(
     scene: dict[str, Any],
     coord: CoordTransform,
     x_m: float,
+    oid: str | None = None,
 ) -> list[tuple[float, float]]:
-    """Return (y_m, slope_dy_dx) of all support surfaces spanning x_m."""
+    """Return (y_m, slope_dy_dx) of the support surfaces spanning x_m (those object `oid` can touch, if given)."""
     out: list[tuple[float, float]] = []
-    for surf in scene.get("surfaces", []):
+    allowed = None if oid is None else set(surfaces_touching(scene, assign_layers(scene), oid))
+    for si, surf in enumerate(scene.get("surfaces", [])):
+        if allowed is not None and si not in allowed:
+            continue
         p0 = coord.px_to_m(surf["p0"][0], surf["p0"][1])
         p1 = coord.px_to_m(surf["p1"][0], surf["p1"][1])
         lo, hi = (p0[0], p1[0]) if p0[0] <= p1[0] else (p1[0], p0[0])
@@ -112,8 +117,9 @@ def _surface_top_y_at_x(
     scene: dict[str, Any],
     coord: CoordTransform,
     x_m: float,
+    oid: str | None = None,
 ) -> list[float]:
-    return [y for y, _ in _surface_top_and_slope_at_x(scene, coord, x_m)]
+    return [y for y, _ in _surface_top_and_slope_at_x(scene, coord, x_m, oid)]
 
 
 def _obj_vertical_half_m(obj: dict[str, Any], coord: CoordTransform) -> float:
@@ -191,7 +197,7 @@ def _initial_guess_for_object(
     # Avoid spawning slightly buried inside a support surface (which causes a spurious hop)
     half_h = _obj_vertical_half_m(obj, coord)
     if motion_model in ("roll", "slide", "other") and not had_raw_bounce:
-        for sy in _surface_top_y_at_x(scene, coord, x0):
+        for sy in _surface_top_y_at_x(scene, coord, x0, obj.get("id")):
             target_y = sy + half_h
             if target_y - 0.6 * half_h <= y0 < target_y:
                 y0 = target_y + 1e-4
@@ -221,7 +227,7 @@ def _rollout_track(
     }
     prev_vel: dict[str, tuple[float, float]] = {
         oid: (world.bodies[oid].velocity.x, world.bodies[oid].velocity.y)
-        for oid in world.bodies
+        for oid in params_by_id if oid in world.bodies
     }
 
     traj: list[dict[str, Any]] = []
@@ -230,7 +236,8 @@ def _rollout_track(
         while world.time_s + 1e-9 < t:
             t_next = min(t, world.time_s + 0.01)
             world.step_to(t_next)
-            for oid, body in world.bodies.items():
+            for oid in prev_vel:  # fitted bodies only (bodies at rest are not fitted)
+                body = world.bodies[oid]
                 vx, vy = float(body.velocity.x), float(body.velocity.y)
                 pvx, pvy = prev_vel[oid]
                 if (pvy < -0.45 and vy > 0.25) or (pvx * vx < 0 and abs(vx - pvx) > 0.50):
@@ -306,7 +313,7 @@ def _run_lsq(
         y_min = bp.y0 - pos_margin
         vy_min = -max_vel
         if half_h > 0:
-            for sy, slope in _surface_top_and_slope_at_x(scene, coord, bp.x0):
+            for sy, slope in _surface_top_and_slope_at_x(scene, coord, bp.x0, oid):
                 surf_center_y = sy + half_h
                 if bp.y0 >= surf_center_y - 0.35 * half_h:
                     y_min = max(y_min, surf_center_y - 0.002)
