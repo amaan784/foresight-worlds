@@ -99,7 +99,7 @@ Every number below comes from `eval/run_eval.py`: [eval/results.json](eval/resul
 
 **In short:** Physics-IQ score (Verified formula, %, higher is better): Constant velocity (no physics) 77.1, Foresight with Gemini 4 Carbon reading the scene 76.8, Foresight with Gemini 4 Neon reading the scene 74.6, Foresight (physics) 74.4, Genie 4 (world model) 42.2, Last frame held 35.0, Gemini Omni 1.2 Flash (video model) 27.5.
 
-On the Physics-IQ score Foresight (74.4) is above both video models (Gemini Omni 1.2 Flash 27.5, Genie 4 42.2), and still **below** the constant-velocity baseline (77.1), which uses the same Gemini scene reading, tracking and renderer and only drops the physics. On where the object actually ends up, Foresight is closer to reality than constant velocity on 12 of the 14 clips with a measurable endpoint (median 9.9 cm against 192.5 cm). The two measures disagree because the Physics-IQ score compares where pixels change: a constant-velocity object that leaves the frame early leaves a still picture, which matches a real scene that has come to rest, even when the object went the wrong way. The physics fit blew up (endpoint over 10 m off) on 0 clips; the energy check fell back to constant velocity on 0.
+On the Physics-IQ score Foresight (74.4) is above both video models (Gemini Omni 1.2 Flash 27.5, Genie 4 42.2), and still **below** the constant-velocity baseline (77.1), which uses the same Gemini scene reading, tracking and renderer and only drops the physics. On where the object actually ends up, Foresight is closer to reality than constant velocity on 12 of the 14 clips with a measurable endpoint (median 9.9 cm against 192.5 cm), and its median is below Genie 4 (11.4 cm), Gemini Omni 1.2 Flash (26.9 cm) and the held last frame (27.8 cm). The two measures disagree because the Physics-IQ score compares where pixels change: a constant-velocity object that leaves the frame early leaves a still picture, which matches a real scene that has come to rest, even when the object went the wrong way. The physics fit blew up (endpoint over 10 m off) on 0 clips; the energy check fell back to constant velocity on 0.
 
 Reading the scene with Gemini 4 Carbon instead of Hydrogen: 76.8 against 74.4, median endpoint error 13.6 cm against 9.9 cm.
 
@@ -115,11 +115,11 @@ The stage reads scenes with Hydrogen because it is the fastest; Neon takes over 
 | Foresight with Gemini 4 Carbon reading the scene | 76.8 | 81.3 | 13.6 | 0 of 15 | 2026-11-22 |
 | Foresight with Gemini 4 Neon reading the scene | 74.6 | 79.4 | 9.6 | 0 of 15 | 2026-11-22 |
 | Foresight (physics) | 74.4 | 77.2 | 9.9 | 0 of 15 | 2026-11-22 |
-| Genie 4 (world model) | 42.2 | 42.3 | n/a | 0 of 15 | 2026-11-21 |
-| Last frame held | 35.0 | 32.4 | n/a | 0 of 15 | 2026-11-22 |
-| Gemini Omni 1.2 Flash (video model) | 27.5 | 21.6 | n/a | 0 of 15 | 2026-11-21 |
+| Genie 4 (world model) | 42.2 | 42.3 | 11.4 | 0 of 15 | 2026-11-21 |
+| Last frame held | 35.0 | 32.4 | 27.8 | 0 of 15 | 2026-11-22 |
+| Gemini Omni 1.2 Flash (video model) | 27.5 | 21.6 | 26.9 | 0 of 15 | 2026-11-21 |
 
-Endpoint error is measured only where the system tracks an object (Foresight and constant velocity). The video models' rows come from their own clean run (the Run column): their output does not depend on Foresight's code. Failures, causes and fixes: [eval/FAILURES.md](eval/FAILURES.md).
+Endpoint error: for Foresight and constant velocity, from their predicted path; for the video models and the held last frame, by tracking the object through their video the same way as through reality (from where it was last seen, ending when it is lost, leaves the frame or goes behind something). A video model that makes the object vanish ends its track early, so its error is measured where the object disappeared. The video models' rows come from their own clean run (the Run column): their output does not depend on Foresight's code. Failures, causes and fixes: [eval/FAILURES.md](eval/FAILURES.md).
 
 ### Wider eval: 20 scenes, all three cameras
 
@@ -129,11 +129,11 @@ Endpoint error is measured only where the system tracks an object (Foresight and
 |---|---|---|---|---|---|---|
 | Constant velocity (no physics) | 66.6 | 64.8 | 68.6 | 66.5 | 154.8 | 0 of 60 |
 | Foresight (physics) | 64.7 | 63.4 | 65.1 | 65.7 | 18.2 | 0 of 60 |
-| Genie 4 (world model) | 46.5 | 43.7 | 45.7 | 50.2 | n/a | 0 of 60 |
-| Last frame held | 36.5 | 36.5 | 35.4 | 37.5 | n/a | 0 of 60 |
-| Gemini Omni 1.2 Flash (video model) | 30.1 | 29.1 | 29.1 | 32.1 | n/a | 0 of 60 |
+| Genie 4 (world model) | 46.5 | 43.7 | 45.7 | 50.2 | 12.6 | 0 of 60 |
+| Last frame held | 36.5 | 36.5 | 35.4 | 37.5 | 22.7 | 0 of 60 |
+| Gemini Omni 1.2 Flash (video model) | 30.1 | 29.1 | 29.1 | 32.1 | 14.7 | 0 of 60 |
 
-Across the 60 scene-views Foresight scores below constant velocity on the Physics-IQ score (64.7 against 66.6) and ends closer to the real object on 36 of the 51 scene-views with a measurable endpoint. Most of these scene-views (the left and right cameras and the five added scenes) were not used while developing.
+Across the 60 scene-views Foresight scores below constant velocity on the Physics-IQ score (64.7 against 66.6) and ends closer to the real object than constant velocity on 36 of the 51 scene-views with a measurable endpoint. Median endpoint error: Genie 4 12.6 cm, Gemini Omni 1.2 Flash 14.7 cm, Foresight 18.2 cm, Last frame held 22.7 cm, Constant velocity 154.8 cm. On these clips the video models' medians are lower than Foresight's. This measure stops a video model's track where it blurs or drops the object and does not count that as an error. Most of these scene-views (the left and right cameras and the five added scenes) were not used while developing.
 
 <!-- results: end -->
 

@@ -48,9 +48,10 @@
       "n_ok": 15,
       "n_failed": 0,
       "latency_s_median": 1.33,
-      "endpoint_error_cm_median": null,
+      "endpoint_error_cm_median": 27.8,
       "run_at": "2026-11-22T07:50:00+00:00",
-      "clean_run": true
+      "clean_run": true,
+      "endpoint_rule": "object tracked through the system's video like the real one (Nov 22)"
     },
     "const_velocity": {
       "physics_iq_verified_pct": 77.06,
@@ -131,9 +132,10 @@
       "n_ok": 15,
       "n_failed": 0,
       "latency_s_median": 38.9,
-      "endpoint_error_cm_median": null,
+      "endpoint_error_cm_median": 26.9,
       "run_at": "2026-11-21T20:49:03+00:00",
-      "clean_run": true
+      "clean_run": true,
+      "endpoint_rule": "object tracked through the system's video like the real one (Nov 22)"
     },
     "genie": {
       "physics_iq_verified_pct": 42.23,
@@ -157,10 +159,11 @@
       },
       "n_ok": 15,
       "n_failed": 0,
-      "endpoint_error_cm_median": null,
+      "endpoint_error_cm_median": 11.4,
       "run_at": "2026-11-21T21:36:40+00:00",
       "clean_run": true,
-      "perception_model": null
+      "perception_model": null,
+      "endpoint_rule": "object tracked through the system's video like the real one (Nov 22)"
     },
     "foresight_carbon": {
       "physics_iq_verified_pct": 76.8,
@@ -223,63 +226,78 @@
     "static": {
       "ball-hits-nothing": {
         "ok": true,
-        "latency_s": 2.16
+        "latency_s": 2.16,
+        "endpoint_error_cm": 62.5
       },
       "ball-rolls-off": {
         "ok": true,
-        "latency_s": 1.21
+        "latency_s": 1.21,
+        "endpoint_error_cm": 37.0
       },
       "ball-rolls-on-glass": {
         "ok": true,
-        "latency_s": 1.18
+        "latency_s": 1.18,
+        "endpoint_error_cm": 26.9
       },
       "ball-ramp": {
         "ok": true,
-        "latency_s": 1.38
+        "latency_s": 1.38,
+        "endpoint_error_cm": 0.2
       },
       "roll-behind-box": {
         "ok": true,
-        "latency_s": 1.26
+        "latency_s": 1.26,
+        "endpoint_error_cm": 12.0
       },
       "roll-front-box": {
         "ok": true,
-        "latency_s": 1.41
+        "latency_s": 1.41,
+        "endpoint_error_cm": 40.9
       },
       "roll-in-box": {
         "ok": true,
-        "latency_s": 1.4
+        "latency_s": 1.4,
+        "endpoint_error_cm": 23.2
       },
       "ball-hits-duck": {
         "ok": true,
-        "latency_s": 1.31
+        "latency_s": 1.31,
+        "endpoint_error_cm": 59.6
       },
       "weight-protects-duck": {
         "ok": true,
-        "latency_s": 1.43
+        "latency_s": 1.43,
+        "endpoint_error_cm": 34.6
       },
       "ball-in-basket": {
         "ok": true,
-        "latency_s": 1.3
+        "latency_s": 1.3,
+        "endpoint_error_cm": null
       },
       "duck-falls-in-box": {
         "ok": true,
-        "latency_s": 1.35
+        "latency_s": 1.35,
+        "endpoint_error_cm": 16.5
       },
       "ball-and-block-fall": {
         "ok": true,
-        "latency_s": 1.26
+        "latency_s": 1.26,
+        "endpoint_error_cm": 18.5
       },
       "ball-train": {
         "ok": true,
-        "latency_s": 1.35
+        "latency_s": 1.35,
+        "endpoint_error_cm": 18.9
       },
       "balls-collide": {
         "ok": true,
-        "latency_s": 1.3
+        "latency_s": 1.3,
+        "endpoint_error_cm": 27.8
       },
       "two-balls-pass": {
         "ok": true,
-        "latency_s": 1.33
+        "latency_s": 1.33,
+        "endpoint_error_cm": 50.6
       }
     },
     "const_velocity": {
@@ -696,91 +714,106 @@
         "ok": true,
         "latency_s": 35.3,
         "omni_raw_duration_s": 13.0,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 5.7
       },
       "ball-rolls-on-glass": {
         "ok": true,
         "latency_s": 37.8,
         "omni_raw_duration_s": 13.0,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 26.9
       },
       "roll-behind-box": {
         "ok": true,
         "latency_s": 41.4,
         "omni_raw_duration_s": 13.0,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 4.7
       },
       "ball-hits-nothing": {
         "ok": true,
         "latency_s": 46.7,
         "omni_raw_duration_s": 13.0,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 38.6
       },
       "ball-ramp": {
         "ok": true,
         "latency_s": 49.4,
         "omni_raw_duration_s": 13.0,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 36.8
       },
       "roll-front-box": {
         "ok": true,
         "latency_s": 37.2,
         "omni_raw_duration_s": 13.0,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 4.2
       },
       "roll-in-box": {
         "ok": true,
         "latency_s": 38.9,
         "omni_raw_duration_s": 13.0,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 3.5
       },
       "ball-hits-duck": {
         "ok": true,
         "latency_s": 40.0,
         "omni_raw_duration_s": 13.0,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 46.4
       },
       "ball-in-basket": {
         "ok": true,
         "latency_s": 36.7,
         "omni_raw_duration_s": 13.0,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": null
       },
       "weight-protects-duck": {
         "ok": true,
         "latency_s": 39.6,
         "omni_raw_duration_s": 13.0,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 61.2
       },
       "duck-falls-in-box": {
         "ok": true,
         "latency_s": 37.4,
         "omni_raw_duration_s": 13.0,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 15.4
       },
       "ball-and-block-fall": {
         "ok": true,
         "latency_s": 35.8,
         "omni_raw_duration_s": 13.0,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 6.4
       },
       "ball-train": {
         "ok": true,
         "latency_s": 41.7,
         "omni_raw_duration_s": 13.0,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 6.0
       },
       "balls-collide": {
         "ok": true,
         "latency_s": 36.9,
         "omni_raw_duration_s": 13.0,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 40.7
       },
       "two-balls-pass": {
         "ok": true,
         "latency_s": 40.7,
         "omni_raw_duration_s": 13.0,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 50.4
       }
     },
     "genie": {
@@ -788,91 +821,106 @@
         "ok": true,
         "latency_s": 11.55,
         "frames_received": 120,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 35.8
       },
       "ball-rolls-off": {
         "ok": true,
         "latency_s": 20.41,
         "frames_received": 120,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 49.4
       },
       "ball-rolls-on-glass": {
         "ok": true,
         "latency_s": 20.84,
         "frames_received": 120,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 18.7
       },
       "ball-ramp": {
         "ok": true,
         "latency_s": 21.21,
         "frames_received": 120,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 5.6
       },
       "roll-behind-box": {
         "ok": true,
         "latency_s": 8.78,
         "frames_received": 120,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 4.9
       },
       "roll-front-box": {
         "ok": true,
         "latency_s": 28.23,
         "frames_received": 120,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 56.3
       },
       "roll-in-box": {
         "ok": true,
         "latency_s": 21.74,
         "frames_received": 120,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 10.4
       },
       "ball-hits-duck": {
         "ok": true,
         "latency_s": 11.35,
         "frames_received": 120,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 11.4
       },
       "weight-protects-duck": {
         "ok": true,
         "latency_s": 21.62,
         "frames_received": 120,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 24.9
       },
       "ball-in-basket": {
         "ok": true,
         "latency_s": 9.21,
         "frames_received": 120,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": null
       },
       "duck-falls-in-box": {
         "ok": true,
         "latency_s": 11.15,
         "frames_received": 120,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 5.8
       },
       "ball-and-block-fall": {
         "ok": true,
         "latency_s": 9.24,
         "frames_received": 120,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 1.6
       },
       "ball-train": {
         "ok": true,
         "latency_s": 9.29,
         "frames_received": 120,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 6.4
       },
       "balls-collide": {
         "ok": true,
         "latency_s": 10.03,
         "frames_received": 120,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 7.9
       },
       "two-balls-pass": {
         "ok": true,
         "latency_s": 11.06,
         "frames_received": 120,
-        "frames_padded": 0
+        "frames_padded": 0,
+        "endpoint_error_cm": 96.1
       }
     },
     "foresight_carbon": {

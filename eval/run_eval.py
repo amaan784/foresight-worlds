@@ -137,17 +137,33 @@ def chart(results: dict, path: Path) -> None:
               "genie": "Genie 4\n(world model)"}
     systems = [s for s in REPORTED if s in results["systems"]]
     vals = [results["systems"][s]["physics_iq_verified_pct"] for s in systems]
-    fig, ax = plt.subplots(figsize=(11.5, 5.2), dpi=160)
+    ends = [(s, results["systems"][s].get("endpoint_error_cm_median")) for s in systems]
+    ends = [(s, v) for s, v in ends if v is not None]
+    fig, axes = plt.subplots(1, 2 if ends else 1, figsize=(19, 5.6) if ends else (11.5, 5.2), dpi=160,
+                             gridspec_kw={"width_ratios": [1, 1]} if ends else None)
+    ax = axes[0] if ends else axes
     bars = ax.bar([labels[s] for s in systems], vals, color=[colors[s] for s in systems], width=0.62)
     for b, v in zip(bars, vals):
-        ax.text(b.get_x() + b.get_width() / 2, v + 1.2, f"{v:.1f}", ha="center", va="bottom", fontsize=15, fontweight="bold")
+        ax.text(b.get_x() + b.get_width() / 2, v + 1.2, f"{v:.1f}", ha="center", va="bottom", fontsize=13, fontweight="bold")
     ax.set_ylim(0, max(60, max(vals) + 12))
     ax.set_ylabel("Physics-IQ score (Verified formula, %)", fontsize=12)
     gt = "Physics-IQ Verified GT" if results["gt_source"] == "hf" else "original Physics-IQ GT"
-    ax.set_title(f"{results['n_clips']} rigid-body side-view clips, official metric code, {gt}", fontsize=12, loc="left", color="#5f6470")
-    for sp in ("top", "right"):
-        ax.spines[sp].set_visible(False)
-    ax.tick_params(axis="x", labelsize=12)
+    ax.set_title(f"Physics-IQ score, higher is better ({results['n_clips']} clips, official code, {gt})", fontsize=12,
+                 loc="left", color="#5f6470")
+    if ends:  # where the object ends up: every system, its object tracked like the real one
+        ax2 = axes[1]
+        b2 = ax2.bar([labels[s] for s, _ in ends], [v for _, v in ends], color=[colors[s] for s, _ in ends], width=0.62)
+        for b, (_, v) in zip(b2, ends):
+            ax2.text(b.get_x() + b.get_width() / 2, v * 1.08, f"{v:.0f} cm" if v >= 10 else f"{v:.1f} cm", ha="center",
+                     va="bottom", fontsize=13, fontweight="bold")
+        ax2.set_yscale("log")
+        ax2.set_ylim(1, max(v for _, v in ends) * 3)
+        ax2.set_ylabel("Median endpoint error (cm, log scale)", fontsize=12)
+        ax2.set_title("Where the object ends up, lower is better", fontsize=12, loc="left", color="#5f6470")
+    for a in (axes if ends else [axes]):
+        for sp in ("top", "right"):
+            a.spines[sp].set_visible(False)
+        a.tick_params(axis="x", labelsize=10.5)
     fig.tight_layout()
     fig.savefig(path)
     plt.close(fig)

@@ -226,9 +226,10 @@
         "weight-protects-duck|right": 37.77
       },
       "n_scene_views": 60,
-      "endpoint_error_cm_median": null,
+      "endpoint_error_cm_median": 22.7,
       "n_failed": 0,
-      "n_fallback": 0
+      "n_fallback": 0,
+      "endpoint_rule": "object tracked through the system's video like the real one (Nov 22)"
     },
     "omni": {
       "run_at": "2026-11-22T08:17:35+00:00",
@@ -302,9 +303,10 @@
         "weight-protects-duck|right": 31.97
       },
       "n_scene_views": 60,
-      "endpoint_error_cm_median": null,
+      "endpoint_error_cm_median": 14.7,
       "n_failed": 0,
-      "n_fallback": 0
+      "n_fallback": 0,
+      "endpoint_rule": "object tracked through the system's video like the real one (Nov 22)"
     },
     "genie": {
       "run_at": "2026-11-22T08:24:09+00:00",
@@ -378,9 +380,10 @@
         "weight-protects-duck|right": 29.11
       },
       "n_scene_views": 60,
-      "endpoint_error_cm_median": null,
+      "endpoint_error_cm_median": 12.6,
       "n_failed": 0,
-      "n_fallback": 0
+      "n_fallback": 0,
+      "endpoint_rule": "object tracked through the system's video like the real one (Nov 22)"
     }
   },
   "runs": {
@@ -1833,361 +1836,421 @@
         "scene": "ball-hits-nothing",
         "view": "left",
         "ok": true,
-        "latency_s": 29.0
+        "latency_s": 29.0,
+        "endpoint_error_cm": 40.5
       },
       "ball-hits-nothing|center": {
         "scene": "ball-hits-nothing",
         "view": "center",
         "ok": true,
-        "latency_s": 28.31
+        "latency_s": 28.31,
+        "endpoint_error_cm": 57.3
       },
       "ball-hits-nothing|right": {
         "scene": "ball-hits-nothing",
         "view": "right",
         "ok": true,
-        "latency_s": 28.64
+        "latency_s": 28.64,
+        "endpoint_error_cm": 54.3
       },
       "ball-rolls-off|left": {
         "scene": "ball-rolls-off",
         "view": "left",
         "ok": true,
-        "latency_s": 28.77
+        "latency_s": 28.77,
+        "endpoint_error_cm": 27.1
       },
       "ball-rolls-off|center": {
         "scene": "ball-rolls-off",
         "view": "center",
         "ok": true,
-        "latency_s": 27.31
+        "latency_s": 27.31,
+        "endpoint_error_cm": 37.0
       },
       "ball-rolls-off|right": {
         "scene": "ball-rolls-off",
         "view": "right",
         "ok": true,
-        "latency_s": 28.41
+        "latency_s": 28.41,
+        "endpoint_error_cm": 51.2
       },
       "ball-rolls-on-glass|left": {
         "scene": "ball-rolls-on-glass",
         "view": "left",
         "ok": true,
-        "latency_s": 26.61
+        "latency_s": 26.61,
+        "endpoint_error_cm": 14.7
       },
       "ball-rolls-on-glass|center": {
         "scene": "ball-rolls-on-glass",
         "view": "center",
         "ok": true,
-        "latency_s": 27.97
+        "latency_s": 27.97,
+        "endpoint_error_cm": 26.7
       },
       "ball-rolls-on-glass|right": {
         "scene": "ball-rolls-on-glass",
         "view": "right",
         "ok": true,
-        "latency_s": 3.57
+        "latency_s": 3.57,
+        "endpoint_error_cm": 29.5
       },
       "ball-ramp|left": {
         "scene": "ball-ramp",
         "view": "left",
         "ok": true,
-        "latency_s": 52.85
+        "latency_s": 52.85,
+        "endpoint_error_cm": 29.3
       },
       "ball-ramp|center": {
         "scene": "ball-ramp",
         "view": "center",
         "ok": true,
-        "latency_s": 52.17
+        "latency_s": 52.17,
+        "endpoint_error_cm": 28.5
       },
       "ball-ramp|right": {
         "scene": "ball-ramp",
         "view": "right",
         "ok": true,
-        "latency_s": 51.99
+        "latency_s": 51.99,
+        "endpoint_error_cm": 19.4
       },
       "roll-behind-box|left": {
         "scene": "roll-behind-box",
         "view": "left",
         "ok": true,
-        "latency_s": 51.12
+        "latency_s": 51.12,
+        "endpoint_error_cm": 17.8
       },
       "roll-behind-box|center": {
         "scene": "roll-behind-box",
         "view": "center",
         "ok": true,
-        "latency_s": 51.48
+        "latency_s": 51.48,
+        "endpoint_error_cm": 10.8
       },
       "roll-behind-box|right": {
         "scene": "roll-behind-box",
         "view": "right",
         "ok": true,
-        "latency_s": 50.84
+        "latency_s": 50.84,
+        "endpoint_error_cm": null
       },
       "roll-front-box|left": {
         "scene": "roll-front-box",
         "view": "left",
         "ok": true,
-        "latency_s": 51.53
+        "latency_s": 51.53,
+        "endpoint_error_cm": 50.0
       },
       "roll-front-box|center": {
         "scene": "roll-front-box",
         "view": "center",
         "ok": true,
-        "latency_s": 3.37
+        "latency_s": 3.37,
+        "endpoint_error_cm": 41.2
       },
       "roll-front-box|right": {
         "scene": "roll-front-box",
         "view": "right",
         "ok": true,
-        "latency_s": 42.38
+        "latency_s": 42.38,
+        "endpoint_error_cm": 47.9
       },
       "roll-in-box|left": {
         "scene": "roll-in-box",
         "view": "left",
         "ok": true,
-        "latency_s": 7.99
+        "latency_s": 7.99,
+        "endpoint_error_cm": 9.9
       },
       "roll-in-box|center": {
         "scene": "roll-in-box",
         "view": "center",
         "ok": true,
-        "latency_s": 41.23
+        "latency_s": 41.23,
+        "endpoint_error_cm": 26.5
       },
       "roll-in-box|right": {
         "scene": "roll-in-box",
         "view": "right",
         "ok": true,
-        "latency_s": 42.19
+        "latency_s": 42.19,
+        "endpoint_error_cm": 22.8
       },
       "ball-hits-duck|left": {
         "scene": "ball-hits-duck",
         "view": "left",
         "ok": true,
-        "latency_s": 41.36
+        "latency_s": 41.36,
+        "endpoint_error_cm": 0.1
       },
       "ball-hits-duck|center": {
         "scene": "ball-hits-duck",
         "view": "center",
         "ok": true,
-        "latency_s": 33.39
+        "latency_s": 33.39,
+        "endpoint_error_cm": 58.9
       },
       "ball-hits-duck|right": {
         "scene": "ball-hits-duck",
         "view": "right",
         "ok": true,
-        "latency_s": 34.95
+        "latency_s": 34.95,
+        "endpoint_error_cm": 71.8
       },
       "weight-protects-duck|left": {
         "scene": "weight-protects-duck",
         "view": "left",
         "ok": true,
-        "latency_s": 41.64
+        "latency_s": 41.64,
+        "endpoint_error_cm": 42.6
       },
       "weight-protects-duck|center": {
         "scene": "weight-protects-duck",
         "view": "center",
         "ok": true,
-        "latency_s": 38.69
+        "latency_s": 38.69,
+        "endpoint_error_cm": 35.8
       },
       "weight-protects-duck|right": {
         "scene": "weight-protects-duck",
         "view": "right",
         "ok": true,
-        "latency_s": 3.18
+        "latency_s": 3.18,
+        "endpoint_error_cm": 19.8
       },
       "ball-in-basket|left": {
         "scene": "ball-in-basket",
         "view": "left",
         "ok": true,
-        "latency_s": 37.1
+        "latency_s": 37.1,
+        "endpoint_error_cm": null
       },
       "ball-in-basket|center": {
         "scene": "ball-in-basket",
         "view": "center",
         "ok": true,
-        "latency_s": 13.36
+        "latency_s": 13.36,
+        "endpoint_error_cm": null
       },
       "ball-in-basket|right": {
         "scene": "ball-in-basket",
         "view": "right",
         "ok": true,
-        "latency_s": 11.85
+        "latency_s": 11.85,
+        "endpoint_error_cm": null
       },
       "duck-falls-in-box|left": {
         "scene": "duck-falls-in-box",
         "view": "left",
         "ok": true,
-        "latency_s": 9.16
+        "latency_s": 9.16,
+        "endpoint_error_cm": 19.5
       },
       "duck-falls-in-box|center": {
         "scene": "duck-falls-in-box",
         "view": "center",
         "ok": true,
-        "latency_s": 11.6
+        "latency_s": 11.6,
+        "endpoint_error_cm": 16.6
       },
       "duck-falls-in-box|right": {
         "scene": "duck-falls-in-box",
         "view": "right",
         "ok": true,
-        "latency_s": 14.05
+        "latency_s": 14.05,
+        "endpoint_error_cm": 21.5
       },
       "ball-and-block-fall|left": {
         "scene": "ball-and-block-fall",
         "view": "left",
         "ok": true,
-        "latency_s": 13.72
+        "latency_s": 13.72,
+        "endpoint_error_cm": 8.4
       },
       "ball-and-block-fall|center": {
         "scene": "ball-and-block-fall",
         "view": "center",
         "ok": true,
-        "latency_s": 15.46
+        "latency_s": 15.46,
+        "endpoint_error_cm": 17.9
       },
       "ball-and-block-fall|right": {
         "scene": "ball-and-block-fall",
         "view": "right",
         "ok": true,
-        "latency_s": 19.17
+        "latency_s": 19.17,
+        "endpoint_error_cm": 1516.0
       },
       "ball-train|left": {
         "scene": "ball-train",
         "view": "left",
         "ok": true,
-        "latency_s": 27.76
+        "latency_s": 27.76,
+        "endpoint_error_cm": 15.9
       },
       "ball-train|center": {
         "scene": "ball-train",
         "view": "center",
         "ok": true,
-        "latency_s": 35.3
+        "latency_s": 35.3,
+        "endpoint_error_cm": 18.9
       },
       "ball-train|right": {
         "scene": "ball-train",
         "view": "right",
         "ok": true,
-        "latency_s": 22.53
+        "latency_s": 22.53,
+        "endpoint_error_cm": 15.6
       },
       "balls-collide|left": {
         "scene": "balls-collide",
         "view": "left",
         "ok": true,
-        "latency_s": 43.65
+        "latency_s": 43.65,
+        "endpoint_error_cm": 32.8
       },
       "balls-collide|center": {
         "scene": "balls-collide",
         "view": "center",
         "ok": true,
-        "latency_s": 45.29
+        "latency_s": 45.29,
+        "endpoint_error_cm": 26.6
       },
       "balls-collide|right": {
         "scene": "balls-collide",
         "view": "right",
         "ok": true,
-        "latency_s": 45.55
+        "latency_s": 45.55,
+        "endpoint_error_cm": 22.7
       },
       "two-balls-pass|left": {
         "scene": "two-balls-pass",
         "view": "left",
         "ok": true,
-        "latency_s": 43.35
+        "latency_s": 43.35,
+        "endpoint_error_cm": 49.2
       },
       "two-balls-pass|center": {
         "scene": "two-balls-pass",
         "view": "center",
         "ok": true,
-        "latency_s": 32.97
+        "latency_s": 32.97,
+        "endpoint_error_cm": 48.5
       },
       "two-balls-pass|right": {
         "scene": "two-balls-pass",
         "view": "right",
         "ok": true,
-        "latency_s": 22.2
+        "latency_s": 22.2,
+        "endpoint_error_cm": 42.6
       },
       "ball-in-sand|left": {
         "scene": "ball-in-sand",
         "view": "left",
         "ok": true,
-        "latency_s": 19.89
+        "latency_s": 19.89,
+        "endpoint_error_cm": 8.6
       },
       "ball-in-sand|center": {
         "scene": "ball-in-sand",
         "view": "center",
         "ok": true,
-        "latency_s": 16.38
+        "latency_s": 16.38,
+        "endpoint_error_cm": 9.0
       },
       "ball-in-sand|right": {
         "scene": "ball-in-sand",
         "view": "right",
         "ok": true,
-        "latency_s": 13.2
+        "latency_s": 13.2,
+        "endpoint_error_cm": 0.8
       },
       "marble-run-x|left": {
         "scene": "marble-run-x",
         "view": "left",
         "ok": true,
-        "latency_s": 12.61
+        "latency_s": 12.61,
+        "endpoint_error_cm": 0.4
       },
       "marble-run-x|center": {
         "scene": "marble-run-x",
         "view": "center",
         "ok": true,
-        "latency_s": 11.67
+        "latency_s": 11.67,
+        "endpoint_error_cm": 13.2
       },
       "marble-run-x|right": {
         "scene": "marble-run-x",
         "view": "right",
         "ok": true,
-        "latency_s": 13.99
+        "latency_s": 13.99,
+        "endpoint_error_cm": 1.5
       },
       "marble-run-y|left": {
         "scene": "marble-run-y",
         "view": "left",
         "ok": true,
-        "latency_s": 16.94
+        "latency_s": 16.94,
+        "endpoint_error_cm": 8.9
       },
       "marble-run-y|center": {
         "scene": "marble-run-y",
         "view": "center",
         "ok": true,
-        "latency_s": 17.86
+        "latency_s": 17.86,
+        "endpoint_error_cm": 0.2
       },
       "marble-run-y|right": {
         "scene": "marble-run-y",
         "view": "right",
         "ok": true,
-        "latency_s": 9.91
+        "latency_s": 9.91,
+        "endpoint_error_cm": 2.6
       },
       "stable-blocks|left": {
         "scene": "stable-blocks",
         "view": "left",
         "ok": true,
-        "latency_s": 18.31
+        "latency_s": 18.31,
+        "endpoint_error_cm": 0.4
       },
       "stable-blocks|center": {
         "scene": "stable-blocks",
         "view": "center",
         "ok": true,
-        "latency_s": 16.46
+        "latency_s": 16.46,
+        "endpoint_error_cm": null
       },
       "stable-blocks|right": {
         "scene": "stable-blocks",
         "view": "right",
         "ok": true,
-        "latency_s": 16.38
+        "latency_s": 16.38,
+        "endpoint_error_cm": null
       },
       "unstable-block-stack|left": {
         "scene": "unstable-block-stack",
         "view": "left",
         "ok": true,
-        "latency_s": 16.56
+        "latency_s": 16.56,
+        "endpoint_error_cm": null
       },
       "unstable-block-stack|center": {
         "scene": "unstable-block-stack",
         "view": "center",
         "ok": true,
-        "latency_s": 13.54
+        "latency_s": 13.54,
+        "endpoint_error_cm": null
       },
       "unstable-block-stack|right": {
         "scene": "unstable-block-stack",
         "view": "right",
         "ok": true,
-        "latency_s": 13.61
+        "latency_s": 13.61,
+        "endpoint_error_cm": null
       }
     },
     "omni": {
@@ -2197,7 +2260,8 @@
         "omni_latency_s": 39.8,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 46.75
+        "latency_s": 46.75,
+        "endpoint_error_cm": 40.5
       },
       "ball-hits-nothing|center": {
         "scene": "ball-hits-nothing",
@@ -2205,7 +2269,8 @@
         "omni_latency_s": 40.9,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 46.19
+        "latency_s": 46.19,
+        "endpoint_error_cm": 46.3
       },
       "ball-hits-nothing|right": {
         "scene": "ball-hits-nothing",
@@ -2213,7 +2278,8 @@
         "omni_latency_s": 38.1,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 43.3
+        "latency_s": 43.3,
+        "endpoint_error_cm": 39.3
       },
       "ball-rolls-off|left": {
         "scene": "ball-rolls-off",
@@ -2221,7 +2287,8 @@
         "omni_latency_s": 35.9,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 40.2
+        "latency_s": 40.2,
+        "endpoint_error_cm": 9.0
       },
       "ball-rolls-off|center": {
         "scene": "ball-rolls-off",
@@ -2229,7 +2296,8 @@
         "omni_latency_s": 39.6,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 44.68
+        "latency_s": 44.68,
+        "endpoint_error_cm": 9.7
       },
       "ball-rolls-off|right": {
         "scene": "ball-rolls-off",
@@ -2237,7 +2305,8 @@
         "omni_latency_s": 43.7,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 48.18
+        "latency_s": 48.18,
+        "endpoint_error_cm": 51.2
       },
       "ball-rolls-on-glass|left": {
         "scene": "ball-rolls-on-glass",
@@ -2245,7 +2314,8 @@
         "omni_latency_s": 38.1,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 42.63
+        "latency_s": 42.63,
+        "endpoint_error_cm": 14.7
       },
       "ball-rolls-on-glass|center": {
         "scene": "ball-rolls-on-glass",
@@ -2253,7 +2323,8 @@
         "omni_latency_s": 39.1,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 44.22
+        "latency_s": 44.22,
+        "endpoint_error_cm": 26.6
       },
       "ball-rolls-on-glass|right": {
         "scene": "ball-rolls-on-glass",
@@ -2261,7 +2332,8 @@
         "omni_latency_s": 37.2,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 41.83
+        "latency_s": 41.83,
+        "endpoint_error_cm": 29.4
       },
       "ball-ramp|left": {
         "scene": "ball-ramp",
@@ -2269,7 +2341,8 @@
         "omni_latency_s": 45.7,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 50.26
+        "latency_s": 50.26,
+        "endpoint_error_cm": 76.3
       },
       "ball-ramp|center": {
         "scene": "ball-ramp",
@@ -2277,7 +2350,8 @@
         "omni_latency_s": 38.4,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 42.75
+        "latency_s": 42.75,
+        "endpoint_error_cm": 34.0
       },
       "ball-ramp|right": {
         "scene": "ball-ramp",
@@ -2285,7 +2359,8 @@
         "omni_latency_s": 43.1,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 48.06
+        "latency_s": 48.06,
+        "endpoint_error_cm": 49.0
       },
       "roll-behind-box|left": {
         "scene": "roll-behind-box",
@@ -2293,7 +2368,8 @@
         "omni_latency_s": 39.2,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 43.86
+        "latency_s": 43.86,
+        "endpoint_error_cm": 17.8
       },
       "roll-behind-box|center": {
         "scene": "roll-behind-box",
@@ -2301,7 +2377,8 @@
         "omni_latency_s": 42.1,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 47.21
+        "latency_s": 47.21,
+        "endpoint_error_cm": 1.1
       },
       "roll-behind-box|right": {
         "scene": "roll-behind-box",
@@ -2309,7 +2386,8 @@
         "omni_latency_s": 41.3,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 45.99
+        "latency_s": 45.99,
+        "endpoint_error_cm": null
       },
       "roll-front-box|left": {
         "scene": "roll-front-box",
@@ -2317,7 +2395,8 @@
         "omni_latency_s": 38.6,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 43.14
+        "latency_s": 43.14,
+        "endpoint_error_cm": 6.3
       },
       "roll-front-box|center": {
         "scene": "roll-front-box",
@@ -2325,7 +2404,8 @@
         "omni_latency_s": 41.9,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 46.41
+        "latency_s": 46.41,
+        "endpoint_error_cm": 41.1
       },
       "roll-front-box|right": {
         "scene": "roll-front-box",
@@ -2333,7 +2413,8 @@
         "omni_latency_s": 39.9,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 44.43
+        "latency_s": 44.43,
+        "endpoint_error_cm": 43.5
       },
       "roll-in-box|left": {
         "scene": "roll-in-box",
@@ -2341,7 +2422,8 @@
         "omni_latency_s": 39.0,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 44.29
+        "latency_s": 44.29,
+        "endpoint_error_cm": 9.9
       },
       "roll-in-box|center": {
         "scene": "roll-in-box",
@@ -2349,7 +2431,8 @@
         "omni_latency_s": 38.8,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 43.51
+        "latency_s": 43.51,
+        "endpoint_error_cm": 26.5
       },
       "roll-in-box|right": {
         "scene": "roll-in-box",
@@ -2357,7 +2440,8 @@
         "omni_latency_s": 41.4,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 45.98
+        "latency_s": 45.98,
+        "endpoint_error_cm": 22.9
       },
       "ball-hits-duck|left": {
         "scene": "ball-hits-duck",
@@ -2365,7 +2449,8 @@
         "omni_latency_s": 38.4,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 42.64
+        "latency_s": 42.64,
+        "endpoint_error_cm": 51.6
       },
       "ball-hits-duck|center": {
         "scene": "ball-hits-duck",
@@ -2373,7 +2458,8 @@
         "omni_latency_s": 41.9,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 46.56
+        "latency_s": 46.56,
+        "endpoint_error_cm": 14.1
       },
       "ball-hits-duck|right": {
         "scene": "ball-hits-duck",
@@ -2381,7 +2467,8 @@
         "omni_latency_s": 42.8,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 47.54
+        "latency_s": 47.54,
+        "endpoint_error_cm": 23.8
       },
       "weight-protects-duck|left": {
         "scene": "weight-protects-duck",
@@ -2389,7 +2476,8 @@
         "omni_latency_s": 38.3,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 45.29
+        "latency_s": 45.29,
+        "endpoint_error_cm": 51.2
       },
       "weight-protects-duck|center": {
         "scene": "weight-protects-duck",
@@ -2397,7 +2485,8 @@
         "omni_latency_s": 38.5,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 43.19
+        "latency_s": 43.19,
+        "endpoint_error_cm": 35.9
       },
       "weight-protects-duck|right": {
         "scene": "weight-protects-duck",
@@ -2405,7 +2494,8 @@
         "omni_latency_s": 39.3,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 43.83
+        "latency_s": 43.83,
+        "endpoint_error_cm": 45.6
       },
       "ball-in-basket|left": {
         "scene": "ball-in-basket",
@@ -2413,7 +2503,8 @@
         "omni_latency_s": 43.9,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 48.24
+        "latency_s": 48.24,
+        "endpoint_error_cm": null
       },
       "ball-in-basket|center": {
         "scene": "ball-in-basket",
@@ -2421,7 +2512,8 @@
         "omni_latency_s": 40.1,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 44.74
+        "latency_s": 44.74,
+        "endpoint_error_cm": null
       },
       "ball-in-basket|right": {
         "scene": "ball-in-basket",
@@ -2429,7 +2521,8 @@
         "omni_latency_s": 38.4,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 43.34
+        "latency_s": 43.34,
+        "endpoint_error_cm": null
       },
       "duck-falls-in-box|left": {
         "scene": "duck-falls-in-box",
@@ -2437,7 +2530,8 @@
         "omni_latency_s": 36.2,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 40.48
+        "latency_s": 40.48,
+        "endpoint_error_cm": 5.4
       },
       "duck-falls-in-box|center": {
         "scene": "duck-falls-in-box",
@@ -2445,7 +2539,8 @@
         "omni_latency_s": 38.8,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 44.96
+        "latency_s": 44.96,
+        "endpoint_error_cm": 16.6
       },
       "duck-falls-in-box|right": {
         "scene": "duck-falls-in-box",
@@ -2453,7 +2548,8 @@
         "omni_latency_s": 36.0,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 40.58
+        "latency_s": 40.58,
+        "endpoint_error_cm": 21.3
       },
       "ball-and-block-fall|left": {
         "scene": "ball-and-block-fall",
@@ -2461,7 +2557,8 @@
         "omni_latency_s": 37.8,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 42.66
+        "latency_s": 42.66,
+        "endpoint_error_cm": 8.4
       },
       "ball-and-block-fall|center": {
         "scene": "ball-and-block-fall",
@@ -2469,7 +2566,8 @@
         "omni_latency_s": 36.3,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 41.46
+        "latency_s": 41.46,
+        "endpoint_error_cm": 4.1
       },
       "ball-and-block-fall|right": {
         "scene": "ball-and-block-fall",
@@ -2477,7 +2575,8 @@
         "omni_latency_s": 41.1,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 45.81
+        "latency_s": 45.81,
+        "endpoint_error_cm": 1538.9
       },
       "ball-train|left": {
         "scene": "ball-train",
@@ -2485,7 +2584,8 @@
         "omni_latency_s": 39.2,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 43.77
+        "latency_s": 43.77,
+        "endpoint_error_cm": 6.4
       },
       "ball-train|center": {
         "scene": "ball-train",
@@ -2493,7 +2593,8 @@
         "omni_latency_s": 42.0,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 46.43
+        "latency_s": 46.43,
+        "endpoint_error_cm": 4.6
       },
       "ball-train|right": {
         "scene": "ball-train",
@@ -2501,7 +2602,8 @@
         "omni_latency_s": 40.2,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 44.44
+        "latency_s": 44.44,
+        "endpoint_error_cm": 5.0
       },
       "balls-collide|left": {
         "scene": "balls-collide",
@@ -2509,7 +2611,8 @@
         "omni_latency_s": 40.3,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 44.65
+        "latency_s": 44.65,
+        "endpoint_error_cm": 42.3
       },
       "balls-collide|center": {
         "scene": "balls-collide",
@@ -2517,7 +2620,8 @@
         "omni_latency_s": 41.1,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 45.67
+        "latency_s": 45.67,
+        "endpoint_error_cm": 8.4
       },
       "balls-collide|right": {
         "scene": "balls-collide",
@@ -2525,7 +2629,8 @@
         "omni_latency_s": 40.9,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 45.13
+        "latency_s": 45.13,
+        "endpoint_error_cm": 33.7
       },
       "two-balls-pass|left": {
         "scene": "two-balls-pass",
@@ -2533,7 +2638,8 @@
         "omni_latency_s": 44.7,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 49.03
+        "latency_s": 49.03,
+        "endpoint_error_cm": 12.9
       },
       "two-balls-pass|center": {
         "scene": "two-balls-pass",
@@ -2541,7 +2647,8 @@
         "omni_latency_s": 37.7,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 42.77
+        "latency_s": 42.77,
+        "endpoint_error_cm": 3.1
       },
       "two-balls-pass|right": {
         "scene": "two-balls-pass",
@@ -2549,7 +2656,8 @@
         "omni_latency_s": 41.3,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 45.62
+        "latency_s": 45.62,
+        "endpoint_error_cm": 13.5
       },
       "ball-in-sand|left": {
         "scene": "ball-in-sand",
@@ -2557,7 +2665,8 @@
         "omni_latency_s": 41.3,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 46.85
+        "latency_s": 46.85,
+        "endpoint_error_cm": 2.3
       },
       "ball-in-sand|center": {
         "scene": "ball-in-sand",
@@ -2565,7 +2674,8 @@
         "omni_latency_s": 41.5,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 46.43
+        "latency_s": 46.43,
+        "endpoint_error_cm": 1.8
       },
       "ball-in-sand|right": {
         "scene": "ball-in-sand",
@@ -2573,7 +2683,8 @@
         "omni_latency_s": 43.2,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 49.9
+        "latency_s": 49.9,
+        "endpoint_error_cm": 8.7
       },
       "marble-run-x|left": {
         "scene": "marble-run-x",
@@ -2581,7 +2692,8 @@
         "omni_latency_s": 43.3,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 48.39
+        "latency_s": 48.39,
+        "endpoint_error_cm": 1.3
       },
       "marble-run-x|center": {
         "scene": "marble-run-x",
@@ -2589,7 +2701,8 @@
         "omni_latency_s": 42.8,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 47.13
+        "latency_s": 47.13,
+        "endpoint_error_cm": 51.4
       },
       "marble-run-x|right": {
         "scene": "marble-run-x",
@@ -2597,7 +2710,8 @@
         "omni_latency_s": 44.2,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 49.04
+        "latency_s": 49.04,
+        "endpoint_error_cm": 1.4
       },
       "marble-run-y|left": {
         "scene": "marble-run-y",
@@ -2605,7 +2719,8 @@
         "omni_latency_s": 43.2,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 47.61
+        "latency_s": 47.61,
+        "endpoint_error_cm": 9.1
       },
       "marble-run-y|center": {
         "scene": "marble-run-y",
@@ -2613,7 +2728,8 @@
         "omni_latency_s": 38.8,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 43.14
+        "latency_s": 43.14,
+        "endpoint_error_cm": 0.2
       },
       "marble-run-y|right": {
         "scene": "marble-run-y",
@@ -2621,7 +2737,8 @@
         "omni_latency_s": 45.1,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 49.71
+        "latency_s": 49.71,
+        "endpoint_error_cm": 2.8
       },
       "stable-blocks|left": {
         "scene": "stable-blocks",
@@ -2629,7 +2746,8 @@
         "omni_latency_s": 41.5,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 46.44
+        "latency_s": 46.44,
+        "endpoint_error_cm": 0.6
       },
       "stable-blocks|center": {
         "scene": "stable-blocks",
@@ -2637,7 +2755,8 @@
         "omni_latency_s": 41.7,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 48.3
+        "latency_s": 48.3,
+        "endpoint_error_cm": null
       },
       "stable-blocks|right": {
         "scene": "stable-blocks",
@@ -2645,7 +2764,8 @@
         "omni_latency_s": 38.0,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 43.13
+        "latency_s": 43.13,
+        "endpoint_error_cm": null
       },
       "unstable-block-stack|left": {
         "scene": "unstable-block-stack",
@@ -2653,7 +2773,8 @@
         "omni_latency_s": 45.1,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 49.61
+        "latency_s": 49.61,
+        "endpoint_error_cm": null
       },
       "unstable-block-stack|center": {
         "scene": "unstable-block-stack",
@@ -2661,7 +2782,8 @@
         "omni_latency_s": 39.5,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 44.2
+        "latency_s": 44.2,
+        "endpoint_error_cm": null
       },
       "unstable-block-stack|right": {
         "scene": "unstable-block-stack",
@@ -2669,7 +2791,8 @@
         "omni_latency_s": 38.7,
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 43.0
+        "latency_s": 43.0,
+        "endpoint_error_cm": null
       }
     },
     "genie": {
@@ -2678,420 +2801,480 @@
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 11.11
+        "latency_s": 11.11,
+        "endpoint_error_cm": 18.7
       },
       "ball-hits-nothing|center": {
         "scene": "ball-hits-nothing",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 10.51
+        "latency_s": 10.51,
+        "endpoint_error_cm": 68.2
       },
       "ball-hits-nothing|right": {
         "scene": "ball-hits-nothing",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 10.26
+        "latency_s": 10.26,
+        "endpoint_error_cm": 31.2
       },
       "ball-rolls-off|left": {
         "scene": "ball-rolls-off",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.33
+        "latency_s": 9.33,
+        "endpoint_error_cm": 35.4
       },
       "ball-rolls-off|center": {
         "scene": "ball-rolls-off",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.61
+        "latency_s": 9.61,
+        "endpoint_error_cm": 21.0
       },
       "ball-rolls-off|right": {
         "scene": "ball-rolls-off",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.6
+        "latency_s": 9.6,
+        "endpoint_error_cm": 26.1
       },
       "ball-rolls-on-glass|left": {
         "scene": "ball-rolls-on-glass",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 8.58
+        "latency_s": 8.58,
+        "endpoint_error_cm": 11.5
       },
       "ball-rolls-on-glass|center": {
         "scene": "ball-rolls-on-glass",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.14
+        "latency_s": 9.14,
+        "endpoint_error_cm": 12.6
       },
       "ball-rolls-on-glass|right": {
         "scene": "ball-rolls-on-glass",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 11.17
+        "latency_s": 11.17,
+        "endpoint_error_cm": 15.9
       },
       "ball-ramp|left": {
         "scene": "ball-ramp",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 64.92
+        "latency_s": 64.92,
+        "endpoint_error_cm": 38.0
       },
       "ball-ramp|center": {
         "scene": "ball-ramp",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.65
+        "latency_s": 9.65,
+        "endpoint_error_cm": 64.3
       },
       "ball-ramp|right": {
         "scene": "ball-ramp",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 60.7
+        "latency_s": 60.7,
+        "endpoint_error_cm": 50.9
       },
       "roll-behind-box|left": {
         "scene": "roll-behind-box",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.25
+        "latency_s": 9.25,
+        "endpoint_error_cm": 7.8
       },
       "roll-behind-box|center": {
         "scene": "roll-behind-box",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 45.35
+        "latency_s": 45.35,
+        "endpoint_error_cm": 1.7
       },
       "roll-behind-box|right": {
         "scene": "roll-behind-box",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.45
+        "latency_s": 9.45,
+        "endpoint_error_cm": null
       },
       "roll-front-box|left": {
         "scene": "roll-front-box",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.24
+        "latency_s": 9.24,
+        "endpoint_error_cm": 76.1
       },
       "roll-front-box|center": {
         "scene": "roll-front-box",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 8.69
+        "latency_s": 8.69,
+        "endpoint_error_cm": 58.0
       },
       "roll-front-box|right": {
         "scene": "roll-front-box",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.01
+        "latency_s": 9.01,
+        "endpoint_error_cm": 67.4
       },
       "roll-in-box|left": {
         "scene": "roll-in-box",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.23
+        "latency_s": 9.23,
+        "endpoint_error_cm": 4.2
       },
       "roll-in-box|center": {
         "scene": "roll-in-box",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 49.86
+        "latency_s": 49.86,
+        "endpoint_error_cm": 20.3
       },
       "roll-in-box|right": {
         "scene": "roll-in-box",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 41.26
+        "latency_s": 41.26,
+        "endpoint_error_cm": 4.4
       },
       "ball-hits-duck|left": {
         "scene": "ball-hits-duck",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 40.98
+        "latency_s": 40.98,
+        "endpoint_error_cm": 0.2
       },
       "ball-hits-duck|center": {
         "scene": "ball-hits-duck",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 8.95
+        "latency_s": 8.95,
+        "endpoint_error_cm": 14.8
       },
       "ball-hits-duck|right": {
         "scene": "ball-hits-duck",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.02
+        "latency_s": 9.02,
+        "endpoint_error_cm": 13.6
       },
       "weight-protects-duck|left": {
         "scene": "weight-protects-duck",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.25
+        "latency_s": 9.25,
+        "endpoint_error_cm": 12.6
       },
       "weight-protects-duck|center": {
         "scene": "weight-protects-duck",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.2
+        "latency_s": 9.2,
+        "endpoint_error_cm": 36.8
       },
       "weight-protects-duck|right": {
         "scene": "weight-protects-duck",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.27
+        "latency_s": 9.27,
+        "endpoint_error_cm": 7.2
       },
       "ball-in-basket|left": {
         "scene": "ball-in-basket",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.05
+        "latency_s": 9.05,
+        "endpoint_error_cm": null
       },
       "ball-in-basket|center": {
         "scene": "ball-in-basket",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 41.45
+        "latency_s": 41.45,
+        "endpoint_error_cm": null
       },
       "ball-in-basket|right": {
         "scene": "ball-in-basket",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 8.91
+        "latency_s": 8.91,
+        "endpoint_error_cm": null
       },
       "duck-falls-in-box|left": {
         "scene": "duck-falls-in-box",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 8.83
+        "latency_s": 8.83,
+        "endpoint_error_cm": 5.4
       },
       "duck-falls-in-box|center": {
         "scene": "duck-falls-in-box",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 32.83
+        "latency_s": 32.83,
+        "endpoint_error_cm": 5.9
       },
       "duck-falls-in-box|right": {
         "scene": "duck-falls-in-box",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.23
+        "latency_s": 9.23,
+        "endpoint_error_cm": 6.1
       },
       "ball-and-block-fall|left": {
         "scene": "ball-and-block-fall",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.33
+        "latency_s": 9.33,
+        "endpoint_error_cm": 0.8
       },
       "ball-and-block-fall|center": {
         "scene": "ball-and-block-fall",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 10.1
+        "latency_s": 10.1,
+        "endpoint_error_cm": 2.1
       },
       "ball-and-block-fall|right": {
         "scene": "ball-and-block-fall",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.17
+        "latency_s": 9.17,
+        "endpoint_error_cm": 1174.8
       },
       "ball-train|left": {
         "scene": "ball-train",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.36
+        "latency_s": 9.36,
+        "endpoint_error_cm": 6.6
       },
       "ball-train|center": {
         "scene": "ball-train",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.51
+        "latency_s": 9.51,
+        "endpoint_error_cm": 9.5
       },
       "ball-train|right": {
         "scene": "ball-train",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 54.39
+        "latency_s": 54.39,
+        "endpoint_error_cm": 28.7
       },
       "balls-collide|left": {
         "scene": "balls-collide",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.17
+        "latency_s": 9.17,
+        "endpoint_error_cm": 5.9
       },
       "balls-collide|center": {
         "scene": "balls-collide",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 50.42
+        "latency_s": 50.42,
+        "endpoint_error_cm": 6.4
       },
       "balls-collide|right": {
         "scene": "balls-collide",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 41.67
+        "latency_s": 41.67,
+        "endpoint_error_cm": 6.9
       },
       "two-balls-pass|left": {
         "scene": "two-balls-pass",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.04
+        "latency_s": 9.04,
+        "endpoint_error_cm": 19.8
       },
       "two-balls-pass|center": {
         "scene": "two-balls-pass",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.22
+        "latency_s": 9.22,
+        "endpoint_error_cm": 7.3
       },
       "two-balls-pass|right": {
         "scene": "two-balls-pass",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.3
+        "latency_s": 9.3,
+        "endpoint_error_cm": 13.1
       },
       "ball-in-sand|left": {
         "scene": "ball-in-sand",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.03
+        "latency_s": 9.03,
+        "endpoint_error_cm": 3.3
       },
       "ball-in-sand|center": {
         "scene": "ball-in-sand",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.48
+        "latency_s": 9.48,
+        "endpoint_error_cm": 0.7
       },
       "ball-in-sand|right": {
         "scene": "ball-in-sand",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.16
+        "latency_s": 9.16,
+        "endpoint_error_cm": 9.9
       },
       "marble-run-x|left": {
         "scene": "marble-run-x",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 41.9
+        "latency_s": 41.9,
+        "endpoint_error_cm": 11.8
       },
       "marble-run-x|center": {
         "scene": "marble-run-x",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 41.49
+        "latency_s": 41.49,
+        "endpoint_error_cm": 252.1
       },
       "marble-run-x|right": {
         "scene": "marble-run-x",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 42.04
+        "latency_s": 42.04,
+        "endpoint_error_cm": 3.6
       },
       "marble-run-y|left": {
         "scene": "marble-run-y",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.25
+        "latency_s": 9.25,
+        "endpoint_error_cm": 0.3
       },
       "marble-run-y|center": {
         "scene": "marble-run-y",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.59
+        "latency_s": 9.59,
+        "endpoint_error_cm": 38.6
       },
       "marble-run-y|right": {
         "scene": "marble-run-y",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.61
+        "latency_s": 9.61,
+        "endpoint_error_cm": 15.1
       },
       "stable-blocks|left": {
         "scene": "stable-blocks",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.15
+        "latency_s": 9.15,
+        "endpoint_error_cm": 0.6
       },
       "stable-blocks|center": {
         "scene": "stable-blocks",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.65
+        "latency_s": 9.65,
+        "endpoint_error_cm": null
       },
       "stable-blocks|right": {
         "scene": "stable-blocks",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.35
+        "latency_s": 9.35,
+        "endpoint_error_cm": null
       },
       "unstable-block-stack|left": {
         "scene": "unstable-block-stack",
         "view": "left",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.41
+        "latency_s": 9.41,
+        "endpoint_error_cm": null
       },
       "unstable-block-stack|center": {
         "scene": "unstable-block-stack",
         "view": "center",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 40.52
+        "latency_s": 40.52,
+        "endpoint_error_cm": null
       },
       "unstable-block-stack|right": {
         "scene": "unstable-block-stack",
         "view": "right",
         "frames_padded": 0,
         "ok": true,
-        "latency_s": 9.58
+        "latency_s": 9.58,
+        "endpoint_error_cm": null
       }
     }
   },

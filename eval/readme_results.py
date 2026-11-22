@@ -54,7 +54,18 @@ def section(r: dict) -> str:
                    f"same Gemini scene reading, tracking and renderer and only drops the physics. "))
         text += (f"On where the object actually ends up, Foresight is closer to reality than constant velocity on "
                  f"{len(closer)} of the {len(both)} clips with a measurable endpoint (median "
-                 f"{f1(fh.get('endpoint_error_cm_median'))} cm against {f1(cv.get('endpoint_error_cm_median'))} cm). ")
+                 f"{f1(fh.get('endpoint_error_cm_median'))} cm against {f1(cv.get('endpoint_error_cm_median'))} cm)")
+        others = [(k, s[k].get("endpoint_error_cm_median")) for k in ("genie", "omni", "static") if k in s and s[k].get("endpoint_error_cm_median") is not None]
+        short = {"genie": "Genie 4", "omni": "Gemini Omni 1.2 Flash", "static": "the held last frame"}
+        if others and fh.get("endpoint_error_cm_median") is not None:
+            m = fh["endpoint_error_cm_median"]
+            below = [f"{short[k]} ({f1(v)} cm)" for k, v in others if m < v]
+            above = [f"{short[k]} ({f1(v)} cm)" for k, v in others if m >= v]
+            join = lambda xs: ", ".join(xs[:-1]) + " and " + xs[-1] if len(xs) > 1 else xs[0]  # noqa: E731
+            text += ", and its median is" + (f" below {join(below)}" if below else "") + \
+                    (" and" if below and above else "") + (f" not below {join(above)}" if above else "") + ". "
+        else:
+            text += ". "
         if fh["physics_iq_verified_pct"] <= cv["physics_iq_verified_pct"]:
             text += ("The two measures disagree because the Physics-IQ score compares where pixels change: a constant-velocity "
                      "object that leaves the frame early leaves a still picture, which matches a real scene that has come to "
@@ -84,9 +95,12 @@ def section(r: dict) -> str:
         sc = f"{v['physics_iq_verified_pct']:.1f}"
         lines.append(f"| {NAMES[k]} | {'**' + sc + '**' if v['physics_iq_verified_pct'] == best else sc} | {v['physics_iq_original_pct']:.1f} | "
                      f"{f1(v.get('endpoint_error_cm_median'))} | {v['n_failed']} of {r['n_clips']} | {v.get('run_at', '')[:10]} |")
-    lines += ["", "Endpoint error is measured only where the system tracks an object (Foresight and constant velocity). "
-              "The video models' rows come from their own clean run (the Run column): their output does not depend on "
-              "Foresight's code. Failures, causes and fixes: [eval/FAILURES.md](eval/FAILURES.md).", ""]
+    lines += ["", "Endpoint error: for Foresight and constant velocity, from their predicted path; for the video models and "
+              "the held last frame, by tracking the object through their video the same way as through reality (from where "
+              "it was last seen, ending when it is lost, leaves the frame or goes behind something). A video model that makes "
+              "the object vanish ends its track early, so its error is measured where the object disappeared. The video "
+              "models' rows come from their own clean run (the Run column): their output does not depend on Foresight's "
+              "code. Failures, causes and fixes: [eval/FAILURES.md](eval/FAILURES.md).", ""]
     wide = ROOT / "eval" / "results_wide.json"
     if wide.exists():
         w = json.loads(wide.read_text())
@@ -114,8 +128,14 @@ def section(r: dict) -> str:
                 lines += ["", f"Across the {fw.get('n_scene_views')} scene-views Foresight scores "
                           f"{'above' if fw.get('pooled_verified_pct', 0) > cw.get('pooled_verified_pct', 0) else 'below'} constant velocity "
                           f"on the Physics-IQ score ({f1(fw.get('pooled_verified_pct'))} against {f1(cw.get('pooled_verified_pct'))}) and ends "
-                          f"closer to the real object on {closer} of the {len(both)} scene-views with a measurable endpoint. Most of these "
-                          f"scene-views (the left and right cameras and the five added scenes) were not used while developing."]
+                          f"closer to the real object than constant velocity on {closer} of the {len(both)} scene-views with a measurable "
+                          f"endpoint. Median endpoint error: " + ", ".join(f"{NAMES[k].split(' (')[0]} {f1(v.get('endpoint_error_cm_median'))} cm"
+                          for k, v in sorted(ws.items(), key=lambda kv: kv[1].get('endpoint_error_cm_median') or 1e9)
+                          if v.get('endpoint_error_cm_median') is not None) + ". On these clips the video models' medians are "
+                          f"{'lower' if min((v.get('endpoint_error_cm_median') or 1e9) for k, v in ws.items() if k in ('omni', 'genie')) < (fw.get('endpoint_error_cm_median') or 0) else 'higher'} "
+                          f"than Foresight's. This measure stops a video model's track where it blurs or drops the object and does not "
+                          f"count that as an error. Most of these scene-views (the left and right cameras and the five added "
+                          f"scenes) were not used while developing."]
             lines.append("")
     lines.append(END)
     return "\n".join(lines)

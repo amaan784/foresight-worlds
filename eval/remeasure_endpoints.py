@@ -2,7 +2,8 @@
 
 Each Foresight / constant-velocity run saved its scene (scene.json) and its predicted path (predict_meta.json), so
 the real object can be tracked again and the endpoint error recomputed after a change to how the real track ends
-(Nov 22: it now ends when the object goes behind something standing in front of it).
+(Nov 22: it now ends when the object goes behind something standing in front of it). Systems that output only
+video (Omni, Genie 4, the held last frame) are measured by tracking the object through their video the same way.
 
   PYTHONPATH=backend:phase0 python eval/remeasure_endpoints.py main   # eval/results.json, latest clean run_*
   PYTHONPATH=backend:phase0 python eval/remeasure_endpoints.py wide   # eval/results_wide.json, latest wide_*
@@ -20,6 +21,50 @@ import run_eval as E  # noqa: E402
 from foresight.pipeline import endpoint_error, track_in_video  # noqa: E402
 
 SYSTEMS = ["foresight", "const_velocity"]
+# Systems that output only video: the object is tracked through their 5 s the same way as through reality
+# (from where it was last seen, ending at loss, at the frame edge or behind something), as the stage does live.
+VIDEO_SYSTEMS = ["omni", "genie", "static"]
+
+
+def measure_video(job: tuple) -> tuple:
+    key, scene_json, pred_video, real_video = job
+    scene = json.loads(Path(scene_json).read_text())
+    main = max(scene["objects"], key=lambda ob: len(ob["track"]))["id"]
+    pts = track_in_video(Path(pred_video), scene)
+    real = track_in_video(Path(real_video), scene)
+    traj = [{"t_s": p["t_s"], "objects": {main: {"x": p["x"], "y": p["y"]}}} for p in pts]
+    ee = endpoint_error(traj, real, scene, main) if traj else None
+    return key, (ee["cm"] if ee else None)
+
+
+def video_systems(r: dict, which: str, cache: Path, keys: list) -> None:
+    from concurrent.futures import ProcessPoolExecutor
+
+    bench = E.pq.benchmark_dir("gcs")
+    for system in VIDEO_SYSTEMS:
+        if system not in r["systems"]:
+            continue
+        jobs = []
+        for key, sc, view in keys:
+            if which == "main":
+                scene_json = cache / "work" / "foresight" / sc / "scene.json"
+                pred = E.PREDS / system / E.pred_name(sc)
+            else:
+                import run_wide as W
+
+                scene_json = cache / "work" / "foresight" / f"{sc}_{view}" / "scene.json"
+                pred = W.PREDS / system / view / W.pred_name(sc, view)
+            if scene_json.exists() and pred.exists():
+                jobs.append((key, str(scene_json), str(pred), str(bench / E.pq.needed_files(sc, view, E.FPS)[1])))
+        with ProcessPoolExecutor(max_workers=6) as ex:
+            measured = dict(ex.map(measure_video, jobs))
+        runs = r.setdefault("runs", {}).setdefault(system, {})
+        for key, cm in measured.items():
+            runs.setdefault(key, {"ok": True})["endpoint_error_cm"] = cm
+        ees = sorted(v for v in measured.values() if v is not None)
+        r["systems"][system]["endpoint_error_cm_median"] = ees[len(ees) // 2] if ees else None
+        r["systems"][system]["endpoint_rule"] = "object tracked through the system's video like the real one (Nov 22)"
+        print(f"{system}: measured {len(ees)} of {len(jobs)}, median {r['systems'][system]['endpoint_error_cm_median']}")
 
 
 def remeasure(work: Path, scene_name: str, view: str) -> float | None:
@@ -68,15 +113,16 @@ def main() -> None:
         r["systems"][system]["endpoint_error_cm_median"] = ees[len(ees) // 2] if ees else None
         r["systems"][system]["endpoint_rule"] = "real track ends at the frame edge, at loss, or behind an object in front (Nov 22)"
         print(f"{system}: {changed} changed, median {r['systems'][system]['endpoint_error_cm_median']}")
+    video_systems(r, which, cache, keys)
     path.write_text(json.dumps(r, indent=2))
     blk = E.RESULTS
     if which == "main":
-        for system in systems:
+        for system in systems + VIDEO_SYSTEMS:
             f = blk / f"system_{system}.json"
             if f.exists():
                 b = json.loads(f.read_text())
                 b["systems"][system] = r["systems"][system]
-                b["runs"][system] = r["runs"][system]
+                b.setdefault("runs", {})[system] = r["runs"][system]
                 f.write_text(json.dumps(b, indent=2))
 
 
