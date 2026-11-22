@@ -11,15 +11,21 @@ export default function Stage() {
   const [samples, setSamples] = useState<Sample[]>([]);
   const [session, setSession] = useState(newSession);
   const [jobId, setJobId] = useState<string | null>(() => new URLSearchParams(location.search).get("job"));
-  const [askOmni, setAskOmni] = useState(true);
-  const [askGenie, setAskGenie] = useState(true);
+  const [askOmni, setAskOmni] = useState(false);
+  const [askGenie, setAskGenie] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [startErr, setStartErr] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentRun[]>([]);
   const job = useJob(jobId);
 
   useEffect(() => {
-    getInfo().then(setInfo).catch((e) => setInfoErr(String(e.message ?? e)));
+    getInfo()
+      .then((inf) => {
+        setInfo(inf);
+        setAskOmni(Boolean(inf.omni_enabled));
+        setAskGenie(Boolean(inf.genie_enabled));
+      })
+      .catch((e) => setInfoErr(String(e.message ?? e)));
     getSamples().then(setSamples);
   }, []);
   useEffect(() => { if (!jobId) getRecent(8).then(setRecent); }, [jobId]);
@@ -125,8 +131,8 @@ export default function Stage() {
                 setAskOmni={setAskOmni} askGenie={askGenie} setAskGenie={setAskGenie} busy={busy} onSample={runSample} startErr={startErr}
                 onUpload={runUpload} recent={recent} onOpen={open} />
         )}
-        {job && !job.result && <Running job={job} onReset={reset} />}
-        {job && job.result && <Reveal job={job} onReset={reset} />}
+        {job && !job.result && <Running job={job} models={info?.models} onReset={reset} />}
+        {job && job.result && <Reveal job={job} models={info?.models} onReset={reset} />}
       </main>
     </div>
   );
@@ -181,15 +187,31 @@ function Idle(p: {
           {p.captureUrl ? <QRCodeSVG value={p.captureUrl} size={220} bgColor="transparent" fgColor="#15171c" /> : <div className="size-[220px]" />}
         </div>
         <p className="mt-3 break-all font-mono text-xs text-muted">{p.captureUrl}</p>
-        <label className="mt-5 flex items-start gap-3 text-base">
+        <label className={`mt-5 flex items-start gap-3 text-base ${p.info && !p.info.omni_enabled ? "opacity-60" : ""}`}>
           <input type="checkbox" className="mt-1.5 size-4 accent-[var(--color-amber)]" checked={p.askOmni}
+                 disabled={p.info ? !p.info.omni_enabled : false}
                  onChange={(e) => p.setAskOmni(e.target.checked)} />
-          <span>Also ask Omni to continue the clip <span className="text-muted">(about 40 s, about $1)</span></span>
+          <span>
+            Also ask Omni ({p.info?.models.baseline_video ?? "Gemini Omni"}) to continue the clip{" "}
+            <span className="text-muted">
+              {p.info && !p.info.omni_enabled
+                ? "(disabled on server; set FORESIGHT_OMNI_ENABLED=true on a paid-tier key)"
+                : "(about 40 s, paid tier)"}
+            </span>
+          </span>
         </label>
-        <label className="mt-3 flex items-start gap-3 text-base">
+        <label className={`mt-3 flex items-start gap-3 text-base ${p.info && !p.info.genie_enabled ? "opacity-60" : ""}`}>
           <input type="checkbox" className="mt-1.5 size-4 accent-[var(--color-plum)]" checked={p.askGenie}
+                 disabled={p.info ? !p.info.genie_enabled : false}
                  onChange={(e) => p.setAskGenie(e.target.checked)} />
-          <span>And Genie 4 to play the scene on from its last frame <span className="text-muted">(about 15 s)</span></span>
+          <span>
+            And {p.info?.models.world_model ?? "Genie 4"} to play the scene on from its last frame{" "}
+            <span className="text-muted">
+              {p.info && !p.info.genie_enabled
+                ? "(disabled on server; set FORESIGHT_GENIE_ENABLED=true when available)"
+                : "(about 15 s)"}
+            </span>
+          </span>
         </label>
         <DropVideo busy={p.busy === "upload"} onFile={p.onUpload} />
       </aside>
@@ -307,12 +329,16 @@ function Bars({ conf }: { conf: Record<string, number> }) {
   );
 }
 
-function Running({ job, onReset }: { job: JobState; onReset: () => void }) {
+function Running({ job, models, onReset }: { job: JobState; models?: Record<string, string>; onReset: () => void }) {
   const p = job.perception;
   const tr = job.tracking[0];
   const fit = job.fits.at(-1);
   const ver = job.verifies.at(-1);
   const physicsStage = job.stages.fit ? "fit" : job.stages.simulate ? "simulate" : "fit";
+  const perceptionModel = p?.model ?? models?.perception ?? "Gemini";
+  const verifyModel = ver?.model ?? models?.verify ?? "Gemini";
+  const omniModel = models?.baseline_video ?? "Gemini Omni";
+  const genieModel = models?.world_model ?? "Genie 4";
   return (
     <div className="max-w-[1400px] space-y-8">
       <Timeline condUrl={apiUrl(job.ingest?.conditioning_url) ?? undefined} />
@@ -325,7 +351,7 @@ function Running({ job, onReset }: { job: JobState; onReset: () => void }) {
       )}
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-8 lg:gap-12">
         <ol>
-          <StepRow n={1} title="Gemini 4 Hydrogen reads the scene" state={stageState(job, "perceive")}>
+          <StepRow n={1} title={`${perceptionModel} reads the scene`} state={stageState(job, "perceive")}>
             {p && (
               <>
                 {p.objects.filter((o) => o.moving).map((o) => `${o.name}, a ${o.shape} about ${o.est_real_size_cm} cm across`).join("; ")}
@@ -344,10 +370,10 @@ function Running({ job, onReset }: { job: JobState; onReset: () => void }) {
             {!fit && job.stages.simulate && <>{job.stages.simulate.message}</>}
             {job.fallback && <p className="mt-2 text-bad">Physics check failed ({job.fallback.reason}); this run shows {job.fallback.to} instead.</p>}
           </StepRow>
-          <StepRow n={5} title="Gemini Decision 1 checks the fit" state={job.verifies.length ? "done" : stageState(job, "verify")}>
+          <StepRow n={5} title={`${verifyModel} checks the fit`} state={job.verifies.length ? "done" : stageState(job, "verify")}>
             {ver && <Bars conf={ver.confidences} />}
             {job.repairs.map((r) => (
-              <p key={r.attempt} className="mt-2">Gemini 4 Carbon proposed {r.proposal.motion_model}: {r.proposal.reason}</p>
+              <p key={r.attempt} className="mt-2">{r.model ?? models?.repair ?? "Gemini"} proposed {r.proposal.motion_model}: {r.proposal.reason}</p>
             ))}
             {job.repairSkipped && <p className="mt-2 text-muted">Stopped repairing: {job.repairSkipped.reason}.</p>}
           </StepRow>
@@ -356,8 +382,8 @@ function Running({ job, onReset }: { job: JobState; onReset: () => void }) {
           </StepRow>
         </ol>
         <div className="space-y-6 self-start">
-          <BaselineLane title="Meanwhile, Omni" sub="Gemini Omni 1.2 Flash continues the same 3 seconds as video." lane={job.omni} />
-          <BaselineLane title="And Genie 4" sub="The Genie 4 world model plays the scene on from its last frame." lane={job.genie} />
+          <BaselineLane title="Meanwhile, Omni" sub={`${omniModel} continues the same 3 seconds as video.`} lane={job.omni} />
+          <BaselineLane title={`And ${genieModel}`} sub={`The ${genieModel} world model plays the scene on from its last frame.`} lane={job.genie} />
         </div>
       </div>
     </div>
@@ -373,7 +399,7 @@ function BaselineLane({ title, sub, lane: o }: { title: string; sub: string; lan
         {!o && "Waiting to start"}
         {o?.status === "start" && <span className="text-amber font-medium">Generating <span className="live-dot inline-block size-2 rounded-full bg-amber align-middle" /></span>}
         {o?.status === "done" && <span className="font-medium">Done in {o.latency_s?.toFixed(0)} s</span>}
-        {o?.status === "skipped" && <span className="text-muted">Not requested for this run</span>}
+        {o?.status === "skipped" && <span className="text-muted">{o.message || "Not requested for this run"}</span>}
         {o?.status === "error" && <span className="text-bad">Failed: {o.error}</span>}
       </p>
     </section>
@@ -381,7 +407,7 @@ function BaselineLane({ title, sub, lane: o }: { title: string; sub: string; lan
 }
 
 /* ----------------------------------------------------------------------------------------- reveal */
-function Reveal({ job, onReset }: { job: JobState; onReset: () => void }) {
+function Reveal({ job, models, onReset }: { job: JobState; models?: Record<string, string>; onReset: () => void }) {
   const r = job.result!;
   const omniUrl = r.urls.omni ?? (job.omni?.status === "done" ? job.omni.url : null);
   const genieUrl = r.urls.genie ?? (job.genie?.status === "done" ? job.genie.url : null);
@@ -394,16 +420,24 @@ function Reveal({ job, onReset }: { job: JobState; onReset: () => void }) {
   // The panel closest to where the object really ended up, among those with a measured endpoint.
   const scored = ([["foresight", eeF], ["omni", eeO], ["genie", eeG]] as const).filter(([, e]) => e !== null) as [string, number][];
   const better = scored.length >= 2 ? scored.reduce((a, b) => (b[1] < a[1] ? b : a))[0] : null;
-  const laneNote = (l?: Lane) => (l?.status === "start" ? "still generating…" : l?.status === "skipped" ? "not requested" : l?.status === "error" ? "failed" : "");
+  const laneNote = (l?: Lane, saved?: { status: string; message?: string | null }) =>
+    l?.status === "start"
+      ? "still generating…"
+      : l?.status === "skipped" || saved?.status === "skipped"
+        ? l?.message || saved?.message || "not requested"
+        : l?.status === "error" || saved?.status === "error"
+          ? "failed"
+          : "";
+  const verifyLabel = (job.verifies.at(-1)?.model ?? r.models?.verify ?? models?.verify) === "gemini-decision-1" ? "Decision 1" : "Fit check";
 
   const panels = [
     { key: "reality", title: "Reality", sub: "what actually happened", url: apiUrl(r.urls.reality), color: "text-ink", err: null as number | null, note: r.urls.reality ? "" : "no hidden clip for this run" },
     { key: "foresight", title: foresightTitle, sub: "simulated from 3 s of video", url: apiUrl(showPath && r.urls.overlay ? r.urls.overlay : r.urls.foresight), color: "text-cobalt", err: eeF, note: "" },
     { key: "omni", title: "Omni (video model)", sub: "generated from the same 3 s", url: apiUrl(omniUrl),
       color: "text-amber", err: eeO,
-      note: laneNote(job.omni) },
+      note: laneNote(job.omni, r.omni) },
     ...(job.genie && job.genie.status !== "skipped" ? [{ key: "genie", title: "Genie 4 (world model)", sub: "played on from the last frame",
-      url: apiUrl(genieUrl), color: "text-plum", err: eeG, note: laneNote(job.genie) }] : []),
+      url: apiUrl(genieUrl), color: "text-plum", err: eeG, note: laneNote(job.genie, r.genie) }] : []),
   ];
 
   return (
@@ -422,7 +456,7 @@ function Reveal({ job, onReset }: { job: JobState; onReset: () => void }) {
         <Stat label="Total time" value={`${r.metrics.latency_s_total.toFixed(1)} s`} />
         <Stat label="Scene parse" value={`${(r.metrics.latency_s_by_stage.perceive ?? 0).toFixed(1)} s`} />
         <Stat label="Fit error" value={r.metrics.fit_error_px !== null ? `${r.metrics.fit_error_px.toFixed(1)} px` : "—"} />
-        <Stat label="Decision 1" value={r.metrics.decision1_confidences ? Object.values(r.metrics.decision1_confidences).map((v) => v.toFixed(2)).join(" / ") : "—"} />
+        <Stat label={verifyLabel} value={r.metrics.decision1_confidences ? Object.values(r.metrics.decision1_confidences).map((v) => v.toFixed(2)).join(" / ") : "—"} />
       </dl>
       <Downloads r={r} />
       {(r.paths?.predicted.length || r.understanding) && (

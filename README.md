@@ -90,6 +90,13 @@ was added after the event, starting November 22, and the work is ongoing on `mai
 - A free development loop on cached Gemini readings (`eval/offline_fit.py`), and two measurement fixes: the scorer
   reused masks of older videos, and the real track followed the edge of whatever hid the object.
 
+**Runs on a personal Gemini API key**
+- Every model slot in `backend/foresight/config.py` is configurable via `FORESIGHT_*` environment variables and defaults
+  to public GA models (`gemini-3.8-flash`, with `gemini-3.6-flash` as automatic 503 backup).
+- Fit verification now asks `gemini-3.8-flash` the same two questions via native structured output with stated
+  confidences against the 0.7 gate (`FORESIGHT_VERIFY_MODE=decisions` keeps `gemini-decision-1`), and paid/preview video
+  lanes (`Omni`, `Genie 4`) are off by default and skipped cleanly on the stage when unavailable.
+
 **Docs:** [the simple guide](docs/foresight-simple-guide.docx) (Word).
 
 <!-- results: start (written by eval/readme_results.py from eval/results.json; edits here are lost) -->
@@ -139,9 +146,9 @@ Across the 60 scene-views Foresight scores below constant velocity on the Physic
 
 ## How it works
 
-1. **Read the scene.** Gemini 4 Hydrogen watches the clip (agentic video) and returns, as structured output, each
-   object as a circle or a box with its real size and mass, the surfaces it moves on (hard or soft), and the kind
-   of motion.
+1. **Read the scene.** Gemini 3.8 Flash (`gemini-3.8-flash`; `gemini-4-hydrogen` in the Nov 21–22 evals) watches the
+   clip (agentic video) and returns, as structured output, each object as a circle or a box with its real size, mass
+   and material, the surfaces it moves on (hard or soft), and the kind of motion.
 2. **Track.** OpenCV CSRT follows the object frame by frame, with real timestamps from the 30 FPS clip, and keeps
    only free motion: the stretch where a grabber still holds the object and points from a half-hidden object are
    dropped.
@@ -151,9 +158,12 @@ Across the 60 scene-views Foresight scores below constant velocity on the Physic
    objects on the same line collide, a box lower in the image is in front and hides the ball instead of stopping
    it, resting balls and toys can be knocked, containers are open on top, and tables stay level even when
    perspective draws them sloped.
-5. **Check and repair.** Gemini Decision 1 looks at the fitted outline on real frames and says whether it sits on
-   the object and what the motion is, with a confidence. Under 0.7, Gemini 4 Carbon proposes another motion model
-   and the fit runs again, within a 90 s budget.
+5. **Check and repair.** Gemini 3.8 Flash looks at the fitted outline on real conditioning frames and answers, as
+   structured output with a stated confidence, whether the outline sits on the object and what the motion is
+   (`roll`, `slide`, `fall`, `bounce` or `other`). *(Changed after the hackathon from Gemini Decision 1's calibrated
+   prefill probabilities so any personal API key can run it; set `FORESIGHT_VERIFY_MODE=decisions` for Decision 1.)*
+   Under 0.7, Gemini 3.8 Flash (`FORESIGHT_REPAIR_MODEL`; Gemini 4 Carbon in the Nov 21–22 evals) proposes another
+   motion model and the fit runs again, within a 90 s budget.
 6. **Render.** The world runs for exactly 5.000 s and the objects are drawn onto the frame they were cleaned from,
    hidden behind whatever stands in front of them. If a simulated object gains energy, which real contacts cannot
    do, the run falls back to constant velocity and says so.
@@ -168,16 +178,22 @@ Across the 60 scene-views Foresight scores below constant velocity on the Physic
 
 ## Gemini models, each with a job
 
+Every model ID in `backend/foresight/config.py` can be overridden with a `FORESIGHT_*` environment variable (see
+`.env.example`). Defaults run on a standard personal Gemini API key; the Nov 21–22 evaluation rows above retain the
+Gemini 4, Decision 1, Omni 1.2 and Genie 4 runs recorded on those dates.
+
 | Model | Its job |
 |---|---|
-| Gemini 4 Hydrogen (`gemini-4-hydrogen`) | Reads the clip: objects, sizes, surfaces, motion (agentic video, structured output, thinking level low). 12.5 s in [Phase 0](phase0/REPORT.md). |
-| Gemini 4 Neon (`gemini-4-neon`) | Takes over scene reading automatically if Hydrogen keeps returning 503 (it never had to); also run as a scene-reading variant on the 15 clips, in the results below. |
-| Gemini Decision 1 (`gemini-decision-1`) | Checks the fit on real frames: does the outline sit on the object, which motion is it; confidences gate the repair. |
-| Gemini 4 Carbon (`gemini-4-carbon`) | Repairs a fit Decision 1 doubts: proposes another motion model and starting guesses (thinking level low, inside a 90 s budget). |
-| Gemini Omni 1.2 Flash (`gemini-omni-1.2-flash`) | The baseline: continues the same 3 s as video. |
+| Gemini 3.8 Flash (`gemini-3.8-flash`) | **Default live model** for scene reading (`FORESIGHT_PERCEPTION_MODEL`, agentic video + structured output, thinking level low), fit checking (`FORESIGHT_VERIFY_MODEL`, structured output + stated confidences with the 0.7 gate), and fit repair (`FORESIGHT_REPAIR_MODEL`, inside a 90 s budget). |
+| Gemini 3.6 Flash (`gemini-3.6-flash`) | **Default 503 backup** (`FORESIGHT_FALLBACK_MODEL`): takes over automatically if `gemini-3.8-flash` repeatedly returns 503. |
+| Gemini Omni Flash (`gemini-omni-1.1-flash` / `gemini-omni-1.2-flash`) | Video-continuation baseline (`FORESIGHT_OMNI_MODEL`, off by default on personal keys; enable with `FORESIGHT_OMNI_ENABLED=true` on a paid-tier key). Nov 21–22 evals ran `gemini-omni-1.2-flash`. |
+| Gemini 4 Hydrogen (`gemini-4-hydrogen`) | Read the scene in the Nov 21–22 evaluations (12.5 s in [Phase 0](phase0/REPORT.md)). |
+| Gemini 4 Neon (`gemini-4-neon`) | Hydrogen's 503 backup during the hackathon, and run as a 15-clip scene-reading variant on Nov 22. |
+| Gemini Decision 1 (`gemini-decision-1`) | Checked fits in the Nov 21–22 evaluations via `decisions.create` calibrated probabilities (`FORESIGHT_VERIFY_MODE=decisions`). |
+| Gemini 4 Carbon (`gemini-4-carbon`) | Repaired fits in the Nov 21–22 evaluations, and run as a 15-clip scene-reading variant on Nov 22. |
 | Gemini Robotics-ER 2 (`gemini-robotics-er-2-preview`) | Tested as a tracker in Phase 0 and not used: 39 px median error against 20 px for CSRT. |
-| Managed Agent (`antigravity-preview-09-2026`) | Runs the physics fit for a batch of scenes in one remote sandbox it sets up once (scene JSON in, never video). On the 15 eval scenes its fits matched the local ones exactly ([eval/agent_batch.json](eval/agent_batch.json), `eval/run_agent_batch.py`). |
-| Genie 4 (`genie-4`) | A second baseline, in the eval and on the stage: a world model that starts from the last frame and a prompt and streams live video. |
+| Managed Agent (`antigravity-preview-09-2026`) | Runs batch physics fits in one reused remote sandbox (`eval/agent_batch.json`, `eval/run_agent_batch.py`), matching the local fits on all 15 eval scenes. |
+| Genie 4 (`genie-4`) | Streaming world-model baseline in the Nov 21–22 evaluations (`FORESIGHT_GENIE_ENABLED=true` when available; skipped cleanly otherwise). |
 
 ## Docs
 

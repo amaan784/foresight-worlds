@@ -83,8 +83,8 @@ export function Understood({ u }: { u: Understanding }) {
       <p className="text-base text-muted">
         Motion: <span className="text-ink">{u.motion_model ?? "—"}</span>. Scale: {Math.round(u.px_per_m).toLocaleString()} pixels per metre,
         from {u.scale_source === "gravity" ? "the fall (gravity)" : "the object's real size"}.
-        {checks.length > 0 && <> Decision 1: {checks.map(([k, v]) => `${k.replaceAll("_", " ")} ${v.toFixed(2)}`).join(", ")}.</>}
-        {u.repairs_used ? ` Carbon repaired the fit ${u.repairs_used} time${u.repairs_used > 1 ? "s" : ""}.` : ""}
+        {checks.length > 0 && <> Fit check: {checks.map(([k, v]) => `${k.replaceAll("_", " ")} ${v.toFixed(2)}`).join(", ")}.</>}
+        {u.repairs_used ? ` Repaired the fit ${u.repairs_used} time${u.repairs_used > 1 ? "s" : ""}.` : ""}
       </p>
       {fell && <p role="note" className="text-base text-bad">The physics failed its energy check ({u.fallback_reason}), so this run shows constant velocity.</p>}
     </section>

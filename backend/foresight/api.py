@@ -25,7 +25,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import config, genie, omni
-from .gemini import SpendCapHit
+from .gemini import SpendCapHit, _status
 from .pipeline import draw_overlay, endpoint_error, predict_clip, track_in_video
 from .video import probe, transcode
 
@@ -195,14 +195,14 @@ def _run(job: Job, src: dict, run_omni: bool, dynamics: str, run_genie: bool = F
                             "has_reality": has_reality})
         job.emit("stage", {"stage": "ingest", "status": "done", "message": f"{pc['frames']} frames"})
 
-        def lane(name: str, make_video) -> None:
+        def lane(name: str, model_id: str, make_video) -> None:
             """One baseline: make its 5 s video, then (once the scene is known) its endpoint error."""
             state = lanes[name]
-            job.emit(name, {"status": "start", "url": None, "latency_s": None, "error": None})
+            job.emit(name, {"status": "start", "url": None, "latency_s": None, "error": None, "message": None})
             try:
                 info = make_video(job.dir / f"{name}.mp4")
                 _poster(job.dir / f"{name}.mp4")
-                state.update(status="done", url=job.url(f"{name}.mp4"), latency_s=info["latency_s"], info=info)
+                state.update(status="done", url=job.url(f"{name}.mp4"), latency_s=info["latency_s"], info=info, message=None)
                 scene_ready.wait(timeout=600)
                 if "scene" in holder and has_reality:
                     pts = track_in_video(job.dir / f"{name}.mp4", holder["scene"])
@@ -210,28 +210,54 @@ def _run(job: Job, src: dict, run_omni: bool, dynamics: str, run_genie: bool = F
             except JobCancelled:
                 return
             except SpendCapHit as e:
-                state.update(status="error", error=str(e))
+                state.update(status="error", error=str(e), message=None)
             except Exception as e:  # noqa: BLE001
-                state.update(status="error", error=f"{type(e).__name__}: {e}"[:400])
+                code = _status(e)
+                if code in (403, 404):
+                    state.update(
+                        status="skipped",
+                        error=None,
+                        message=f"{model_id} is unavailable on this API key (HTTP {code}); baseline skipped.",
+                    )
+                else:
+                    state.update(status="error", error=f"{type(e).__name__}: {e}"[:400], message=None)
             try:
                 job.emit(name, {"status": state["status"], "url": state.get("url"), "latency_s": state.get("latency_s"),
-                                "error": state.get("error"), "endpoint_error_cm": (state.get("endpoint") or {}).get("cm")})
+                                "error": state.get("error"), "message": state.get("message"),
+                                "endpoint_error_cm": (state.get("endpoint") or {}).get("cm")})
             except JobCancelled:
                 return
 
         prompt = src.get("omni_prompt")
         makers = {
-            "omni": (run_omni, lambda out: omni.continue_clip(Path(cond), out, prompt=prompt or omni.GENERIC_PROMPT, tag=f"api:{job.id}")),
-            "genie": (run_genie, lambda out: genie.continue_from_frame(
-                Path(cond), out, prompt=(prompt or "").replace(" Continue the scene.", "") or genie.GENERIC_PROMPT, tag=f"api:{job.id}")),
+            "omni": (
+                run_omni,
+                config.OMNI_ENABLED,
+                config.OMNI,
+                lambda out: omni.continue_clip(Path(cond), out, prompt=prompt or omni.GENERIC_PROMPT, tag=f"api:{job.id}"),
+            ),
+            "genie": (
+                run_genie,
+                config.GENIE_ENABLED,
+                config.GENIE,
+                lambda out: genie.continue_from_frame(
+                    Path(cond), out, prompt=(prompt or "").replace(" Continue the scene.", "") or genie.GENERIC_PROMPT, tag=f"api:{job.id}"
+                ),
+            ),
         }
-        for name, (on, make) in makers.items():
-            if on:
-                lanes[name] = {"status": "start"}
-                threads[name] = threading.Thread(target=lane, args=(name, make), daemon=True)
+        for name, (requested, enabled, model_id, make) in makers.items():
+            if requested and enabled:
+                lanes[name] = {"status": "start", "message": None}
+                threads[name] = threading.Thread(target=lane, args=(name, model_id, make), daemon=True)
                 threads[name].start()
             else:
-                job.emit(name, {"status": "skipped", "url": None, "latency_s": None, "error": None})
+                msg = (
+                    f"{model_id} is disabled on this server (set FORESIGHT_{name.upper()}_ENABLED=true to enable)."
+                    if not enabled
+                    else "Not requested for this run."
+                )
+                lanes[name] = {"status": "skipped", "url": None, "latency_s": None, "error": None, "message": msg}
+                job.emit(name, lanes[name])
 
         out_size = _ui_size(pc["width"], pc["height"])
         meta = predict_clip(Path(cond), job.dir / "foresight.mp4", out_size=out_size, dynamics=dynamics,
@@ -252,7 +278,7 @@ def _run(job: Job, src: dict, run_omni: bool, dynamics: str, run_genie: bool = F
         (job.dir / "trajectory.json").write_text(json.dumps(export, indent=1))
         _trajectory_csv(export, job.dir / "trajectory.csv")
         result.update(job_id=job.id, status="done", source=src["kind"], title=_title(src), created=job.created,
-                      understanding=_understanding(scene, meta), paths=_paths(scene, meta, main),
+                      models=_active_models(), understanding=_understanding(scene, meta), paths=_paths(scene, meta, main),
                       frame_url=job.url("conditioning.jpg"), urls={
             "conditioning": job.url("conditioning.mp4"), "reality": job.url("reality.mp4") if has_reality else None,
             "foresight": job.url("foresight.mp4"), "omni": None, "genie": None, "overlay": job.url("overlay.mp4"),
@@ -260,18 +286,20 @@ def _run(job: Job, src: dict, run_omni: bool, dynamics: str, run_genie: bool = F
         for name in ("omni", "genie"):
             result["metrics"]["endpoint_error_cm"][name] = None
             result["metrics"]["endpoint_error_px"][name] = None
+            result[name] = {k: lanes.get(name, {}).get(k) for k in ("status", "latency_s", "error", "message")}
         job.result = result
         job.emit("result", result)
         for name, th in threads.items():
             th.join(timeout=600)
             state = lanes[name]
-            if state.get("status") == "done":
-                result["urls"][name] = state["url"]
-                ep = state.get("endpoint") or {}
-                result["metrics"]["endpoint_error_cm"][name] = ep.get("cm")
-                result["metrics"]["endpoint_error_px"][name] = ep.get("px")
-            result[name] = {k: state.get(k) for k in ("status", "latency_s", "error")}
-            job.result = result
+            with job.cv:
+                if state.get("status") == "done":
+                    result["urls"][name] = state["url"]
+                    ep = state.get("endpoint") or {}
+                    result["metrics"]["endpoint_error_cm"][name] = ep.get("cm")
+                    result["metrics"]["endpoint_error_px"][name] = ep.get("px")
+                result[name] = {k: state.get(k) for k in ("status", "latency_s", "error", "message")}
+                job.result = result
         job.status = "done"
         (job.dir / "result.json").write_text(json.dumps(job.result, indent=2))
         job.emit("end", {"status": "done"})
@@ -404,12 +432,29 @@ def _recent(limit: int) -> list[dict]:
     return rows
 
 
+def _active_models() -> dict[str, str]:
+    return {
+        "perception": config.PERCEPTION,
+        "fallback": config.FALLBACK_MODEL,
+        "verify": config.DECISION if config.VERIFY_MODE == "decisions" else config.VERIFY,
+        "repair": config.REPAIR,
+        "baseline_video": config.OMNI,
+        "world_model": config.GENIE,
+        "managed_agent": config.MANAGED_AGENT,
+    }
+
+
 # ------------------------------------------------------------------------------------------------ routes
 @app.get("/api/info")
 def info():
-    return {"lan_ip": _lan_ip(), "physics_available": _physics_available(), "omni_enabled": True, "genie_enabled": True,
-            "models": {"perception": config.PERCEPTION, "repair": config.CARBON, "verify": config.DECISION,
-                       "baseline_video": config.OMNI, "world_model": config.GENIE, "managed_agent": config.MANAGED_AGENT}}
+    return {
+        "lan_ip": _lan_ip(),
+        "physics_available": _physics_available(),
+        "omni_enabled": config.OMNI_ENABLED,
+        "genie_enabled": config.GENIE_ENABLED,
+        "verify_mode": config.VERIFY_MODE,
+        "models": _active_models(),
+    }
 
 
 @app.get("/api/samples")
@@ -419,7 +464,7 @@ def samples():
 
 @app.post("/api/predict", status_code=202)
 async def predict(video: UploadFile | None = File(None), sample_id: str | None = Form(None), session: str | None = Form(None),
-                  cond_seconds: float = Form(3.0), omni: str = Form("true"), genie: str = Form("false"),
+                  cond_seconds: float = Form(3.0), omni: str | None = Form(None), genie: str | None = Form(None),
                   dynamics: str = Form("physics")):
     if dynamics not in ("physics", "const_velocity"):
         raise HTTPException(400, "dynamics must be physics or const_velocity")
@@ -451,7 +496,9 @@ async def predict(video: UploadFile | None = File(None), sample_id: str | None =
     else:
         raise HTTPException(400, "send a video file or a sample_id")
     JOBS[job.id] = job
-    threading.Thread(target=_run, args=(job, src, omni.lower() == "true", dynamics, genie.lower() == "true"), daemon=True).start()
+    want_omni = config.OMNI_ENABLED if omni is None else (omni.lower() == "true")
+    want_genie = config.GENIE_ENABLED if genie is None else (genie.lower() == "true")
+    threading.Thread(target=_run, args=(job, src, want_omni, dynamics, want_genie), daemon=True).start()
     return {"job_id": job.id, "events_url": f"/api/jobs/{job.id}/events", "result_url": f"/api/jobs/{job.id}"}
 
 

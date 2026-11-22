@@ -18,10 +18,11 @@ Each agent edits ONLY its own section. Format: Done / Next / Blockers.
 - Wider eval, 20 scenes x 3 cameras (eval/results_wide.json): constant velocity 66.63, Foresight 64.73, Genie 4 46.52, last frame 36.48, Omni 30.11; median endpoint Foresight 18.2 cm, constant velocity 154.8 cm; Foresight closer on 36 of 51 scene-views. No failures, no fallbacks.
 - Stage: drop a video from the laptop, recent runs, path plot, "what Foresight understood", trajectory JSON/CSV, /results page.
 - README: "Post-hackathon changes" section; submitted version is branch hackathon-submission-branch-archive at b3b3f79.
+- C1 (public Gemini models): `config.py` configurable via `FORESIGHT_*` env vars defaulting to `gemini-3.8-flash` (`gemini-3.6-flash` 503 fallback), structured-output fit verification (`verify.py`, 0.7 gate; `FORESIGHT_VERIFY_MODE=decisions` keeps Decision 1), `genie.py` routed through `foresight.gemini.call`, Omni/Genie off by default and skipped cleanly on the stage when disabled or 403/404, 34/34 tests passing, offline 15-clip `c1_baseline` 74.52 and `c1_public` (`gemini-3.8-flash` readings) 76.15, live sample (`j_2ff3bfd0`) and upload (`j_d44dc973`) verified (eval/FAILURES.md row 28).
 
 ### Next (handed over to Antigravity on Nov 22, see HANDOVER.md)
-- Option C, hardening: public Gemini models (the hackathon account is deleted Nov 22), phone spend bug, synced
-  playback reset, gravity scale guard, per-object start times, local multi-start instead of Carbon repairs, CI.
+- Option C, hardening: phone spend bug (C2), synced
+  playback reset (C3), gravity scale guard (C4), per-object start times (C5), local multi-start instead of repairs (C6), CI (C7).
 - Then Option A: a physics auditor for video and world models, and an interactive what-if on the stage.
 - Physics-IQ Verified ground truth: needs the gated Hugging Face dataset accepted by the account owner.
 - Glancing collisions in depth (balls-collide, ball-hits-duck) are out of reach for a 2D world.

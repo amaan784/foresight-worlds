@@ -17,10 +17,10 @@ The same pipeline as a flow:
    conditioning clip at 24 FPS, the same 3 s at 30 FPS for fitting, and the hidden next 5 s. Physics-IQ clips
    come split already. The 24 FPS Physics-IQ files drop every fifth frame of the 30 FPS originals, so timing for
    the fit always comes from the 30 FPS clip.
-2. **Read the scene** (`perceive.py`): Gemini 4 Hydrogen gets the clip with agentic video processing plus its
-   first and last frames, at thinking level low, and returns a structured scene: each object as a circle or a box
-   with its real size in cm and mass in grams, the surfaces it rolls on as line segments (hard or soft), and the
-   kind of motion.
+2. **Read the scene** (`perceive.py`): `config.PERCEPTION` (`gemini-3.8-flash` by default; `gemini-4-hydrogen` in the
+   Nov 21–22 evals) gets the clip with agentic video processing plus its first and last frames, at thinking level low,
+   and returns a structured scene: each object as a circle or a box with its real size in cm, mass in grams and outer
+   material, the surfaces it rolls on as line segments (hard or soft), and the kind of motion.
 3. **Track** (`track.py`): OpenCV CSRT follows each moving object forward from the first frame and back from the
    last. CSRT rarely admits it has lost the object, so a frame only counts when the tracked patch still looks
    like the object. `clean_track` then keeps only free motion: the stretch before a held object is released, and
@@ -40,9 +40,11 @@ object rolls in the layer of its support line; a static object whose bottom sits
 body at rest if it is light enough to be knocked), one lower in the image is in front and hides it, one higher is
 behind. Containers are open on top. Tables and floors are level in 3D, so gravity along their drawn slope is
 cancelled; soft surfaces absorb landings; balls brake with a rolling resistance of 0.04 g. `scipy.optimize.least_squares` fits the start position, velocity and
-the material parameters the track can support; the rest keep priors. Gemini Decision 1 looks at keyframes with
+the material parameters the track can support; the rest keep priors. `verify.py` (`gemini-3.8-flash` structured
+output by default, or `gemini-decision-1` when `FORESIGHT_VERIFY_MODE=decisions`) looks at keyframes with
 the fitted outline drawn on them and answers whether it sits on the object, and which motion it is (roll,
-slide, fall, bounce or other), each with a confidence. Under 0.7, Gemini 4 Carbon (thinking level low) looks
+slide, fall, bounce or other), each with a confidence. Under 0.7, `repair.py` (`config.REPAIR`, `gemini-3.8-flash`
+at thinking level low) looks
 at a plot of the track and the keyframes and proposes another motion model and starting guesses; the fit runs
 again, at most twice and within 90 s for the whole loop. The world then runs for exactly 5.000 s and is rendered
 onto the cleaned frame, each object hidden behind what stands in front of it. If a simulated object moves faster
@@ -50,17 +52,18 @@ than its start speed plus free fall allows, the run falls back to constant veloc
 
 ## The baselines (`backend/foresight/omni.py`, `genie.py`)
 
-Gemini Omni 1.2 Flash gets the same 3 s and is asked to continue the scene (video extension). It returns the
-input plus a continuation; the 5 s right after the input are kept. Genie 4 gets the last frame and a scene
-prompt in a live session and streams video; the first 5 s are kept (padded with the last frame, and reported, if
-the stream ends early).
+Gemini Omni Flash (`config.OMNI`, off by default on personal keys unless `FORESIGHT_OMNI_ENABLED=true`) gets the same
+3 s and is asked to continue the scene (video extension). It returns the input plus a continuation; the 5 s right after
+the input are kept. Genie 4 (`config.GENIE`, enabled with `FORESIGHT_GENIE_ENABLED=true`) gets the last frame and a
+scene prompt in a live session and streams video; the first 5 s are kept (padded with the last frame, and reported, if
+the stream ends early). When disabled or unavailable on the active key, the API skips those lanes cleanly.
 
 ## Serving (`backend/foresight/api.py`)
 
 FastAPI. `POST /api/predict` starts a job and returns at once; `GET /api/jobs/{id}/events` streams every stage as
-server-sent events (perception, tracking, scale, fit, Decision 1 confidences, repairs, fallback, render, Omni,
-Genie), replaying past events to late listeners. The Omni and Genie lanes run in parallel. Every Gemini call goes through
-`foresight/gemini.py`: retry with backoff on 503, a switch from Hydrogen to Neon if 503s continue, a hard stop on
+server-sent events (perception, tracking, scale, fit, verification confidences, repairs, fallback, render, Omni,
+Genie), replaying past events to late listeners. The Omni and Genie lanes run in parallel when enabled. Every Gemini call goes through
+`foresight/gemini.py`: retry with backoff on 503, an automatic fallback (`gemini-3.8-flash` <-> `gemini-3.6-flash` by default) if 503s continue, a hard stop on
 429 (the project's spend cap), and a JSON line per call in `logs/` with the media stripped.
 
 ## The stage (`frontend/`)

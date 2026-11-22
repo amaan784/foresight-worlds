@@ -17,6 +17,7 @@ export type Info = {
   physics_available: boolean;
   omni_enabled: boolean;
   genie_enabled?: boolean;
+  verify_mode?: string;
   models: Record<string, string>;
 };
 export type Sample = { id: string; title: string; thumb_url: string };
@@ -52,9 +53,10 @@ export type Result = {
     fallback_reason?: string | null;
   };
   scene: { objects: { name: string; shape: string; est_real_size_cm: number }[]; motion_type: string; px_per_m: number };
+  models?: Record<string, string>;
   physics?: { motion_model?: string } | null;
-  omni?: { status: string; latency_s: number | null; error: string | null };
-  genie?: { status: string; latency_s: number | null; error: string | null };
+  omni?: { status: string; latency_s: number | null; error: string | null; message?: string | null };
+  genie?: { status: string; latency_s: number | null; error: string | null; message?: string | null };
 };
 
 /** Points are [t_s, x, y] in the clip's original pixels. */
@@ -77,7 +79,7 @@ export type Understanding = {
 export type RecentRun = { job_id: string; created: string; title: string; poster: string | null; dynamics: string | null;
                           endpoint_error_cm: { foresight: number | null; omni: number | null; genie: number | null } };
 
-export type Lane = { status: string; url: string | null; latency_s: number | null; error: string | null; endpoint_error_cm?: number | null; t?: number };
+export type Lane = { status: string; url: string | null; latency_s: number | null; error: string | null; message?: string | null; endpoint_error_cm?: number | null; t?: number };
 
 export type JobState = {
   id: string;
@@ -87,8 +89,8 @@ export type JobState = {
   tracking: { object: string; frames_ok: number; frames_total: number; points: number[][] }[];
   scale?: { px_per_m: number; source: string; gravity_check: { g_est_m_s2: number } | null };
   fits: { attempt: number; motion_model: string; fit_error_px: number; n_points: number; params?: Record<string, unknown> }[];
-  verifies: { attempt: number; confidences: Record<string, number>; answers?: Record<string, string>; passed: boolean }[];
-  repairs: { attempt: number; proposal: { motion_model?: string; reason?: string } }[];
+  verifies: { model?: string; mode?: string; attempt: number; confidences: Record<string, number>; answers?: Record<string, string>; passed: boolean }[];
+  repairs: { model?: string; attempt: number; proposal: { motion_model?: string; reason?: string } }[];
   render?: { url: string | null; frames: number; duration_s: number };
   omni?: Lane;
   omniStartT?: number;
