@@ -22,6 +22,8 @@ export default function Capture() {
   const [msg, setMsg] = useState<string | null>(null);
   const [portrait, setPortrait] = useState(false);
   const [physics, setPhysics] = useState(true);
+  // State, not just the ref: the record button must re-render as enabled once the camera stream arrives.
+  const [camReady, setCamReady] = useState(false);
 
   useEffect(() => {
     getInfo().then((i) => setPhysics(i.physics_available)).catch(() => {});
@@ -30,7 +32,7 @@ export default function Capture() {
     window.addEventListener("resize", onRot);
     navigator.mediaDevices
       ?.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }, audio: false })
-      .then((s) => { streamRef.current = s; if (videoRef.current) videoRef.current.srcObject = s; })
+      .then((s) => { streamRef.current = s; if (videoRef.current) videoRef.current.srcObject = s; setCamReady(true); })
       .catch((e) => { setPhase("error"); setMsg(`Camera unavailable: ${e.message}. Open this page over https and allow camera access.`); });
     return () => { window.removeEventListener("resize", onRot); streamRef.current?.getTracks().forEach((t) => t.stop()); };
   }, []);
@@ -112,7 +114,7 @@ export default function Capture() {
       )}
       <div className="absolute right-5 top-1/2 -translate-y-1/2">
         {(phase === "idle" || phase === "sent" || phase === "error" || phase === "recording" || phase === "uploading" || phase === "countdown") && (
-          <button onClick={record} disabled={phase === "recording" || phase === "uploading" || phase === "countdown" || !streamRef.current}
+          <button onClick={record} disabled={phase === "recording" || phase === "uploading" || phase === "countdown" || !camReady}
                   aria-label={phase === "sent" ? "Record again" : "Record 8 seconds"} className="relative grid place-items-center size-24">
             <svg viewBox="0 0 100 100" className="absolute inset-0 -rotate-90">
               <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,.35)" strokeWidth="6" />

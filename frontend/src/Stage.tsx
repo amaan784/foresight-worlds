@@ -57,10 +57,14 @@ export default function Stage() {
     history.replaceState(null, "", "/");
   }
 
+  // Phones need https for the camera. The plain-HTTP stage (:5174) points them at the HTTPS dev server (:5173).
   const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  const httpsPort = location.protocol === "https:" ? location.port || "443" : "5173";
   const captureUrl = isLocal
-    ? (info ? `https://${info.lan_ip}:${location.port || "5173"}/capture?session=${session}` : "")
-    : `${location.origin}/capture?session=${session}`;
+    ? (info ? `https://${info.lan_ip}:${httpsPort}/capture?session=${session}` : "")
+    : location.protocol === "https:"
+      ? `${location.origin}/capture?session=${session}`
+      : `https://${location.hostname}:5173/capture?session=${session}`;
 
   return (
     <div className="min-h-full flex flex-col">
