@@ -34,6 +34,10 @@ RIGID_SINGLE = [
     "weight-protects-duck", "ball-in-basket", "duck-falls-in-box", "ball-and-block-fall",
 ]
 RIGID_MULTI = ["ball-train", "balls-collide", "two-balls-pass"]
+# Added Nov 22 for the wider eval, by a rule fixed before any run: the remaining Solid Mechanics scenes where a rigid
+# object is released, rolled or knocked and then moves freely (no cutting/tearing/breaking, no pendulums or cables,
+# no motorized platforms, nothing held by a tool through the prediction).
+RIGID_EXTRA = ["ball-in-sand", "marble-run-x", "marble-run-y", "stable-blocks", "unstable-block-stack"]
 
 
 def scenes() -> dict:
